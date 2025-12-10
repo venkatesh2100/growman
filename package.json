@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:web": "turbo run build --filter=web",
+    "deploy": "cd apps/web && npx wrangler deploy",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",

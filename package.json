@@ -16,5 +16,12 @@
   "packageManager": "pnpm@10.19.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "link": "^2.1.1",
+    "navigation": "^6.3.1",
+    "next": "^16.0.7",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

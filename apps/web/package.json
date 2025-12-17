@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.14.6",
-    "@repo/lib": "workspace:*",
     "@repo/ui": "workspace:*",
     "next": "^16.0.7",
     "react": "^19.2.0",

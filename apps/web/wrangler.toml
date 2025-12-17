@@ -9,5 +9,5 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 
 [[routes]]
-pattern = "growman.live/"
+pattern = "growman.live"
 custom_domain = true

@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
+	// appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
 )
@@ -41,21 +41,21 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Delete("/products/{slug}", h.DeleteProduct)
 		r.Get("/products/{slug}/related", h.RelatedProducts)
 
-		r.Get("/categories", h.ListCategories)
-		r.Get("/categories/{slug}", h.GetCategory)
-		r.Get("/categories/{slug}/products", h.ProductsByCategory)
-		r.Get("/categories/{slug}/subcategories", h.ListSubcategories)
-		r.Get("/categories/{slug}/subcategories/{subSlug}/products", h.ProductsBySubcategory)
+		// r.Get("/categories", h.ListCategories)
+		// r.Get("/categories/{slug}", h.GetCategory)
+		// r.Get("/categories/{slug}/products", h.ProductsByCategory)
+		// r.Get("/categories/{slug}/subcategories", h.ListSubcategories)
+		// r.Get("/categories/{slug}/subcategories/{subSlug}/products", h.ProductsBySubcategory)
 
-		r.Get("/brands", h.ListBrands)
-		r.Get("/tags", h.ListTags)
+		// r.Get("/brands", h.ListBrands)
+		// r.Get("/tags", h.ListTags)
 
-		r.Post("/auth/login", h.Login)
+		// r.Post("/auth/login", h.Login)
 
-		r.Group(func(pr chi.Router) {
-			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
-			pr.Get("/auth/me", h.Me)
-		})
+		// r.Group(func(pr chi.Router) {
+		// 	pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
+		// 	pr.Get("/auth/me", h.Me)
+		// })
 	})
 
 	return r

@@ -17,6 +17,7 @@ type Config struct {
 	AllowedOrigins []string
 	AppEnv         string
 	AutoMigrate    bool
+	REDIS_URL 			string
 	SeedOnStartup  bool
 }
 
@@ -31,6 +32,7 @@ func Load() (Config, error) {
 		JWTSecret:     getenv("JWT_SECRET", "dev-secret-change-me"),
 		AppEnv:        getenv("GO_ENV", getenv("APP_ENV", "development")),
 		AutoMigrate:   getenv("AUTO_MIGRATE", "true") == "true",
+		REDIS_URL:     os.Getenv("REDIS_URL"),
 		SeedOnStartup: getenv("SEED_ON_STARTUP", "false") == "true",
 	}
 

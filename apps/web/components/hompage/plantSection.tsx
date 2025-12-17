@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// import ProductCard from '../components/ProductCard';
+import ProductCard from '@repo/ui/productCard';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
+import { Product } from '../../lib/types';
 
 export default function PlantSection() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -12,9 +14,9 @@ export default function PlantSection() {
   useEffect(() => {
     async function fetchFeatured() {
       try {
-        const res = await fetch('/api/products/featured');
+        const res = await apiFetch('/products/featured');
         const data = await res.json();
-        setFeaturedProducts(data.products);
+        setFeaturedProducts(data);
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
       } finally {
@@ -63,7 +65,7 @@ export default function PlantSection() {
                   <div className="h-8 bg-emerald-100 rounded w-full"></div>
                 </div>
               ))
-            : featuredProducts.map((product: any) => (
+            : featuredProducts.map((product: Product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
         </div>

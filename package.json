@@ -17,6 +17,10 @@
   "engines": {
     "node": ">=18"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "dependencies": {
     "link": "^2.1.1",
     "navigation": "^6.3.1",

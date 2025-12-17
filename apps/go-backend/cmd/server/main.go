@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Sever is Running Venky!")
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config error: %v", err)
@@ -47,8 +48,4 @@ func main() {
 	if err := http.ListenAndServe(cfg.Port, r); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
-}
-
-func main()  {
-	fmt.Println("Hello world")
 }

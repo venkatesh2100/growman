@@ -7,9 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	appauth "github.com/plantera/go-backend/internal/auth"
-	"github.com/plantera/go-backend/internal/config"
-	"github.com/plantera/go-backend/internal/handlers"
+	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
 )
 
 // NewRouter wires all HTTP routes and middleware.
@@ -21,7 +21,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
-	
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},

@@ -3,7 +3,7 @@ package seed
 import (
 	"log"
 
-	"github.com/plantera/go-backend/internal/models"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"gorm.io/gorm"
 )
 

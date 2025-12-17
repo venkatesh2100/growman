@@ -100,9 +100,6 @@ importers:
       '@opennextjs/cloudflare':
         specifier: ^1.14.6
         version: 1.14.6(next@16.0.7(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(wrangler@4.55.0)
-      '@repo/lib':
-        specifier: workspace:*
-        version: link:../../packages/lib
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui

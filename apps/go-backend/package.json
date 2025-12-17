@@ -1,0 +1,16 @@
+{
+  "name": "go-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "GO_ENV=development go run ./cmd/server",
+    "start": "GO_ENV=production go run ./cmd/server",
+    "build": "go build ./cmd/server",
+    "lint": "golangci-lint run || true"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.19.0"
+}

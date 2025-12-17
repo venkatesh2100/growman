@@ -1,16 +1,13 @@
-
 {
   "name": "@repo/lib",
   "version": "1.0.0",
   "description": "",
-    "files": [
+  "files": [
     "dist"
   ],
   "main": "dist/index.js",
-"types": "dist/index.d.ts",
-
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build":"tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

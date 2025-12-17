@@ -14,9 +14,9 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.14.4",
+    "@opennextjs/cloudflare": "^1.14.6",
+    "@repo/lib": "workspace:*",
     "@repo/ui": "workspace:*",
-    "@repo/lib":"workspace:*",
     "next": "^16.0.7",
     "react": "^19.2.0",
     "react-dom": "^19.1.0",
@@ -36,6 +36,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.5",
     "typescript": "5.9.2",
-    "wrangler": "^4.53.0"
+    "wrangler": "^4.55.0"
   }
 }

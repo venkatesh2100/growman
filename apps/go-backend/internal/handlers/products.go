@@ -3,10 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"context"
+	"log"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/cache"
 	"gorm.io/gorm"
 )
 
@@ -82,14 +86,14 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
-func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
-	var products []models.Product
-	if err := h.DB.Preload("Sizes").Preload("Attributes").Preload("Category").Preload("Subcategory").Preload("Brand").Where("featured = ?", true).Find(&products).Error; err != nil {
-		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch featured products")
-		return
-	}
-	httpjson.JSON(w, http.StatusOK, products)
-}
+// func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
+// 	var products []models.Product
+// 	if err := h.DB.Preload("Sizes").Preload("Attributes").Preload("Category").Preload("Subcategory").Preload("Brand").Where("featured = ?", true).Find(&products).Error; err != nil {
+// 		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch featured products")
+// 		return
+// 	}
+// 	httpjson.JSON(w, http.StatusOK, products)
+// }
 
 func (h *Handler) RelatedProducts(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
@@ -107,4 +111,100 @@ func (h *Handler) RelatedProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpjson.JSON(w, http.StatusOK, related)
+}
+
+//!
+// FeaturedProducts returns products marked as featured, with Redis caching.
+func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
+    ctx := context.Background()
+    cacheKey := "featured_products"
+
+    // Initialize cache helper
+    cacheHelper := cache.NewHelper(h.Redis)
+
+    // Try to get from Redis cache
+    var products []models.Product
+    hit, err := cacheHelper.Get(ctx, cacheKey, &products)
+
+    if err != nil {
+        log.Printf("[CACHE] Cache error, falling back to DB: %v", err)
+    } else if hit {
+        log.Println("[CACHE] Featured products served from Redis")
+        httpjson.JSON(w, http.StatusOK, products)
+        return
+    }
+
+    // Cache miss: fetch from database
+    log.Println("[CACHE] Cache miss, fetching featured products from DB")
+
+    if err := h.DB.Preload("Sizes").
+        Preload("Attributes").
+        Preload("Category").
+        Preload("Subcategory").
+        Preload("Brand").
+        Where("featured = ?", true).
+        Find(&products).Error; err != nil {
+        httpjson.Error(w, http.StatusInternalServerError, "failed to fetch featured products")
+        return
+    }
+
+    log.Println("[DB] Featured products fetched from database")
+
+    // Store in Redis cache (with 10-minute TTL)
+    if err := cacheHelper.Set(ctx, cacheKey, products, 10*time.Minute); err != nil {
+        log.Printf("[REDIS] Failed to cache featured products: %v", err)
+    }
+
+    httpjson.JSON(w, http.StatusOK, products)
+}
+
+// AllProducts returns all products with optional caching.
+func (h *Handler) AllProducts(w http.ResponseWriter, r *http.Request) {
+    ctx := context.Background()
+    cacheKey := "all_products"
+
+    cacheHelper := cache.NewHelper(h.Redis)
+
+    var products []models.Product
+    hit, _ := cacheHelper.Get(ctx, cacheKey, &products)
+
+    if hit {
+        log.Println("[CACHE] All products served from Redis")
+        httpjson.JSON(w, http.StatusOK, products)
+        return
+    }
+
+    // Fetch from database
+    if err := h.DB.Preload("Sizes").
+        Preload("Attributes").
+        Preload("Category").
+        Preload("Subcategory").
+        Preload("Brand").
+        Find(&products).Error; err != nil {
+        httpjson.Error(w, http.StatusInternalServerError, "failed to fetch products")
+        return
+    }
+
+    // Cache with 5-minute TTL
+    cacheHelper.Set(ctx, cacheKey, products, 5*time.Minute)
+
+    httpjson.JSON(w, http.StatusOK, products)
+}
+
+// InvalidateProductCache clears product-related cache entries.
+func (h *Handler) InvalidateProductCache() error {
+    if h.Redis == nil {
+        return nil
+    }
+
+    ctx := context.Background()
+    cacheHelper := cache.NewHelper(h.Redis)
+
+    // Delete all product-related cache keys
+    if err := cacheHelper.DeletePattern(ctx, "*products*"); err != nil {
+        return err
+    }
+
+    log.Println("[CACHE] Product cache invalidated")
+    return nil
 }

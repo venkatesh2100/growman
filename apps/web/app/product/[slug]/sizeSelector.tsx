@@ -1,13 +1,14 @@
 // components/SizeSelector.tsx
 import Link from "next/link";
+import type { ProductSize } from "../../../lib/types";
 
 export default function SizeSelector({
   sizes,
   selectedSize,
   productSlug
 }: {
-  sizes: any[];
-  selectedSize: any;
+  sizes: ProductSize[];
+  selectedSize: ProductSize;
   productSlug: string;
 }) {
   return (
@@ -23,7 +24,9 @@ export default function SizeSelector({
             }`}
         >
           <div className="font-medium">{size.label}</div>
-          <div className="text-gray-600 text-sm">{size.dimension}</div>
+          {size.dimension && (
+            <div className="text-gray-600 text-sm">{size.dimension}</div>
+          )}
           <div className="font-bold text-green-700 mt-1">₹{size.price.toFixed(2)}</div>
           <div className={`text-xs mt-1 ${size.stock > 0 ? 'text-green-600' : 'text-red-600'
             }`}>

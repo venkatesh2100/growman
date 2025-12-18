@@ -10,22 +10,32 @@ import RelatedProducts from "./RealatedProducts";
 import CartItems from "./cartItems";
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../../lib/api";
+import type { Product } from "../../../lib/types";
 
-export default function ProductPageClient({ product, searchParams, productSlug }: any) {
+export default function ProductPageClient({ 
+  product, 
+  searchParams, 
+  productSlug 
+}: { 
+  product: Product; 
+  searchParams: { size?: string }; 
+  productSlug: string;
+}) {
   const [showCartPopup , setShowCartPopup] = useState(false);
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(true);
   const selectedSizeId = searchParams?.size
     ? parseInt(searchParams.size)
     : product.sizes[0]?.id;
 
   const selectedSize =
-    product.sizes.find((size: any) => size.id === selectedSizeId) ||
-    product.sizes[0];
+    product.sizes.find((size) => size.id === selectedSizeId) ||
+    product.sizes[0] ||
+    null;
 
   const avgRating =
     product.reviews.length > 0
-      ? product.reviews.reduce((acc: any, review: any) => acc + review.rating, 0) /
+      ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
         product.reviews.length
       : 0;
 
@@ -36,7 +46,7 @@ export default function ProductPageClient({ product, searchParams, productSlug }
         setLoadingRelated(true);
         const response = await apiFetch(`/products/${productSlug}/related`);
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.json() as Product[] | { products: Product[] };
           const products = Array.isArray(data) ? data : data.products || [];
           // console.log("Setting related products:", products);
           // console.log("First product check:", products[0] ? {
@@ -138,10 +148,10 @@ export default function ProductPageClient({ product, searchParams, productSlug }
 
               <span
                 className={`text-sm font-medium ${
-                  selectedSize?.stock > 0 ? "text-green-600" : "text-red-600"
+                  (selectedSize?.stock ?? 0) > 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {selectedSize?.stock > 0 ? "In Stock" : "Out of Stock"}
+                {(selectedSize?.stock ?? 0) > 0 ? "In Stock" : "Out of Stock"}
               </span>
             </div>
 
@@ -165,7 +175,7 @@ export default function ProductPageClient({ product, searchParams, productSlug }
                   ₹{selectedSize?.price.toFixed(2)}
                 </span>
 
-                {product.mrp && product.mrp > selectedSize.price && (
+                {product.mrp && selectedSize && product.mrp > selectedSize.price && (
                   <>
                     <span className="text-gray-500 line-through">
                       ₹{product.mrp.toFixed(2)}
@@ -194,11 +204,13 @@ export default function ProductPageClient({ product, searchParams, productSlug }
                 Available Sizes:
               </h3>
 
-              <SizeSelector
-                sizes={product.sizes}
-                selectedSize={selectedSize}
-                productSlug={product.slug}
-              />
+              {selectedSize && (
+                <SizeSelector
+                  sizes={product.sizes}
+                  selectedSize={selectedSize}
+                  productSlug={product.slug}
+                />
+              )}
             </div>
 
             {/* Attributes */}
@@ -209,7 +221,7 @@ export default function ProductPageClient({ product, searchParams, productSlug }
                 </h3>
 
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {product.attributes.map((attr: any, idx: number) => (
+                  {product.attributes.map((attr, idx: number) => (
                     <li key={idx} className="flex items-start">
                       <span className="text-green-600 mr-2 mt-1">•</span>
                       <span className="text-gray-700">
@@ -223,7 +235,9 @@ export default function ProductPageClient({ product, searchParams, productSlug }
             )}
 
             {/* Add to Cart */}
-            <AddToCart product={product} selectedSize={selectedSize} onCartOpen={()=>setShowCartPopup(true)} />
+            {selectedSize && (
+              <AddToCart product={product} selectedSize={selectedSize} onCartOpen={()=>setShowCartPopup(true)} />
+            )}
                    <CartItems
         isOpen={showCartPopup}
         onClose={() => setShowCartPopup(false)}
@@ -258,7 +272,7 @@ export default function ProductPageClient({ product, searchParams, productSlug }
 
       {/* Tabs */}
       <ProductTabs
-        fullDescription={product.fullDescription || product.description}
+        fullDescription={product.fullDescription || product.description || ''}
         specifications={product.specifications}
         reviews={product.reviews}
       />

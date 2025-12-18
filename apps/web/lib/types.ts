@@ -35,6 +35,7 @@ export interface ProductSize extends Base {
   stock: number;
   productId: number;
   images?: string[];
+  dimension?: string;
 }
 
 export interface Attribute extends Base {

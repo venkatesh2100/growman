@@ -8,10 +8,12 @@ export default async function Page({
   params, 
   searchParams 
 }: { 
-  params: { slug: string }; 
-  searchParams: { size?: string }; 
+  params: Promise<{ slug: string }>; 
+  searchParams: Promise<{ size?: string }>; 
 }) {
-  const response = await apiFetch(`/products/${params.slug}`, { cache: "no-store" });
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const response = await apiFetch(`/products/${resolvedParams.slug}`, { cache: "no-store" });
   if (!response.ok) {
     return notFound();
   }
@@ -21,8 +23,8 @@ export default async function Page({
   return (
     <ProductPageClient
       product={product}
-      searchParams={searchParams}
-      productSlug={params.slug}
+      searchParams={resolvedSearchParams}
+      productSlug={resolvedParams.slug}
     />
   );
 }

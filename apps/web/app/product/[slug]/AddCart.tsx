@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { ShoppingCart, Heart } from "lucide-react";
-
+import { Product, ProductSize } from "../../../lib/types";
 export default function AddToCart({
   product,
   selectedSize,
   onCartOpen
 }: {
-  product: any;
-  selectedSize: any;
+  product: Product;
+  selectedSize: ProductSize;
   onCartOpen:()=>void,
 }) {
   // const { data: session } = useSession();
@@ -24,7 +24,7 @@ export default function AddToCart({
 
     // Check if the size already exists in cart
     const existingIndex = cart.findIndex(
-      (item: any) => item.productId === selectedSize.id
+      (item: { productId: number }) => item.productId === selectedSize.id
     );
 
     if (existingIndex > -1) {
@@ -42,7 +42,7 @@ export default function AddToCart({
         label: selectedSize.label,
         dimension: selectedSize.dimension,
         quantity: Math.min(quantity, selectedSize.stock),
-        image: selectedSize.images[0],
+        image: selectedSize.images?.[0] || product.imageUrl || '',
       });
     }
 

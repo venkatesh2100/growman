@@ -2,7 +2,8 @@ import "@repo/ui/styles.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import Navbar from "@repo/ui/navbar";
+// import Navbar from "@repo/ui/navbar";
+import Navbar from "../components/hompage/navbar";
 
 // import { SessionProvider } from "next-auth/react";
 

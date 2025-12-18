@@ -9,9 +9,9 @@ export default async function CategoriesPage(
   {
     searchParams,
   }: {
-    searchParams: { [key: string]: string | string[] | undefined };
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
   }) {
-  const resolvedSearchParams = searchParams;
+  const resolvedSearchParams = await searchParams;
 
   const [categoriesRes, brandsRes, productsRes, tagsRes] = await Promise.all([
     apiFetch('/categories', { cache: "no-store" }),

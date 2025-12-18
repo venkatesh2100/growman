@@ -7,7 +7,6 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
-    
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
@@ -17,6 +16,9 @@
   "dependencies": {
     "@opennextjs/cloudflare": "^1.14.6",
     "@repo/ui": "workspace:*",
+    "framer-motion": "^12.23.25",
+    "link": "^2.1.1",
+    "lucide-react": "^0.561.0",
     "next": "^16.0.7",
     "react": "^19.2.0",
     "react-dom": "^19.1.0",

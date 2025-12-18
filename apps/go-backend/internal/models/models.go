@@ -1,11 +1,118 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
+
+// StringArray is a custom type for PostgreSQL text[] arrays that works with pgx
+type StringArray []string
+
+// Value implements the driver.Valuer interface
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "{}", nil
+	}
+	// Escape and quote strings properly for PostgreSQL array format
+	quoted := make([]string, len(a))
+	for i, s := range a {
+		// Escape quotes and backslashes, then wrap in quotes
+		escaped := strings.ReplaceAll(s, "\\", "\\\\")
+		escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+		quoted[i] = `"` + escaped + `"`
+	}
+	return "{" + strings.Join(quoted, ",") + "}", nil
+}
+
+// Scan implements the sql.Scanner interface
+func (a *StringArray) Scan(value interface{}) error {
+	if value == nil {
+		*a = StringArray{}
+		return nil
+	}
+
+	var str string
+	switch v := value.(type) {
+	case []byte:
+		str = string(v)
+	case string:
+		str = v
+	default:
+		return errors.New("cannot scan into StringArray")
+	}
+
+	// Remove curly braces
+	str = strings.Trim(str, "{}")
+	if str == "" {
+		*a = StringArray{}
+		return nil
+	}
+
+	// Parse PostgreSQL array format
+	// This is a simplified parser - handles quoted and unquoted strings
+	result := make(StringArray, 0)
+	var current strings.Builder
+	inQuotes := false
+	escapeNext := false
+
+	for i, r := range str {
+		if escapeNext {
+			current.WriteRune(r)
+			escapeNext = false
+			continue
+		}
+
+		switch r {
+		case '\\':
+			escapeNext = true
+		case '"':
+			inQuotes = !inQuotes
+		case ',':
+			if !inQuotes {
+				val := strings.TrimSpace(current.String())
+				if val != "" {
+					result = append(result, val)
+				}
+				current.Reset()
+			} else {
+				current.WriteRune(r)
+			}
+		default:
+			current.WriteRune(r)
+		}
+
+		// Handle last element
+		if i == len(str)-1 {
+			val := strings.TrimSpace(current.String())
+			if val != "" {
+				result = append(result, val)
+			}
+		}
+	}
+
+	*a = result
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler
+func (a StringArray) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]string(a))
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (a *StringArray) UnmarshalJSON(data []byte) error {
+	var s []string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	*a = StringArray(s)
+	return nil
+}
 
 // Base includes common columns for all tables.
 type Base struct {
@@ -65,7 +172,7 @@ type Product struct {
 	ImageURL       string         `json:"imageUrl"`
 	Status         string         `json:"status"`
 	Featured       bool           `json:"featured"`
-	Tags           pq.StringArray `gorm:"type:text[]" json:"tags"`
+	Tags           StringArray    `gorm:"type:text[]" json:"tags"`
 	Stock          int            `json:"stock"`
 	CategoryID     uint           `json:"categoryId"`
 	Category       Category       `json:"category"`
@@ -84,7 +191,7 @@ type ProductSize struct {
 	Price     float64        `json:"price"`
 	Stock     int            `json:"stock"`
 	ProductID uint           `json:"productId"`
-	Images    pq.StringArray `gorm:"type:text[]" json:"images"`
+	Images    StringArray    `gorm:"type:text[]" json:"images"`
 }
 
 type Attribute struct {

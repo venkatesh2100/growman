@@ -12,6 +12,18 @@ import (
 
 const (
     DefaultTTL = 10 * time.Minute
+    
+    // Product cache TTLs
+    FeaturedProductsTTL = 10 * time.Minute
+    AllProductsTTL      = 5 * time.Minute
+    ProductDetailTTL    = 15 * time.Minute
+    RelatedProductsTTL  = 10 * time.Minute
+    
+    // Product cache key prefixes
+    KeyPrefixFeaturedProducts = "products:featured"
+    KeyPrefixAllProducts      = "products:all"
+    KeyPrefixProductDetail    = "products:detail:"
+    KeyPrefixRelatedProducts  = "products:related:"
 )
 
 // Helper provides common caching operations.
@@ -119,4 +131,89 @@ func (c *Helper) Exists(ctx context.Context, key string) (bool, error) {
     }
 
     return count > 0, nil
+}
+
+// ProductCache provides product-specific caching operations.
+type ProductCache struct {
+    *Helper
+}
+
+// NewProductCache creates a new product cache helper.
+func NewProductCache(rdb *redis.Client) *ProductCache {
+    return &ProductCache{Helper: NewHelper(rdb)}
+}
+
+// GetFeaturedProducts retrieves featured products from cache.
+func (pc *ProductCache) GetFeaturedProducts(ctx context.Context, dest interface{}) (bool, error) {
+    return pc.Get(ctx, KeyPrefixFeaturedProducts, dest)
+}
+
+// SetFeaturedProducts stores featured products in cache.
+func (pc *ProductCache) SetFeaturedProducts(ctx context.Context, value interface{}) error {
+    return pc.Set(ctx, KeyPrefixFeaturedProducts, value, FeaturedProductsTTL)
+}
+
+// GetAllProducts retrieves all products from cache.
+func (pc *ProductCache) GetAllProducts(ctx context.Context, dest interface{}) (bool, error) {
+    return pc.Get(ctx, KeyPrefixAllProducts, dest)
+}
+
+// SetAllProducts stores all products in cache.
+func (pc *ProductCache) SetAllProducts(ctx context.Context, value interface{}) error {
+    return pc.Set(ctx, KeyPrefixAllProducts, value, AllProductsTTL)
+}
+
+// GetProductDetail retrieves a single product detail from cache.
+func (pc *ProductCache) GetProductDetail(ctx context.Context, slug string, dest interface{}) (bool, error) {
+    return pc.Get(ctx, KeyPrefixProductDetail+slug, dest)
+}
+
+// SetProductDetail stores a single product detail in cache.
+func (pc *ProductCache) SetProductDetail(ctx context.Context, slug string, value interface{}) error {
+    return pc.Set(ctx, KeyPrefixProductDetail+slug, value, ProductDetailTTL)
+}
+
+// GetRelatedProducts retrieves related products from cache.
+func (pc *ProductCache) GetRelatedProducts(ctx context.Context, slug string, dest interface{}) (bool, error) {
+    return pc.Get(ctx, KeyPrefixRelatedProducts+slug, dest)
+}
+
+// SetRelatedProducts stores related products in cache.
+func (pc *ProductCache) SetRelatedProducts(ctx context.Context, slug string, value interface{}) error {
+    return pc.Set(ctx, KeyPrefixRelatedProducts+slug, value, RelatedProductsTTL)
+}
+
+// InvalidateAllProductCaches clears all product-related cache entries.
+func (pc *ProductCache) InvalidateAllProductCaches(ctx context.Context) error {
+    if pc.Redis == nil {
+        return nil
+    }
+    
+    patterns := []string{
+        KeyPrefixFeaturedProducts,
+        KeyPrefixAllProducts,
+        KeyPrefixProductDetail + "*",
+        KeyPrefixRelatedProducts + "*",
+    }
+    
+    for _, pattern := range patterns {
+        if err := pc.DeletePattern(ctx, pattern); err != nil {
+            log.Printf("[CACHE] Error invalidating pattern %s: %v", pattern, err)
+        }
+    }
+    
+    log.Println("[CACHE] All product caches invalidated")
+    return nil
+}
+
+// InvalidateProductDetail invalidates cache for a specific product and related products.
+func (pc *ProductCache) InvalidateProductDetail(ctx context.Context, slug string) error {
+    keys := []string{
+        KeyPrefixProductDetail + slug,
+        KeyPrefixRelatedProducts + slug,
+        KeyPrefixFeaturedProducts,
+        KeyPrefixAllProducts,
+    }
+    
+    return pc.Delete(ctx, keys...)
 }

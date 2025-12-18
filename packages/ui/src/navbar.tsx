@@ -1,10 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaLeaf } from "react-icons/fa";
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  price: number;
+  currency: string;
+  imageUrl?: string;
+  category?: {
+    name: string;
+  };
+}
+
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showCategories, setShowCategories] = useState(true);
@@ -12,10 +25,17 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
-  const [isMounted, setIsMounted] = useState(false); // Add mounted state
+  const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const navbarRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Set mounted state to prevent hydration mismatch
   useEffect(() => {
@@ -64,11 +84,100 @@ export default function Navbar() {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
         setActiveCategory(null);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Search function with debouncing
+  const performSearch = useCallback(async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Get API URL from environment or use default
+      const apiUrl = 
+        (typeof window !== 'undefined' 
+          ? (process.env.NEXT_PUBLIC_GO_API_URL || process.env.NEXT_PUBLIC_API_URL)
+          : (process.env.GO_API_URL || process.env.NEXT_PUBLIC_GO_API_URL || process.env.NEXT_PUBLIC_API_URL))
+        || 'http://localhost:8080/api/v1';
+      
+      const response = await fetch(
+        `${apiUrl}/products/search?q=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to search products');
+      }
+      
+      const results = await response.json();
+      setSearchResults(results);
+      setShowSearchResults(results.length > 0);
+    } catch (error) {
+      console.error("Error searching products:", error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchQuery.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        performSearch(searchQuery);
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, performSearch]);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle search submit
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim().length >= 2) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearchResults(false);
+      setSearchQuery("");
+    }
+  };
+
+  // Handle product click in search results
+  const handleProductClick = (slug: string) => {
+    router.push(`/products/${slug}`);
+    setShowSearchResults(false);
+    setSearchQuery("");
+  };
 
   // Main categories data
   const mainCategories = [
@@ -272,9 +381,10 @@ export default function Navbar() {
                 <input
                   type="text"
                   placeholder="Search plants, seeds, tools..."
+                  disabled
                   className="bg-transparent outline-none w-58 text-green-800 placeholder-emerald-600/70"
                 />
-                <button className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full">
+                <button className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full" disabled>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5"
@@ -526,28 +636,83 @@ export default function Navbar() {
           {/* Action Icons */}
           <div className="flex items-center space-x-3">
             {/* Search Bar (Desktop) */}
-            <div className="hidden md:flex items-center bg-emerald-50 rounded-full pl-4 pr-2 py-1 transition-all duration-300 shadow-inner">
-              <input
-                type="text"
-                placeholder="Search plants, seeds, tools..."
-                className="bg-transparent outline-none w-58 text-green-800 placeholder-emerald-600/70"
-              />
-              <button className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </button>
+            <div ref={searchContainerRef} className="hidden md:block relative">
+              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full pl-4 pr-2 py-1 transition-all duration-300 shadow-inner">
+                <input
+                  type="text"
+                  placeholder="Search plants, seeds, tools..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
+                  className="bg-transparent outline-none w-58 text-green-800 placeholder-emerald-600/70"
+                />
+                <button type="submit" className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors">
+                  {isSearching ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </form>
+              
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {showSearchResults && searchResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-emerald-100 max-h-96 overflow-y-auto z-50"
+                  >
+                    <div className="p-2">
+                      {searchResults.map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => handleProductClick(product.slug)}
+                          className="w-full flex items-center space-x-3 p-3 hover:bg-emerald-50 rounded-lg transition-colors text-left"
+                        >
+                          {product.imageUrl && (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-green-900 truncate">
+                              {product.name}
+                            </p>
+                            {product.category && (
+                              <p className="text-xs text-emerald-600 truncate">
+                                {product.category.name}
+                              </p>
+                            )}
+                            <p className="text-sm font-semibold text-emerald-700 mt-1">
+                              {product.currency} {product.price.toFixed(2)}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Mobile Search Toggle */}
@@ -665,32 +830,87 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden container mx-auto px-4 py-3"
           >
-            <div className="flex items-center bg-emerald-50 rounded-full px-4 py-2 shadow-inner">
-              <input
-                ref={searchRef}
-                type="text"
-                placeholder="Search plants, seeds, tools..."
-                className="bg-transparent outline-none w-full text-green-800 placeholder-emerald-600/70"
-              />
-              <button
-                className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors"
-                onClick={() => setIsSearchOpen(false)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            <div ref={searchContainerRef} className="relative">
+              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full px-4 py-2 shadow-inner">
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search plants, seeds, tools..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
+                  className="bg-transparent outline-none w-full text-green-800 placeholder-emerald-600/70"
+                />
+                <button
+                  type="button"
+                  className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setShowSearchResults(false);
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </form>
+              
+              {/* Mobile Search Results Dropdown */}
+              <AnimatePresence>
+                {showSearchResults && searchResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-emerald-100 max-h-96 overflow-y-auto z-50"
+                  >
+                    <div className="p-2">
+                      {searchResults.map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => {
+                            handleProductClick(product.slug);
+                            setIsSearchOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 p-3 hover:bg-emerald-50 rounded-lg transition-colors text-left"
+                        >
+                          {product.imageUrl && (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-green-900 truncate">
+                              {product.name}
+                            </p>
+                            {product.category && (
+                              <p className="text-xs text-emerald-600 truncate">
+                                {product.category.name}
+                              </p>
+                            )}
+                            <p className="text-sm font-semibold text-emerald-700 mt-1">
+                              {product.currency} {product.price.toFixed(2)}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}

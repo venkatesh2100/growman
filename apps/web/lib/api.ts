@@ -26,3 +26,23 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
     },
   });
 }
+
+/**
+ * Search products by query string
+ */
+export async function searchProducts(query: string): Promise<any[]> {
+  if (!query || query.trim() === '') {
+    return [];
+  }
+  
+  try {
+    const res = await apiFetch(`/products/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      throw new Error('Failed to search products');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error searching products:', error);
+    return [];
+  }
+}

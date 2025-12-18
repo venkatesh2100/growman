@@ -24,6 +24,8 @@
     "RAZORPAY_KEY_ID",
     "RAZORPAY_KEY_SECRET",
     "API_URL",
-    "GO_API_URL"
+    "GO_API_URL",
+    "NEXT_PUBLIC_API_URL",
+    "NEXT_PUBLIC_GO_API_URL"
   ]
 }

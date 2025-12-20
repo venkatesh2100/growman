@@ -1,11 +1,10 @@
 
 import { FilterSidebar } from '../../components/productspage/FilterSideBar';
 import CategoryCard from '../../components/productspage/categoryCard';
-import ProductCard from '@repo/ui/productCard';
-import { apiFetch } from '../../lib/api';
-import type { Brand, Category, Product } from '../../lib/types';
+import ProductsDisplay from '../../components/productspage/ProductsDisplay';
+import { fetchProductsData, filterProducts } from '../../lib/data';
 
-export default async function CategoriesPage(
+export default async function ProductsPage(
   {
     searchParams,
   }: {
@@ -13,42 +12,18 @@ export default async function CategoriesPage(
   }) {
   const resolvedSearchParams = await searchParams;
 
-  const [categoriesRes, brandsRes, productsRes, tagsRes] = await Promise.all([
-    apiFetch('/categories', { cache: "no-store" }),
-    apiFetch('/brands', { cache: "no-store" }),
-    apiFetch('/products', { cache: "no-store" }),
-    apiFetch('/tags', { cache: "no-store" }),
-  ]);
+  // Fetch all data using shared utility (with caching)
+  const {
+    productsBySize,
+    categories,
+    categoryFilters,
+    brandFilters,
+    tags,
+    priceRange,
+  } = await fetchProductsData();
 
-  const categories: Category[] = categoriesRes.ok ? await categoriesRes.json() : [];
-  const brands: Brand[] = brandsRes.ok ? await brandsRes.json() : [];
-  const allProducts: Product[] = productsRes.ok ? await productsRes.json() : [];
-  const tagsPayload: string[] = tagsRes.ok ? await tagsRes.json() : [];
-
-  // Get price range
-  const priceRange = allProducts.length
-    ? {
-        min: Math.min(...allProducts.map(p => p.price)),
-        max: Math.max(...allProducts.map(p => p.price)),
-      }
-    : { min: 0, max: 0 };
-
-  const uniqueTags = tagsPayload.length
-    ? Array.from(new Set(tagsPayload))
-    : Array.from(new Set(allProducts.flatMap(p => p.tags || [])));
-
-  const categoryFilters = categories.map(c => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    count: allProducts.filter(p => p.categoryId === c.id).length,
-  }));
-
-  const brandFilters = brands.map(b => ({
-    id: b.id,
-    name: b.name,
-    slug: b.slug,
-  }));
+  // Filter products based on search params
+  const filteredProducts = filterProducts(productsBySize, resolvedSearchParams);
 
   return (
     <div className="max-w-7xl pt-10 mx-auto">
@@ -66,7 +41,7 @@ export default async function CategoriesPage(
             filterOptions={{
               categories: categoryFilters,
               brands: brandFilters,
-              tags: uniqueTags,
+              tags,
               priceRange,
             }}
             searchParams={resolvedSearchParams}
@@ -92,20 +67,11 @@ export default async function CategoriesPage(
           </section>
 
           {/* All Plants Section */}
-          <section>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-green-800">All Plants</h2>
-              <div className="text-sm text-emerald-600">
-                Showing {allProducts.length} plants
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {allProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </section>
+          <ProductsDisplay
+            products={filteredProducts}
+            title="All Plants"
+            showCount={true}
+          />
         </div>
       </div>
     </div>

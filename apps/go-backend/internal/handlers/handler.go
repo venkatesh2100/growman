@@ -25,14 +25,17 @@ func New(db *gorm.DB, cfg config.Config, rdb *redis.Client) *Handler {
 
 // AutoMigrate migrates all models.
 func (h *Handler) AutoMigrate() error {
-    return h.DB.AutoMigrate(
-        &models.User{},
-        &models.Category{},
-        &models.Subcategory{},
-        &models.Brand{},
-        &models.Product{},
-        &models.ProductSize{},
-        &models.Attribute{},
-        &models.Review{},
-    )
+	return h.DB.AutoMigrate(
+		&models.User{},
+		&models.Category{},
+		&models.Subcategory{},
+		&models.Brand{},
+		&models.Product{},
+		&models.ProductSize{},
+		&models.Attribute{},
+		&models.Review{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.Payment{},
+	)
 }

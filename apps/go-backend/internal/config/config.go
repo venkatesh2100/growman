@@ -19,6 +19,12 @@ type Config struct {
 	AutoMigrate    bool
 	REDIS_URL 			string
 	SeedOnStartup  bool
+	RazorpayKeyID  string
+	RazorpayKeySecret string
+	SMTPEmail      string
+	SMTPPassword   string
+	SMTPHost       string
+	SMTPPort       string
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -34,6 +40,12 @@ func Load() (Config, error) {
 		AutoMigrate:   getenv("AUTO_MIGRATE", "true") == "true",
 		REDIS_URL:     os.Getenv("REDIS_URL"),
 		SeedOnStartup: getenv("SEED_ON_STARTUP", "false") == "true",
+		RazorpayKeyID: os.Getenv("RAZORPAY_KEY_ID"),
+		RazorpayKeySecret: os.Getenv("RAZORPAY_KEY_SECRET"),
+		SMTPEmail:     os.Getenv("SMTP_EMAIL"),
+		SMTPPassword:  os.Getenv("SMTP_PASSWORD"),
+		SMTPHost:      getenv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:      getenv("SMTP_PORT", "587"),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")

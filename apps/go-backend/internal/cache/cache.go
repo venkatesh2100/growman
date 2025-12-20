@@ -19,11 +19,19 @@ const (
     ProductDetailTTL    = 15 * time.Minute
     RelatedProductsTTL  = 10 * time.Minute
     
+    // Category cache TTLs
+    AllCategoriesTTL = 10 * time.Minute
+    CategoryDetailTTL = 15 * time.Minute
+    
     // Product cache key prefixes
     KeyPrefixFeaturedProducts = "products:featured"
     KeyPrefixAllProducts      = "products:all"
     KeyPrefixProductDetail    = "products:detail:"
     KeyPrefixRelatedProducts  = "products:related:"
+    
+    // Category cache key prefixes
+    KeyPrefixAllCategories = "categories:all"
+    KeyPrefixCategoryDetail = "categories:detail:"
 )
 
 // Helper provides common caching operations.
@@ -216,4 +224,55 @@ func (pc *ProductCache) InvalidateProductDetail(ctx context.Context, slug string
     }
     
     return pc.Delete(ctx, keys...)
+}
+
+// CategoryCache provides category-specific caching operations.
+type CategoryCache struct {
+    *Helper
+}
+
+// NewCategoryCache creates a new category cache helper.
+func NewCategoryCache(rdb *redis.Client) *CategoryCache {
+    return &CategoryCache{Helper: NewHelper(rdb)}
+}
+
+// GetAllCategories retrieves all categories from cache.
+func (cc *CategoryCache) GetAllCategories(ctx context.Context, dest interface{}) (bool, error) {
+    return cc.Get(ctx, KeyPrefixAllCategories, dest)
+}
+
+// SetAllCategories stores all categories in cache.
+func (cc *CategoryCache) SetAllCategories(ctx context.Context, value interface{}) error {
+    return cc.Set(ctx, KeyPrefixAllCategories, value, AllCategoriesTTL)
+}
+
+// GetCategoryDetail retrieves a single category detail from cache.
+func (cc *CategoryCache) GetCategoryDetail(ctx context.Context, slug string, dest interface{}) (bool, error) {
+    return cc.Get(ctx, KeyPrefixCategoryDetail+slug, dest)
+}
+
+// SetCategoryDetail stores a single category detail in cache.
+func (cc *CategoryCache) SetCategoryDetail(ctx context.Context, slug string, value interface{}) error {
+    return cc.Set(ctx, KeyPrefixCategoryDetail+slug, value, CategoryDetailTTL)
+}
+
+// InvalidateAllCategoryCaches clears all category-related cache entries.
+func (cc *CategoryCache) InvalidateAllCategoryCaches(ctx context.Context) error {
+    if cc.Redis == nil {
+        return nil
+    }
+    
+    patterns := []string{
+        KeyPrefixAllCategories,
+        KeyPrefixCategoryDetail + "*",
+    }
+    
+    for _, pattern := range patterns {
+        if err := cc.DeletePattern(ctx, pattern); err != nil {
+            log.Printf("[CACHE] Error invalidating pattern %s: %v", pattern, err)
+        }
+    }
+    
+    log.Println("[CACHE] All category caches invalidated")
+    return nil
 }

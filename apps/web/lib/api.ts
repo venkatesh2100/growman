@@ -1,4 +1,6 @@
-1/**
+import { useAuthStore } from './store/authStore';
+
+/**
  * Get the base API URL from environment variable or default to local API
  */
 export function getApiUrl(): string {
@@ -13,17 +15,32 @@ export function getApiUrl(): string {
 
 /**
  * Fetch from the external API
+ * Automatically includes Authorization header if token is available
  */
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   const apiUrl = getApiUrl();
   const url = path.startsWith('/') ? `${apiUrl}${path}` : `${apiUrl}/${path}`;
-  // console.log('url', url);
+  
+  // Get token from store or localStorage (for backward compatibility)
+  let token: string | null = null;
+  if (typeof window !== 'undefined') {
+    const authStore = useAuthStore.getState();
+    token = authStore.token || localStorage.getItem('token');
+  }
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
+  
+  // Add Authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   return fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 }
 

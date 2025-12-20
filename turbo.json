@@ -26,6 +26,7 @@
     "API_URL",
     "GO_API_URL",
     "NEXT_PUBLIC_API_URL",
-    "NEXT_PUBLIC_GO_API_URL"
+    "NEXT_PUBLIC_GO_API_URL",
+    "NODE_ENV"
   ]
 }

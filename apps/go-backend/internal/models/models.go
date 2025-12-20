@@ -124,11 +124,14 @@ type Base struct {
 
 type User struct {
 	Base
-	Name         string   `json:"name"`
-	Email        string   `gorm:"uniqueIndex" json:"email"`
-	PasswordHash string   `json:"-"`
-	Role         string   `json:"role"`
-	Reviews      []Review `json:"reviews"`
+	Name          string   `json:"name"`
+	Email         string   `gorm:"uniqueIndex" json:"email"`
+	Phone         string   `gorm:"uniqueIndex" json:"phone"`
+	PasswordHash  string   `json:"-"`
+	EmailVerified bool     `gorm:"default:false" json:"emailVerified"`
+	Provider      string   `gorm:"default:'local'" json:"provider"` // 'local' or 'google'
+	Role          string   `json:"role"`
+	Reviews       []Review `json:"reviews"`
 }
 
 type Category struct {
@@ -208,4 +211,57 @@ type Review struct {
 	ProductID uint   `json:"productId"`
 	UserID    uint   `json:"userId"`
 	User      User   `json:"user"`
+}
+
+// OrderItem represents a single item in an order
+type OrderItem struct {
+	Base
+	OrderID     uint    `json:"orderId"`
+	ProductID   uint    `json:"productId"`
+	Product     Product `json:"product"`
+	ProductSize *uint   `json:"productSizeId,omitempty"`
+	Quantity    int     `json:"quantity"`
+	Price       float64 `json:"price"`
+	Name        string  `json:"name"`
+	ImageURL    string  `json:"imageUrl"`
+}
+
+// Order represents a customer order
+type Order struct {
+	Base
+	UserID          *uint       `json:"userId,omitempty"`
+	User            *User       `json:"user,omitempty"`
+	RazorpayOrderID string      `gorm:"uniqueIndex" json:"razorpayOrderId"`
+	RazorpayPaymentID string    `json:"razorpayPaymentId,omitempty"`
+	PaymentStatus   string      `gorm:"default:'created'" json:"paymentStatus"` // created, paid, failed
+	Status          string      `json:"status"` // pending, paid, failed, cancelled (legacy)
+	Amount          float64     `json:"amount"`
+	Currency        string      `json:"currency"`
+	Items           []OrderItem `json:"items"`
+	// Customer info
+	CustomerName    string      `json:"customerName,omitempty"`
+	CustomerEmail   string      `json:"customerEmail,omitempty"`
+	CustomerPhone   string      `json:"customerPhone,omitempty"`
+	// Address fields
+	AddressLine     string      `json:"addressLine,omitempty"`
+	City            string      `json:"city,omitempty"`
+	State           string      `json:"state,omitempty"`
+	Pincode         string      `json:"pincode,omitempty"`
+	// Legacy fields (for backward compatibility)
+	ShippingAddress string      `json:"shippingAddress,omitempty"`
+	BillingAddress  string      `json:"billingAddress,omitempty"`
+}
+
+// Payment represents a payment transaction
+type Payment struct {
+	Base
+	OrderID         uint    `json:"orderId"`
+	Order           Order   `json:"order"`
+	RazorpayOrderID string  `json:"razorpayOrderId"`
+	RazorpayPaymentID string `gorm:"uniqueIndex" json:"razorpayPaymentId"`
+	Amount          float64 `json:"amount"`
+	Currency        string  `json:"currency"`
+	Status          string  `json:"status"` // created, authorized, captured, failed, refunded
+	Method          string  `json:"method,omitempty"`
+	Description     string  `json:"description,omitempty"`
 }

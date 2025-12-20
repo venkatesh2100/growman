@@ -32,6 +32,9 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 
 	r.Get("/healthz", h.Health)
 
+	// Webhook routes (outside /api/v1, no auth required)
+	r.Post("/webhooks/razorpay", h.RazorpayWebhook)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/products", func(r chi.Router) {
 			r.Get("/", h.ListProducts)
@@ -53,7 +56,24 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Get("/brands", h.ListBrands)
 		r.Get("/tags", h.ListTags)
 
+		// Payment routes (legacy)
+		r.Post("/razorpay/order", h.CreateRazorpayOrder)
+		r.Post("/razorpay/verify", h.VerifyPayment)
+		r.Get("/order", h.GetOrder)
+
+		// Checkout routes (guest-first with OTP)
+		r.Post("/checkout/send-email-otp", h.SendEmailOTP)
+		r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
+		r.Post("/checkout/create-order", h.CreateCheckoutOrder)
+
 		r.Post("/auth/login", h.Login)
+		r.Post("/auth/signup", h.Signup)
+		r.Post("/auth/google", h.Google)
+		r.Post("/auth/google-signup", h.GoogleSignup)
+		r.Get("/auth/check-user", h.CheckUserExists)
+		r.Post("/auth/forgot-password/send-otp", h.SendPasswordResetOTP)
+		r.Post("/auth/forgot-password/verify-otp", h.VerifyPasswordResetOTP)
+		r.Post("/auth/forgot-password/reset", h.ResetPassword)
 
 		r.Group(func(pr chi.Router) {
 			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))

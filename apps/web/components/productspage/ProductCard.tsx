@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ShoppingCart, Zap } from "lucide-react";
+import { useCartStore } from "../../../lib/store/cartStore";
+import { useRouter } from "next/navigation";
 
 export default function ProductCard({ product }: { product: any }) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  const addItem = useCartStore((state) => state.addItem);
 
   // Normalize sizes so we can still render if backend omits them
   const normalizedSizes = useMemo(() => {
@@ -54,21 +59,20 @@ export default function ProductCard({ product }: { product: any }) {
       0
     ) ?? product?.stock ?? 0;
 
+  const firstPrice = numericPrices.length > 0 ? numericPrices[0] : null;
+  const discountPercent = firstPrice && product.mrp && product.mrp > firstPrice 
+    ? Math.round((1 - firstPrice / product.mrp) * 100) 
+    : 0;
+
   return (
-    <Link
-      href={`/product/${product?.slug ?? ""}`}
-      prefetch
-      className="w-full bg-white rounded-xl  overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-green-50 flex flex-col group"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group h-full">
       {/* Image container */}
-      <div className="relative overflow-hidden aspect-square bg-gray-100">
+      <Link href={`/product/${product?.slug ?? ""}`} className="relative overflow-hidden aspect-square bg-gray-50">
         {allImages.length > 0 ? (
           <img
             src={hovered && allImages[1] ? allImages[1] : allImages[0]}
             alt={product.name}
-            className="w-full h-full object-cover transition-opacity duration-500"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={(e) => {
               console.error("Image failed to load:", e);
               e.currentTarget.style.display = 'none';
@@ -79,67 +83,121 @@ export default function ProductCard({ product }: { product: any }) {
             <span className="text-gray-400 text-sm">No image</span>
           </div>
         )}
-        <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-0.5 sm:px-2 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${totalStock > 0 ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'}`}>
-          {totalStock > 0 ? `${totalStock} in stock` : 'Sold out'}
+        {/* Stock badge */}
+        <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium shadow-sm ${
+          totalStock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {totalStock > 0 ? 'In Stock' : 'Sold Out'}
         </div>
-      </div>
+        {/* Discount badge */}
+        {discountPercent > 0 && (
+          <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-red-500 text-white text-xs font-bold shadow-sm">
+            {discountPercent}% OFF
+          </div>
+        )}
+      </Link>
 
-      <div className="p-3 sm:p-4 flex flex-col flex-1">
-        <div className="flex gap-1 sm:gap-2 mb-1 sm:mb-2">
-          {product.category?.name && (
-            <span className="bg-emerald-50 text-emerald-700 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-              {product.category.name}
-            </span>
-          )}
-        </div>
+      <div className="p-4 flex flex-col flex-1">
+        {/* Category */}
+        {product.category?.name && (
+          <span className="text-xs text-emerald-600 font-medium mb-1">
+            {product.category.name}
+          </span>
+        )}
 
-        <div className="mb-1 sm:mb-2">
-          <h2 className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2 min-h-[2.5rem] sm:min-h-[3rem]">
+        {/* Product Name */}
+        <Link href={`/product/${product?.slug ?? ""}`}>
+          <h2 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 min-h-10 sm:min-h-12 hover:text-emerald-600 transition-colors">
             {product.name}
           </h2>
-          <div className="mt-1 flex items-center flex-wrap">
-            <span className="text-base sm:text-lg font-bold text-emerald-700">
-              {hasMultipleSizes && minPrice !== null && maxPrice !== null
-                ? `₹${minPrice.toFixed(2)} - ₹${maxPrice.toFixed(2)}`
-                : numericPrices.length > 0
-                  ? `₹${numericPrices[0].toFixed(2)}`
-                  : "Price unavailable"}
-            </span>
-            {hasMultipleSizes && (
-              <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs text-gray-500 bg-gray-100 px-1 sm:px-1.5 py-0.5 rounded">
-                {product.sizes.length} sizes
+        </Link>
+
+        {/* Pricing Display */}
+        {firstPrice !== null && (
+          <div className="mb-3">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-lg font-bold text-gray-900">
+                ₹{firstPrice.toFixed(2)}
               </span>
+              {product.mrp && product.mrp > firstPrice && (
+                <>
+                  <span className="text-sm text-gray-500 line-through">
+                    ₹{product.mrp.toFixed(2)}
+                  </span>
+                </>
+              )}
+            </div>
+            {hasMultipleSizes && (
+              <p className="text-xs text-gray-500 mt-1">
+                {product.sizes.length} sizes available
+              </p>
             )}
           </div>
-        </div>
+        )}
 
-        <p className="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3 mt-auto">
-          {product.shortDescription}
-        </p>
-
-        <div className="mt-1 mb-2 sm:mt-2 sm:mb-3">
-          <div className="flex flex-wrap gap-1">
-            {normalizedSizes.slice(0, 4).map((size: any, index: number) => (
-              <div
-                key={index}
-                className="text-[10px] sm:text-xs bg-emerald-50 text-emerald-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-emerald-100"
-              >
-                {size.label === "S" ? "small" : size.label === "M" ? "medium" : size.label === "L" ? "large" : size.label}
-              </div>
-            ))}
-            {normalizedSizes.length > 4 && (
-              <div className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-                +{normalizedSizes.length - 4} more
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Optional: you can style the "View Details" div to look like a button, but not a <Link> */}
-        <div className="mt-auto w-full py-1.5 sm:py-2 text-center rounded-lg bg-emerald-600 group-hover:bg-emerald-700 text-white text-sm sm:font-medium transition-colors duration-300">
-          View Details
+        {/* Action Buttons */}
+        <div className="mt-auto flex gap-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (normalizedSizes.length > 0 && totalStock > 0) {
+                const firstSize = normalizedSizes[0];
+                addItem({
+                  productId: product.id,
+                  productSizeId: firstSize.id,
+                  name: product.name,
+                  mrp: product.mrp,
+                  price: firstSize.price,
+                  label: firstSize.label,
+                  quantity: 1,
+                  image: firstSize.images?.[0] || product.imageUrl || '',
+                });
+              }
+            }}
+            disabled={totalStock === 0}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105 active:scale-95 ${
+              totalStock === 0
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50'
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span className="hidden sm:inline">Add to Cart</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (normalizedSizes.length > 0 && totalStock > 0) {
+                const firstSize = normalizedSizes[0];
+                addItem({
+                  productId: product.id,
+                  productSizeId: firstSize.id,
+                  name: product.name,
+                  mrp: product.mrp,
+                  price: firstSize.price,
+                  label: firstSize.label,
+                  quantity: 1,
+                  image: firstSize.images?.[0] || product.imageUrl || '',
+                });
+                router.push('/checkout');
+              }
+            }}
+            disabled={totalStock === 0}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105 active:scale-95 ${
+              totalStock === 0
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            <span className="hidden sm:inline">Buy Now</span>
+            <span className="sm:hidden">Buy</span>
+          </button>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -21,7 +21,6 @@ export default function ProductPageClient({
   searchParams: { size?: string }; 
   productSlug: string;
 }) {
-  const [showCartPopup , setShowCartPopup] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(true);
   const selectedSizeId = searchParams?.size
@@ -113,7 +112,7 @@ export default function ProductPageClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Gallery */}
         <div className="p-4 rounded-xl border border-gray-100">
-          <div className="p-4 rounded-xl shadow border border-green-100">
+          <div className="p-4 rounded-xl shadow border border-green-100 product-image-gallery">
             <ImageGallery images={selectedSize?.images} />
           </div>
         </div>
@@ -236,12 +235,8 @@ export default function ProductPageClient({
 
             {/* Add to Cart */}
             {selectedSize && (
-              <AddToCart product={product} selectedSize={selectedSize} onCartOpen={()=>setShowCartPopup(true)} />
+              <AddToCart product={product} selectedSize={selectedSize} />
             )}
-                   <CartItems
-        isOpen={showCartPopup}
-        onClose={() => setShowCartPopup(false)}
-      />
           </div>
 
           {/* Benefits */}

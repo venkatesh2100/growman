@@ -6,6 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaLeaf } from "react-icons/fa";
 import { searchProducts } from "../../lib/api";
+import { useCartStore } from "../../lib/store/cartStore";
+import { useAuthStore } from "../../lib/store/authStore";
+import { LogOut, Package, Settings, ShoppingBag, LogIn } from "lucide-react";
 
 interface Product {
   id: number;
@@ -170,12 +173,44 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const navbarRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Cart store
+  const totalQuantity = useCartStore((state) => state.getTotalQuantity());
+  
+  // Auth store
+  const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  
+  // Check auth status on mount and when pathname changes (after navigation)
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth, pathname]);
+  
+  // Close account menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setShowAccountMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  const handleLogout = () => {
+    clearAuth();
+    setShowAccountMenu(false);
+    router.push("/");
+  };
 
   useEffect(() => setIsMounted(true), []);
 
@@ -285,8 +320,19 @@ export default function Navbar() {
                 <button className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full" disabled><SearchIcon /></button>
               </div>
               <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Search"><SearchIcon /></button>
-              <button className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full relative" aria-label="Cart"><CartIcon /><span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span></button>
-              <Link href="/account" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Account"><UserIcon /></Link>
+              <Link href="/cart" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full relative" aria-label="Cart" data-cart-icon>
+                <CartIcon />
+                {totalQuantity > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalQuantity > 99 ? '99+' : totalQuantity}
+                  </span>
+                )}
+              </Link>
+              {isLoggedIn ? (
+                <Link href="/account" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Account"><UserIcon /></Link>
+              ) : (
+                <Link href="/login" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Login"><UserIcon /></Link>
+              )}
               <button className="md:hidden p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-2" aria-label="Open menu"><MenuIcon /></button>
             </div>
           </div>
@@ -378,8 +424,126 @@ export default function Navbar() {
             </div>
 
             <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search"><SearchIcon /></button>
-            <button className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative" aria-label="Cart"><CartIcon /><span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span></button>
-            <Link href="/account" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors" aria-label="Account"><UserIcon /></Link>
+            
+            {/* Cart Icon with Badge */}
+            <Link 
+              href="/cart" 
+              className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative" 
+              aria-label="Cart"
+              data-cart-icon
+            >
+              <CartIcon />
+              {totalQuantity > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg"
+                >
+                  {totalQuantity > 99 ? '99+' : totalQuantity}
+                </motion.span>
+              )}
+            </Link>
+            
+            {/* Account Menu */}
+            <div ref={accountMenuRef} className="relative">
+              <button
+                onMouseEnter={() => setShowAccountMenu(true)}
+                onMouseLeave={() => setShowAccountMenu(false)}
+                onClick={() => setShowAccountMenu(!showAccountMenu)}
+                className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors"
+                aria-label="Account"
+              >
+                <UserIcon />
+              </button>
+              
+              {/* Account Dropdown Menu */}
+              <AnimatePresence>
+                {showAccountMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    onMouseEnter={() => setShowAccountMenu(true)}
+                    onMouseLeave={() => setShowAccountMenu(false)}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-emerald-100 py-2 z-50"
+                  >
+                    {isLoggedIn ? (
+                      <>
+                        <Link
+                          href="/orders"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Package className="w-4 h-4 mr-3 text-emerald-600" />
+                          Orders
+                        </Link>
+                        <Link
+                          href="/cart"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <ShoppingBag className="w-4 h-4 mr-3 text-emerald-600" />
+                          My Cart
+                        </Link>
+                        <Link
+                          href="/account"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Settings className="w-4 h-4 mr-3 text-emerald-600" />
+                          Profile / Settings
+                        </Link>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Package className="w-4 h-4 mr-3 text-emerald-600" />
+                          Orders
+                        </Link>
+                        <Link
+                          href="/cart"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <ShoppingBag className="w-4 h-4 mr-3 text-emerald-600" />
+                          My Cart
+                        </Link>
+                        <Link
+                          href="/login"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Settings className="w-4 h-4 mr-3 text-emerald-600" />
+                          Profile / Settings
+                        </Link>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <Link
+                          href="/login"
+                          className="w-full flex items-center px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <LogIn className="w-4 h-4 mr-3" />
+                          Login / Signup
+                        </Link>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
             <button className="md:hidden p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-2" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>
               {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>

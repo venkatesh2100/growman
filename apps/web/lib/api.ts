@@ -28,9 +28,9 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
     token = authStore.token || localStorage.getItem('token');
   }
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options?.headers,
+    ...(options?.headers as Record<string, string>),
   };
   
   // Add Authorization header if token exists
@@ -44,22 +44,31 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
   });
 }
 
+import { Product } from './types';
+
 /**
  * Search products by query string
+ * Returns paginated response with data and pagination metadata
  */
-export async function searchProducts(query: string): Promise<any[]> {
+export async function searchProducts(query: string, page: number = 1, pageSize: number = 20): Promise<{data: Product[], pagination: {page: number, pageSize: number, total: number, totalPages: number, hasNext: boolean, hasPrev: boolean}}> {
   if (!query || query.trim() === '') {
-    return [];
+    return { data: [], pagination: { page: 1, pageSize, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
   }
   
   try {
-    const res = await apiFetch(`/products/search?q=${encodeURIComponent(query)}`);
+    const res = await apiFetch(`/products/search?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
     if (!res.ok) {
       throw new Error('Failed to search products');
     }
-    return await res.json();
+    const result = await res.json();
+    // Handle paginated response
+    if (result.data && result.pagination) {
+      return result;
+    }
+    // Fallback for non-paginated response
+    return { data: Array.isArray(result) ? result : [], pagination: { page: 1, pageSize, total: result.length || 0, totalPages: 1, hasNext: false, hasPrev: false } };
   } catch (error) {
     console.error('Error searching products:', error);
-    return [];
+    return { data: [], pagination: { page: 1, pageSize, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
   }
 }

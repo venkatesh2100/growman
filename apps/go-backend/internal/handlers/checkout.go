@@ -204,41 +204,79 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		Pincode:         req.Customer.Pincode,
 	}
 
-	// Create order items
+	// Batch fetch all products to avoid N+1 queries
+	productIDs := make([]uint, len(req.Items))
+	for i, item := range req.Items {
+		productIDs[i] = item.ProductID
+	}
+	
+	var products []models.Product
+	if err := h.DB.Select("id, name, image_url").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
+		log.Printf("[DB] Error fetching products: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "failed to validate products")
+		return
+	}
+	
+	// Create a map for quick lookup
+	productMap := make(map[uint]models.Product)
+	for _, product := range products {
+		productMap[product.ID] = product
+	}
+	
+	// Validate all products exist
 	for _, item := range req.Items {
-		// Validate product exists
-		var product models.Product
-		if err := h.DB.First(&product, item.ProductID).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				log.Printf("[DB] Product not found: %d", item.ProductID)
-				httpjson.Error(w, http.StatusBadRequest, fmt.Sprintf("product with ID %d not found", item.ProductID))
-				return
-			}
-			log.Printf("[DB] Error fetching product: %v", err)
-			httpjson.Error(w, http.StatusInternalServerError, "failed to validate product")
+		if _, exists := productMap[item.ProductID]; !exists {
+			log.Printf("[DB] Product not found: %d", item.ProductID)
+			httpjson.Error(w, http.StatusBadRequest, fmt.Sprintf("product with ID %d not found", item.ProductID))
 			return
 		}
-
-		// Validate product size if provided
+	}
+	
+	// Batch fetch product sizes if any are provided
+	productSizeIDs := make([]uint, 0)
+	for _, item := range req.Items {
 		if item.ProductSizeID != nil {
-			var productSize models.ProductSize
-			if err := h.DB.Where("id = ? AND product_id = ?", item.ProductSizeID, item.ProductID).First(&productSize).Error; err != nil {
-				if err == gorm.ErrRecordNotFound {
+			productSizeIDs = append(productSizeIDs, *item.ProductSizeID)
+		}
+	}
+	
+	var productSizes []models.ProductSize
+	if len(productSizeIDs) > 0 {
+		if err := h.DB.Select("id, product_id").Where("id IN ? AND product_id IN ?", productSizeIDs, productIDs).Find(&productSizes).Error; err != nil {
+			log.Printf("[DB] Error fetching product sizes: %v", err)
+			httpjson.Error(w, http.StatusInternalServerError, "failed to validate product sizes")
+			return
+		}
+		
+		// Create a map for product size validation
+		sizeMap := make(map[uint]map[uint]bool) // productID -> sizeID -> exists
+		for _, size := range productSizes {
+			if sizeMap[size.ProductID] == nil {
+				sizeMap[size.ProductID] = make(map[uint]bool)
+			}
+			sizeMap[size.ProductID][size.ID] = true
+		}
+		
+		// Validate all product sizes
+		for _, item := range req.Items {
+			if item.ProductSizeID != nil {
+				if sizes, exists := sizeMap[item.ProductID]; !exists || !sizes[*item.ProductSizeID] {
 					log.Printf("[DB] Product size not found: %d for product %d", item.ProductSizeID, item.ProductID)
 					httpjson.Error(w, http.StatusBadRequest, fmt.Sprintf("product size with ID %d not found for product %d", item.ProductSizeID, item.ProductID))
 					return
 				}
-				log.Printf("[DB] Error fetching product size: %v", err)
-				httpjson.Error(w, http.StatusInternalServerError, "failed to validate product size")
-				return
 			}
 		}
+	}
 
+	// Create order items
+	for _, item := range req.Items {
 		var productSizeID *uint
 		if item.ProductSizeID != nil {
 			productSizeID = item.ProductSizeID
 		}
 
+		product := productMap[item.ProductID]
 		orderItem := models.OrderItem{
 			ProductID:   item.ProductID,
 			ProductSize: productSizeID,

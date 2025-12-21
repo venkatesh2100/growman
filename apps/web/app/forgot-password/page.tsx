@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-o        let errorMessage = "Failed to send OTP";
+        let errorMessage = "Failed to send OTP";
         try {
           const text = await res.text();
           try {

@@ -126,7 +126,7 @@ func EnsureSampleData(db *gorm.DB) error {
 			Price:     499,
 			Stock:     15,
 			ProductID: neem.ID,
-			Images:    []string{"https://www.toothmountainnursery.com/wp-content/uploads/2020/03/Neem.jpg", "https://manbhawannursery.in/cdn/shop/files/neem-tree-507.webp?v=1742824601"},
+			Images:    []string{"https://www.toothmountainnursery.com/wp-content/uploads/2020/03/Neem.jpg"},
 		},
 		{
 			Label:     "Large (3-4 ft)",

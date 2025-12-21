@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaLeaf } from "react-icons/fa";
@@ -135,7 +136,7 @@ const SearchResults = ({ results, onProductClick, onClose }: { results: Product[
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-emerald-100 max-h-96 overflow-y-auto z-50"
+        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-emerald-100 max-h-[60vh] sm:max-h-96 overflow-y-auto z-50 overscroll-contain"
       >
         <div className="p-2">
           {results.map((product) => (
@@ -145,13 +146,21 @@ const SearchResults = ({ results, onProductClick, onClose }: { results: Product[
                 onProductClick(product.slug);
                 onClose?.();
               }}
-              className="w-full flex items-center space-x-3 p-3 hover:bg-emerald-50 rounded-lg transition-colors text-left"
+              className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors text-left touch-manipulation"
             >
-              {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover rounded" />}
+              {product.imageUrl && (
+                <Image 
+                  src={product.imageUrl} 
+                  alt={product.name} 
+                  width={48}
+                  height={48}
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0" 
+                />
+              )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-900 truncate">{product.name}</p>
-                {product.category && <p className="text-xs text-emerald-600 truncate">{product.category.name}</p>}
-                <p className="text-sm font-semibold text-emerald-700 mt-1">{product.currency} {product.price.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm font-medium text-green-900 truncate">{product.name}</p>
+                {product.category && <p className="text-[10px] sm:text-xs text-emerald-600 truncate">{product.category.name}</p>}
+                <p className="text-xs sm:text-sm font-semibold text-emerald-700 mt-0.5 sm:mt-1">{product.currency} {product.price.toFixed(2)}</p>
               </div>
             </button>
           ))}
@@ -256,9 +265,11 @@ export default function Navbar() {
     }
     setIsSearching(true);
     try {
-      const results = await searchProducts(query);
-      setSearchResults(results);
-      setShowSearchResults(results.length > 0);
+      const response = await searchProducts(query);
+      // Extract products array from paginated response
+      const products = Array.isArray(response.data) ? response.data : [];
+      setSearchResults(products);
+      setShowSearchResults(products.length > 0);
     } catch (error) {
       console.error("Error searching products:", error);
       setSearchResults([]);
@@ -299,7 +310,7 @@ export default function Navbar() {
   if (!isMounted) {
     return (
       <div ref={navbarRef}>
-        <header className="fixed w-full z-50 bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-3">
+        <header className="fixed w-full z-50 bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3">
           <div className="container mx-auto px-4 flex justify-between items-center">
             <Link href="/" className="flex items-center space-x-2 group">
               <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
@@ -373,15 +384,15 @@ export default function Navbar() {
     <div ref={navbarRef}>
       <motion.header
         className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? "bg-gradient-to-r from-green-100 to-emerald-50 shadow-lg py-2" : "bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-3"
+          isScrolled ? "bg-gradient-to-r from-green-100 to-emerald-50 shadow-lg py-1.5 sm:py-2" : "bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3"
         }`}
       >
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center group-hover:from-green-700 group-hover:to-emerald-600">
-              <FaLeaf className="w-8 h-8 text-emerald-400" />
+        <div className="container mx-auto px-3 sm:px-4 flex justify-between items-center">
+          <Link href="/" className="flex items-center space-x-1.5 sm:space-x-2 group touch-manipulation">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center group-hover:from-green-700 group-hover:to-emerald-600">
+              <FaLeaf className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-bold text-green-800 group-hover:text-emerald-700 transition-colors">Growman</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-green-800 group-hover:text-emerald-700 transition-colors">Growman</h1>
           </Link>
 
           <nav className="hidden md:flex space-x-1">
@@ -389,7 +400,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-2 font-medium rounded-lg transition-colors ${
+                className={`px-3 sm:px-4 py-2 font-medium rounded-lg transition-colors text-sm sm:text-base ${
                   pathname === link.href ? "text-emerald-700 bg-emerald-50 font-semibold" : "text-green-800 hover:text-emerald-600 hover:bg-emerald-50"
                 }`}
               >
@@ -398,20 +409,20 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3">
             <div ref={searchContainerRef} className="hidden md:block relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full pl-4 pr-2 py-1 transition-all duration-300 shadow-inner">
+              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full pl-3 sm:pl-4 pr-2 py-1 transition-all duration-300 shadow-inner">
                 <input
                   type="text"
                   placeholder="Search plants, seeds, tools..."
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                  className="bg-transparent outline-none w-58 text-green-800 placeholder-emerald-600/70"
+                  className="bg-transparent outline-none w-48 sm:w-58 text-sm sm:text-base text-green-800 placeholder-emerald-600/70"
                 />
-                <button type="submit" className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors">
+                <button type="submit" className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation">
                   {isSearching ? (
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -423,12 +434,14 @@ export default function Navbar() {
               {showSearchResults && <SearchResults results={searchResults} onProductClick={handleProductClick} />}
             </div>
 
-            <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search"><SearchIcon /></button>
+            <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
+              <SearchIcon />
+            </button>
             
             {/* Cart Icon with Badge */}
             <Link 
               href="/cart" 
-              className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative" 
+              className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative touch-manipulation active:scale-95" 
               aria-label="Cart"
               data-cart-icon
             >
@@ -437,7 +450,7 @@ export default function Navbar() {
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg"
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-lg"
                 >
                   {totalQuantity > 99 ? '99+' : totalQuantity}
                 </motion.span>
@@ -450,7 +463,7 @@ export default function Navbar() {
                 onMouseEnter={() => setShowAccountMenu(true)}
                 onMouseLeave={() => setShowAccountMenu(false)}
                 onClick={() => setShowAccountMenu(!showAccountMenu)}
-                className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors"
+                className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95"
                 aria-label="Account"
               >
                 <UserIcon />
@@ -465,7 +478,7 @@ export default function Navbar() {
                     exit={{ opacity: 0, y: -10 }}
                     onMouseEnter={() => setShowAccountMenu(true)}
                     onMouseLeave={() => setShowAccountMenu(false)}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-emerald-100 py-2 z-50"
+                    className="absolute right-0 mt-2 w-44 sm:w-48 bg-white rounded-lg shadow-xl border border-emerald-100 py-2 z-50"
                   >
                     {isLoggedIn ? (
                       <>
@@ -544,16 +557,16 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
             
-            <button className="md:hidden p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-2" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>
+            <button className="md:hidden p-1.5 sm:p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-1 sm:ml-2 touch-manipulation active:scale-95" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>
               {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
           </div>
         </div>
 
         {isSearchOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden container mx-auto px-4 py-3">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden container mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <div ref={searchContainerRef} className="relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full px-4 py-2 shadow-inner">
+              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full px-3 sm:px-4 py-2 shadow-inner">
                 <input
                   ref={searchRef}
                   type="text"
@@ -561,9 +574,9 @@ export default function Navbar() {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                  className="bg-transparent outline-none w-full text-green-800 placeholder-emerald-600/70"
+                  className="bg-transparent outline-none w-full text-sm sm:text-base text-green-800 placeholder-emerald-600/70"
                 />
-                <button type="button" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
+                <button type="button" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
                   <CloseIcon />
                 </button>
               </form>
@@ -574,20 +587,25 @@ export default function Navbar() {
 
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-t border-emerald-100">
-              <div className="container mx-auto px-4 py-3 flex flex-col space-y-2">
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-t border-emerald-100 max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain">
+              <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-col space-y-1 sm:space-y-2">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="px-4 py-3 text-emerald-800 font-medium hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                  <Link key={link.href} href={link.href} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">
                     {link.label}
                   </Link>
                 ))}
-                <Link href="/contact" className="px-4 py-3 text-emerald-800 font-medium hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">Contact</Link>
-                <div className="flex space-x-4 pt-2 pb-3 justify-center">
-                  <Link href="/account" className="flex items-center text-emerald-800 px-4 py-2 font-medium hover:bg-emerald-50 rounded-lg">
-                    <span className="h-5 w-5 mr-2"><UserIcon /></span>Account
+                <Link href="/contact" className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">Contact</Link>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-2 sm:pb-3">
+                  <Link href="/account" className="flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
+                    <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><UserIcon /></span>Account
                   </Link>
-                  <Link href="/cart" className="relative flex items-center text-emerald-800 px-4 py-2 font-medium hover:bg-emerald-50 rounded-lg">
-                    <span className="h-5 w-5 mr-2"><CartIcon /></span>Cart (30)
+                  <Link href="/cart" className="relative flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
+                    <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><CartIcon /></span>Cart
+                    {totalQuantity > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {totalQuantity > 99 ? '99+' : totalQuantity}
+                      </span>
+                    )}
                   </Link>
                 </div>
               </div>
@@ -599,25 +617,34 @@ export default function Navbar() {
       <motion.div
         animate={{ y: showCategories ? 0 : -100, opacity: showCategories ? 1 : 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-16 md:top-20 w-full bg-gradient-to-r from-emerald-50 to-green-50 z-40 shadow-sm border-b border-emerald-100"
+        className="fixed top-14 sm:top-16 md:top-20 w-full bg-gradient-to-r from-emerald-50 to-green-50 z-40 shadow-sm border-b border-emerald-100"
       >
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
+        <div className="container mx-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 md:gap-4 justify-center">
             {mainCategories.map((category, index) => (
               <div key={index} className="group relative">
                 <button
-                  className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm"
+                  className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation"
                   onClick={() => setActiveCategory(activeCategory === index ? null : index)}
                 >
-                  {category.icon}
-                  {category.name}
-                  <ChevronDown className={activeCategory === index ? "rotate-180" : ""} />
+                  <span className="hidden sm:inline">{category.icon}</span>
+                  <span className="sm:ml-0">{category.name}</span>
+                  <ChevronDown className={`ml-1 ${activeCategory === index ? "rotate-180" : ""}`} />
                 </button>
                 {activeCategory === index && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute left-0 mt-1 w-64 bg-white border border-emerald-100 rounded-lg shadow-lg z-50">
-                    <div className="py-2 max-h-80 overflow-y-auto">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="absolute left-0 mt-1 w-56 sm:w-64 bg-white border border-emerald-100 rounded-lg shadow-lg z-50 max-h-[60vh] overflow-y-auto overscroll-contain"
+                  >
+                    <div className="py-2">
                       {category.subcategories.map((sub, subIndex) => (
-                        <Link key={subIndex} href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`} className="block px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900 transition-colors">
+                        <Link 
+                          key={subIndex} 
+                          href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`} 
+                          className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 hover:text-emerald-900 transition-colors touch-manipulation"
+                          onClick={() => setActiveCategory(null)}
+                        >
                           {sub}
                         </Link>
                       ))}
@@ -626,22 +653,24 @@ export default function Navbar() {
                 )}
               </div>
             ))}
-            <Link href="/buy-again" className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <Link href="/buy-again" className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Buy Again
+              <span className="hidden sm:inline">Buy Again</span>
+              <span className="sm:hidden">Buy Again</span>
             </Link>
-            <Link href="/gift-options" className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <Link href="/gift-options" className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
               </svg>
-              Gift Options
+              <span className="hidden sm:inline">Gift Options</span>
+              <span className="sm:hidden">Gifts</span>
             </Link>
           </div>
         </div>
       </motion.div>
-      <div className="h-28 md:h-32"></div>
+      <div className="h-20 sm:h-24 md:h-28 lg:h-32"></div>
     </div>
   );
 }

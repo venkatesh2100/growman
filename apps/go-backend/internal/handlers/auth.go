@@ -186,9 +186,10 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch user from database
+	// Fetch user from database - only select needed fields
 	var user models.User
-	if err := h.DB.First(&user, claims.UserID).Error; err != nil {
+	if err := h.DB.Select("id, name, email, phone, email_verified, role, address_line, city, state, pincode, country, latitude, longitude").
+		First(&user, claims.UserID).Error; err != nil {
 		httpjson.Error(w, http.StatusNotFound, "user not found")
 		return
 	}

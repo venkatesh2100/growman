@@ -7,7 +7,7 @@ import { apiFetch } from '../../lib/api';
 import { Product } from '../../lib/types';
 
 export default function PlantSection() {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -15,10 +15,27 @@ export default function PlantSection() {
     async function fetchFeatured() {
       try {
         const res = await apiFetch('/products/featured');
+        if (!res.ok) {
+          throw new Error('Failed to fetch featured products');
+        }
         const data = await res.json();
-        setFeaturedProducts(data);
+        
+        // Handle different response formats
+        let products = [];
+        if (Array.isArray(data)) {
+          products = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          products = data.data;
+        } else if (data.products && Array.isArray(data.products)) {
+          products = data.products;
+        } else if (data.featured && Array.isArray(data.featured)) {
+          products = data.featured;
+        }
+        
+        setFeaturedProducts(products);
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
+        setFeaturedProducts([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
@@ -30,27 +47,27 @@ export default function PlantSection() {
   const skeletons = Array(4).fill(0);
 
   return (
-    <section className="py-16 bg-emerald-50">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12">
+    <section className="py-8 sm:py-12 md:py-16 bg-emerald-50">
+      <div className="container mx-auto px-3 sm:px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 sm:mb-8 md:mb-12">
           <div>
-            <h2 className="text-3xl font-bold text-green-900 mb-2">
+            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-1 sm:mb-2">
               Featured Plants
             </h2>
-            <p className="text-green-700">
+            <p className="text-sm sm:text-base text-green-700">
               Some randomly selected green beauties
             </p>
           </div>
           <button
             onClick={() => router.push('/categories')}
-            className="mt-4 md:mt-0 px-6 py-2 border-2 border-emerald-600 text-emerald-600 rounded-full font-medium hover:bg-emerald-600 hover:text-white transition duration-300"
+            className="mt-4 md:mt-0 px-5 sm:px-6 py-2 border-2 border-emerald-600 text-emerald-600 rounded-full font-medium hover:bg-emerald-600 hover:text-white active:bg-emerald-700 transition duration-300 text-sm sm:text-base touch-manipulation"
           >
             View All
           </button>
         </div>
 
         {/* Cards or Skeletons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
           {loading
             ? skeletons.map((_, idx) => (
                 <div
@@ -60,14 +77,18 @@ export default function PlantSection() {
                   <div className="aspect-square bg-gray-200 rounded mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-4 bg-gray-100 rounded w-1/2 mb-4"></div>
-                  {/* <div className="h-3 bg-gray-100 rounded w-full mb-1"></div>
-                  <div className="h-3 bg-gray-100 rounded w-5/6 mb-3"></div> */}
                   <div className="h-8 bg-emerald-100 rounded w-full"></div>
                 </div>
               ))
-            : featuredProducts.map((product: Product) => (
+            : Array.isArray(featuredProducts) && featuredProducts.length > 0
+            ? featuredProducts.map((product: Product) => (
                 <ProductCard key={product.id} product={product} />
-              ))}
+              ))
+            : !loading && (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-600">No featured products available at the moment.</p>
+                </div>
+              )}
         </div>
       </div>
     </section>

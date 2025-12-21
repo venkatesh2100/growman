@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 // import Navbar from "@repo/ui/navbar";
 import Navbar from "../components/hompage/navbar";
+import { ToastContainer } from "../lib/toast";
 
 // import { SessionProvider } from "next-auth/react";
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           <Navbar />
         </div>
         {children}
+        <ToastContainer />
       </body>
     </html>
   );

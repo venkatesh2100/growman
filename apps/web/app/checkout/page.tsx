@@ -5,21 +5,46 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { ShoppingBag, CreditCard, CheckCircle, XCircle, Loader2, Mail, LogIn, Navigation } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
 import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-  label?: string;
-  productId?: number;
-  productSizeId?: number;
+// Razorpay types
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void | Promise<void>;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal: {
+    ondismiss: () => void;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, handler: (response: unknown) => void) => void;
+}
+
+// CartItem type is imported from cartStore, no need to redefine
 
 interface CustomerInfo {
   name: string;
@@ -48,7 +73,7 @@ export default function CheckoutPage() {
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
-  const [checkingUser, setCheckingUser] = useState(false);
+  // Removed unused checkingUser state
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "",
     email: "",
@@ -158,8 +183,8 @@ export default function CheckoutPage() {
           // Don't show error to user, location is still filled in form
         }
       }
-    } catch (error: any) {
-      setError(`Failed to get location: ${error.message}`);
+    } catch (error: unknown) {
+      setError(`Failed to get location: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLocating(false);
     }
@@ -168,8 +193,6 @@ export default function CheckoutPage() {
   // Check if user exists when email or phone is entered
   const checkUserExists = async (email?: string, phone?: string) => {
     if (!email && !phone) return;
-    
-    setCheckingUser(true);
     try {
       const params = new URLSearchParams();
       if (email) params.append("email", email);
@@ -187,8 +210,6 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error("Error checking user:", error);
-    } finally {
-      setCheckingUser(false);
     }
     return false;
   };
@@ -203,7 +224,7 @@ export default function CheckoutPage() {
   // Load Razorpay Script
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
-      if ((window as any).Razorpay) {
+      if ((window as { Razorpay?: unknown }).Razorpay) {
         resolve(true);
         return;
       }
@@ -215,7 +236,8 @@ export default function CheckoutPage() {
     });
   };
 
-  const validateForm = async (): Promise<boolean> => {
+  // Removed unused validateForm function
+  const _validateForm = async (): Promise<boolean> => {
     if (!customerInfo.name.trim()) {
       setError("Please enter your name");
       return false;
@@ -295,7 +317,7 @@ export default function CheckoutPage() {
       }
 
       setOtpSent(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't block checkout - allow skipping
       setError("Could not send OTP. You can skip verification and proceed to payment.");
     } finally {
@@ -324,8 +346,8 @@ export default function CheckoutPage() {
       }
 
       setOtpVerified(true);
-    } catch (err: any) {
-      setError(err.message || "Invalid OTP. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Invalid OTP. Please try again.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -391,14 +413,14 @@ export default function CheckoutPage() {
 
       const orderData = await orderRes.json();
 
-      const options: any = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      const options: RazorpayOptions = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
         amount: orderData.amount,
         currency: "INR",
         name: "Growman",
         description: `Order #${orderData.orderId}`,
-        order_id: orderData.id,
-        handler: async function (response: any) {
+        order_id: orderData.id || "",
+        handler: async function (response: RazorpayResponse) {
           try {
             // Verify payment with backend
             const verifyRes = await apiFetch("/razorpay/verify", {
@@ -450,8 +472,8 @@ export default function CheckoutPage() {
             setTimeout(() => {
               router.push(`/order-success?orderId=${orderData.orderId}`);
             }, 2000);
-          } catch (err: any) {
-            setError(err.message || "Payment verification failed");
+          } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Payment verification failed");
             setPaymentStatus("failed");
           } finally {
             setLoading(false);
@@ -473,15 +495,19 @@ export default function CheckoutPage() {
         },
       };
 
-      const paymentObject = new (window as any).Razorpay(options);
-      paymentObject.on("payment.failed", function (response: any) {
+      const Razorpay = (window as { Razorpay?: new (options: RazorpayOptions) => RazorpayInstance }).Razorpay;
+      if (!Razorpay) {
+        throw new Error("Razorpay SDK not loaded");
+      }
+      const paymentObject = new Razorpay(options);
+      paymentObject.on("payment.failed", function () {
         setError("Payment failed. Please try again.");
         setPaymentStatus("failed");
         setLoading(false);
       });
       paymentObject.open();
-    } catch (err: any) {
-      setError(err.message || "An error occurred. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
       setPaymentStatus("failed");
       setLoading(false);
     }
@@ -514,22 +540,22 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8">Checkout</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Left Column - Order Summary */}
           <div className="lg:col-span-2 space-y-6">
             {/* Customer Information Form */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-emerald-600" />
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6 flex items-center">
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600" />
                 Customer Information
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Full Name *
                   </label>
                   <input
@@ -538,7 +564,7 @@ export default function CheckoutPage() {
                     onChange={(e) =>
                       setCustomerInfo({ ...customerInfo, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
                     placeholder="John Doe"
                   />
                 </div>
@@ -638,9 +664,9 @@ export default function CheckoutPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="House/Flat No., Building Name, Street"
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       State *
                     </label>
                     <select
@@ -651,7 +677,7 @@ export default function CheckoutPage() {
                           state: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
                     >
                       <option value="">Select State</option>
                       {getAllStateNames().map((state) => (
@@ -662,7 +688,7 @@ export default function CheckoutPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       City *
                     </label>
                     <input
@@ -671,7 +697,7 @@ export default function CheckoutPage() {
                       onChange={(e) =>
                         setCustomerInfo({ ...customerInfo, city: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
                       placeholder="Enter city name"
                     />
                   </div>
@@ -790,7 +816,7 @@ export default function CheckoutPage() {
                   <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">Email Verified</h3>
-                    <p className="text-xs text-gray-600">You're logged in. No verification needed.</p>
+                    <p className="text-xs text-gray-600">You&apos;re logged in. No verification needed.</p>
                   </div>
                 </div>
               </div>
@@ -838,8 +864,10 @@ export default function CheckoutPage() {
                     key={item.id}
                     className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
                   >
-                    <img
+                    <Image
                       src={item.image}
+                      width={80}
+                      height={80}
                       className="w-20 h-20 rounded-lg object-cover"
                       alt={item.name}
                     />
@@ -863,8 +891,8 @@ export default function CheckoutPage() {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sticky top-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Order Summary</h2>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-700">
                   <span>Items Price</span>
@@ -907,7 +935,7 @@ export default function CheckoutPage() {
               <button
                 onClick={handlePayment}
                 disabled={loading || paymentStatus === "processing" || (!isAuthenticated && !otpVerified)}
-                className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full bg-emerald-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base touch-manipulation"
               >
                 {loading || paymentStatus === "processing" ? (
                   <>

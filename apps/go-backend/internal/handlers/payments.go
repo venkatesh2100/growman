@@ -88,6 +88,23 @@ func (h *Handler) CreateRazorpayOrder(w http.ResponseWriter, r *http.Request) {
 		ShippingAddress: req.Customer.Address,
 	}
 
+	// Batch fetch all products to avoid N+1 queries
+	productIDs := make([]uint, len(req.Items))
+	for i, item := range req.Items {
+		productIDs[i] = item.ProductID
+	}
+	
+	var products []models.Product
+	if err := h.DB.Select("id, name, image_url").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
+		log.Printf("[DB] Error fetching products: %v", err)
+	}
+	
+	// Create a map for quick lookup
+	productMap := make(map[uint]models.Product)
+	for _, product := range products {
+		productMap[product.ID] = product
+	}
+
 	// Create order items
 	for _, item := range req.Items {
 		var productSizeID *uint
@@ -101,9 +118,8 @@ func (h *Handler) CreateRazorpayOrder(w http.ResponseWriter, r *http.Request) {
 			Price:       item.Price,
 		}
 
-		// Fetch product details
-		var product models.Product
-		if err := h.DB.First(&product, item.ProductID).Error; err == nil {
+		// Get product details from map
+		if product, exists := productMap[item.ProductID]; exists {
 			orderItem.Name = product.Name
 			orderItem.ImageURL = product.ImageURL
 		}
@@ -328,7 +344,8 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var order models.Order
-	if err := h.DB.Preload("Items").Preload("Items.Product").First(&order, orderID).Error; err != nil {
+	// Optimize: Only preload Items (Product details are already in OrderItem)
+	if err := h.DB.Preload("Items").First(&order, orderID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			httpjson.Error(w, http.StatusNotFound, "order not found")
 			return

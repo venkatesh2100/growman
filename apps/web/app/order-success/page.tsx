@@ -1,26 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Package, Home, ShoppingBag } from "lucide-react";
+import { CheckCircle, Package, Home, ShoppingBag, Loader2 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 
-export default function OrderSuccessPage() {
+interface Order {
+  id: string | number;
+  amount: number;
+  status?: string;
+  paymentStatus?: string;
+  razorpayPaymentId?: string;
+}
+
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get("orderId");
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (orderId) {
-      fetchOrder();
-    } else {
+  const fetchOrder = useCallback(async () => {
+    if (!orderId) {
       setLoading(false);
+      return;
     }
-  }, [orderId]);
-
-  const fetchOrder = async () => {
     try {
       const res = await apiFetch(`/order?id=${orderId}`);
       if (res.ok) {
@@ -32,12 +36,16 @@ export default function OrderSuccessPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchOrder();
+  }, [fetchOrder]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -118,6 +126,29 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function OrderSuccessFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="flex justify-center mb-6">
+            <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
+          </div>
+          <p className="text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={<OrderSuccessFallback />}>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
-import ProductCard from '@repo/ui/productCard';
+// import ProductCard from '@repo/ui/productCard';
+import ProductCard from './ProductCard';
 import type { Product } from '../../lib/types';
 
 interface ProductsDisplayProps {

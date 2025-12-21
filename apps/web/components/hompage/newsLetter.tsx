@@ -20,9 +20,9 @@ export default function NewsLetterSection() {
     <section className="max-h-[60vh] overflow-y-auto py-12 bg-gradient-to-br from-emerald-600 to-green-700">
       <div className="container mx-auto px-4 max-w-2xl">
         {isSubscribed && (
-          <div className="mb-6 bg-green-800 text-white p-4 rounded-xl text-center animate-fade-in">
+          <div className="mb-6  text-white p-4 rounded-xl text-center animate-fade-in">
             <FaCheck className="inline mr-2" />
-            Welcome! Check your email for 15% off coupon
+            Welcome! Check your email for newsletter Weekly 
           </div>
         )}
 

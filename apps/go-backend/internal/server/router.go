@@ -10,6 +10,7 @@ import (
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 )
 
 // NewRouter wires all HTTP routes and middleware.
@@ -21,6 +22,8 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	// Add compression middleware to reduce response size
+	r.Use(middleware.Compress(5))
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
@@ -36,6 +39,35 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	r.Post("/webhooks/razorpay", h.RazorpayWebhook)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		// Apply rate limiting to all API routes
+		// General rate limit: 100 requests per minute per IP
+		if h.Redis != nil {
+			r.Use(middlewares.IPRateLimiter(h.Redis, 100, time.Minute))
+		}
+
+		// Stricter rate limits for auth endpoints
+		r.Group(func(r chi.Router) {
+			if h.Redis != nil {
+				r.Use(middlewares.IPRateLimiter(h.Redis, 10, time.Minute)) // 10 requests per minute for auth
+			}
+			r.Post("/auth/login", h.Login)
+			r.Post("/auth/signup", h.Signup)
+			r.Post("/auth/google", h.Google)
+			r.Post("/auth/google-signup", h.GoogleSignup)
+			r.Post("/auth/forgot-password/send-otp", h.SendPasswordResetOTP)
+			r.Post("/auth/forgot-password/verify-otp", h.VerifyPasswordResetOTP)
+			r.Post("/auth/forgot-password/reset", h.ResetPassword)
+		})
+
+		// Stricter rate limits for checkout endpoints
+		r.Group(func(r chi.Router) {
+			if h.Redis != nil {
+				r.Use(middlewares.IPRateLimiter(h.Redis, 20, time.Minute)) // 20 requests per minute for checkout
+			}
+			r.Post("/checkout/send-email-otp", h.SendEmailOTP)
+			r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
+			r.Post("/checkout/create-order", h.CreateCheckoutOrder)
+		})
 		r.Route("/products", func(r chi.Router) {
 			r.Get("/", h.ListProducts)
 			r.Get("/search", h.SearchProducts)
@@ -62,24 +94,15 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Get("/order", h.GetOrder)
 
 		// Checkout routes (guest-first with OTP)
-		r.Post("/checkout/send-email-otp", h.SendEmailOTP)
-		r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
-		r.Post("/checkout/create-order", h.CreateCheckoutOrder)
-
-		r.Post("/auth/login", h.Login)
-		r.Post("/auth/signup", h.Signup)
-		r.Post("/auth/google", h.Google)
-		r.Post("/auth/google-signup", h.GoogleSignup)
 		r.Get("/auth/check-user", h.CheckUserExists)
-		r.Post("/auth/forgot-password/send-otp", h.SendPasswordResetOTP)
-		r.Post("/auth/forgot-password/verify-otp", h.VerifyPasswordResetOTP)
-		r.Post("/auth/forgot-password/reset", h.ResetPassword)
 
 		r.Group(func(pr chi.Router) {
 			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
 			pr.Get("/auth/me", h.Me)
 			pr.Put("/auth/profile", h.UpdateProfile)
 			pr.Post("/auth/save-location", h.SaveLocation)
+			// Orders endpoint for authenticated users
+			pr.Get("/orders", h.ListOrders)
 		})
 	})
 

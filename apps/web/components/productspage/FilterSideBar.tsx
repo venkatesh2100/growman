@@ -122,37 +122,39 @@ export function FilterSidebar({ filterOptions, searchParams = {} }: FilterSideba
       {/* Mobile filter button */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 z-30 bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition-all"
+        className="lg:hidden fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 bg-green-600 text-white p-3 sm:p-3.5 rounded-full shadow-lg hover:bg-green-700 active:bg-green-800 active:scale-95 transition-all touch-manipulation"
+        aria-label="Open filters"
       >
-        <FiFilter size={24} />
+        <FiFilter size={20} className="sm:w-6 sm:h-6" />
         {isAnyFilterActive && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs flex items-center justify-center">
             !
           </span>
         )}
       </button>
 
       {/* Filter sidebar */}
-      <div className={`fixed inset-0 z-40 lg:static lg:z-auto transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform bg-white lg:bg-transparent`}>
-        <div className="bg-white rounded-xl shadow-lg p-6 h-full lg:h-auto overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-green-800 flex items-center">
-              <FiFilter className="mr-2" /> Filters
+      <div className={`fixed inset-0 z-40 lg:static lg:z-auto transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out bg-white lg:bg-transparent`}>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 h-full lg:h-auto overflow-y-auto overscroll-contain">
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-green-800 flex items-center">
+              <FiFilter className="mr-2 w-5 h-5 sm:w-6 sm:h-6" /> Filters
             </h2>
             <div className="flex items-center gap-2">
               {isAnyFilterActive && (
                 <button
                   onClick={resetFilters}
-                  className="text-sm text-red-600 hover:text-red-800 flex items-center"
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-800 active:text-red-900 flex items-center touch-manipulation"
                 >
-                  <FiX className="mr-1" /> Clear all
+                  <FiX className="mr-1 w-4 h-4" /> <span className="hidden sm:inline">Clear all</span><span className="sm:hidden">Clear</span>
                 </button>
               )}
               <button
                 onClick={() => setIsMobileOpen(false)}
-                className="lg:hidden text-gray-500 hover:text-gray-700"
+                className="lg:hidden text-gray-500 hover:text-gray-700 active:text-gray-900 touch-manipulation p-1"
+                aria-label="Close filters"
               >
-                <FiX size={24} />
+                <FiX size={20} className="sm:w-6 sm:h-6" />
               </button>
             </div>
           </div>
@@ -224,16 +226,16 @@ export function FilterSidebar({ filterOptions, searchParams = {} }: FilterSideba
             )}
           </div>
 
-          <div className="mt-8 flex gap-3">
+          <div className="mt-6 sm:mt-8 flex gap-2 sm:gap-3">
             <button
               onClick={applyFilters}
-              className="flex-1 py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors font-medium"
+              className="flex-1 py-3 px-4 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg shadow transition-all font-medium text-sm sm:text-base touch-manipulation active:scale-95"
             >
               Apply Filters
             </button>
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium"
+              className="lg:hidden py-3 px-4 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-700 rounded-lg font-medium text-sm sm:text-base touch-manipulation active:scale-95"
             >
               Cancel
             </button>
@@ -244,7 +246,7 @@ export function FilterSidebar({ filterOptions, searchParams = {} }: FilterSideba
       {/* Overlay for mobile */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden transition-opacity duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -260,12 +262,12 @@ function FilterSection({ title, icon, items, onChange }: {
   onChange: (id: string, checked: boolean) => void;
 }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-white">
-      <div className="flex items-center gap-3 mb-4">
+    <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         {icon}
-        <h3 className="font-medium text-gray-800">{title}</h3>
+        <h3 className="font-medium text-gray-800 text-sm sm:text-base">{title}</h3>
       </div>
-      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+      <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-60 overflow-y-auto pr-2 overscroll-contain">
         {items.map(item => (
           <div key={item.id} className="flex items-center">
             <div className="relative flex items-center">
@@ -285,11 +287,11 @@ function FilterSection({ title, icon, items, onChange }: {
             </div>
             <label
               htmlFor={`filter-${item.id}`}
-              className="ml-3 text-sm text-gray-700 flex items-center justify-between w-full"
+              className="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-700 flex items-center justify-between w-full cursor-pointer touch-manipulation"
             >
-              <span>{item.name}</span>
+              <span className="truncate flex-1">{item.name}</span>
               {item.count !== undefined && (
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                <span className="text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-2 flex-shrink-0">
                   {item.count}
                 </span>
               )}
@@ -307,25 +309,25 @@ function TagFilter({ tags, selectedTags, onTagToggle }: {
   onTagToggle: (tag: string) => void;
 }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-white">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="bg-purple-100 text-purple-800 rounded-lg p-2">
-          <FiTag />
+    <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="bg-purple-100 text-purple-800 rounded-lg p-1.5 sm:p-2">
+          <FiTag className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <h3 className="font-medium text-gray-800">Tags</h3>
+        <h3 className="font-medium text-gray-800 text-sm sm:text-base">Tags</h3>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {tags.map(tag => (
           <button
             key={tag}
             type="button"
             onClick={() => onTagToggle(tag)}
-            className={`px-3 py-1.5 text-sm rounded-full transition-all flex items-center ${selectedTags.includes(tag)
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full transition-all flex items-center touch-manipulation active:scale-95 ${selectedTags.includes(tag)
+                ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
               }`}
           >
-            {selectedTags.includes(tag) && <FiCheck className="mr-1" />}
+            {selectedTags.includes(tag) && <FiCheck className="mr-1 w-3 h-3 sm:w-4 sm:h-4" />}
             {tag}
           </button>
         ))}
@@ -341,41 +343,41 @@ function PriceFilter({ min, max, values, onChange }: {
   onChange: (min: number, max: number) => void;
 }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-white">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="bg-yellow-100 text-yellow-800 rounded-lg p-2">
-          <FiDollarSign />
+    <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="bg-yellow-100 text-yellow-800 rounded-lg p-1.5 sm:p-2">
+          <FiDollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <h3 className="font-medium text-gray-800">Price Range</h3>
+        <h3 className="font-medium text-gray-800 text-sm sm:text-base">Price Range</h3>
       </div>
 
-      <div className="mb-4">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
+      <div className="mb-3 sm:mb-4">
+        <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-2">
           <span>Min: ₹{min}</span>
           <span>Max: ₹{max}</span>
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="text-xs text-gray-500 mb-1 block">Min Price</label>
+            <label className="text-[10px] sm:text-xs text-gray-500 mb-1 block">Min Price</label>
             <input
               type="number"
               value={values.min}
               onChange={(e) => onChange(Number(e.target.value), values.max)}
               min={min}
               max={max}
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full p-2 border border-gray-300 rounded-lg text-xs sm:text-sm touch-manipulation"
               placeholder="Min"
             />
           </div>
           <div className="flex-1">
-            <label className="text-xs text-gray-500 mb-1 block">Max Price</label>
+            <label className="text-[10px] sm:text-xs text-gray-500 mb-1 block">Max Price</label>
             <input
               type="number"
               value={values.max}
               onChange={(e) => onChange(values.min, Number(e.target.value))}
               min={min}
               max={max}
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full p-2 border border-gray-300 rounded-lg text-xs sm:text-sm touch-manipulation"
               placeholder="Max"
             />
           </div>

@@ -10,7 +10,7 @@ export default function ShopPage() {
       <HeroSlider />
 
       {/* Shop Content Section */}
-      <div className="max-w-7xl mx-auto pt-10 px-4">
+      <div className="max-w-7xl mx-auto pt-6 sm:pt-8 md:pt-10 px-3 sm:px-4">
         <Suspense fallback={<PlantsLoading />}>
           <ShopProducts />
         </Suspense>

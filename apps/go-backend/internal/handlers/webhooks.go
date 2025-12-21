@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 	"gorm.io/gorm"
 )
@@ -132,6 +133,33 @@ func (h *Handler) handlePaymentCaptured(payload map[string]interface{}) error {
 			order.UserID = &user.ID
 			h.DB.Save(&order)
 		}
+	}
+
+	// Send order confirmation email
+	if order.CustomerEmail != "" {
+		go func() {
+			emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
+			
+			// Prepare items for email
+			items := make([]map[string]interface{}, len(order.Items))
+			for i, item := range order.Items {
+				items[i] = map[string]interface{}{
+					"name":     item.Name,
+					"quantity": item.Quantity,
+					"price":    item.Price * float64(item.Quantity),
+				}
+			}
+			
+			if err := emailService.SendOrderConfirmationEmail(
+				order.CustomerEmail,
+				order.CustomerName,
+				order.ID,
+				order.Amount,
+				items,
+			); err != nil {
+				log.Printf("[EMAIL] Error sending order confirmation email: %v", err)
+			}
+		}()
 	}
 
 	return nil

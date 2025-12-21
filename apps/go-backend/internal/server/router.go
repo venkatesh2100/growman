@@ -78,6 +78,8 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Group(func(pr chi.Router) {
 			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
 			pr.Get("/auth/me", h.Me)
+			pr.Put("/auth/profile", h.UpdateProfile)
+			pr.Post("/auth/save-location", h.SaveLocation)
 		})
 	})
 

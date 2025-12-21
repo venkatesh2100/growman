@@ -178,17 +178,38 @@ func (h *Handler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Me returns the authenticated user claims if present.
+// Me returns the authenticated user data
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	claims, ok := appauth.FromContext(r.Context())
 	if !ok {
 		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	// Only return claims for now; extend with DB lookup if needed.
+
+	// Fetch user from database
+	var user models.User
+	if err := h.DB.First(&user, claims.UserID).Error; err != nil {
+		httpjson.Error(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	// Return user data (excluding sensitive fields)
 	httpjson.JSON(w, http.StatusOK, map[string]any{
-		"userId": claims.UserID,
-		"role":   claims.Role,
+		"id":            user.ID,
+		"name":          user.Name,
+		"email":         user.Email,
+		"phone":         user.Phone,
+		"emailVerified": user.EmailVerified,
+		"role":          user.Role,
+		"address": map[string]any{
+			"line":      user.AddressLine,
+			"city":      user.City,
+			"state":     user.State,
+			"pincode":   user.Pincode,
+			"country":   user.Country,
+			"latitude":  user.Latitude,
+			"longitude": user.Longitude,
+		},
 	})
 }
 
@@ -494,5 +515,163 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"message": "Password reset successfully",
+	})
+}
+
+// UpdateProfileRequest represents request to update user profile
+type UpdateProfileRequest struct {
+	Name          string   `json:"name,omitempty"`
+	Phone         string   `json:"phone,omitempty"`
+	AlternatePhone string  `json:"alternatePhone,omitempty"`
+	AddressLine   string   `json:"addressLine,omitempty"`
+	City          string   `json:"city,omitempty"`
+	State         string   `json:"state,omitempty"`
+	Pincode       string   `json:"pincode,omitempty"`
+	Country       string   `json:"country,omitempty"`
+	Latitude      *float64 `json:"latitude,omitempty"`
+	Longitude     *float64 `json:"longitude,omitempty"`
+}
+
+// UpdateProfile updates the authenticated user's profile
+func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	claims, ok := appauth.FromContext(r.Context())
+	if !ok {
+		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Fetch user
+	var user models.User
+	if err := h.DB.First(&user, claims.UserID).Error; err != nil {
+		httpjson.Error(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	// Update fields if provided
+	if req.Name != "" {
+		user.Name = req.Name
+	}
+	if req.Phone != "" {
+		// Check if phone is already taken by another user
+		var existingUser models.User
+		if err := h.DB.Where("phone = ? AND id != ?", req.Phone, user.ID).First(&existingUser).Error; err == nil {
+			httpjson.Error(w, http.StatusConflict, "phone number already in use")
+			return
+		}
+		user.Phone = req.Phone
+	}
+	if req.AddressLine != "" {
+		user.AddressLine = req.AddressLine
+	}
+	if req.City != "" {
+		user.City = req.City
+	}
+	if req.State != "" {
+		user.State = req.State
+	}
+	if req.Pincode != "" {
+		user.Pincode = req.Pincode
+	}
+	if req.Country != "" {
+		user.Country = req.Country
+	}
+	if req.Latitude != nil {
+		user.Latitude = req.Latitude
+	}
+	if req.Longitude != nil {
+		user.Longitude = req.Longitude
+	}
+
+	// Save updated user
+	if err := h.DB.Save(&user).Error; err != nil {
+		log.Printf("[AUTH] Error updating profile: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "failed to update profile")
+		return
+	}
+
+	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Profile updated successfully",
+		"user": map[string]any{
+			"id":            user.ID,
+			"name":          user.Name,
+			"email":         user.Email,
+			"phone":         user.Phone,
+			"address": map[string]any{
+				"line":      user.AddressLine,
+				"city":      user.City,
+				"state":     user.State,
+				"pincode":   user.Pincode,
+				"country":   user.Country,
+				"latitude":  user.Latitude,
+				"longitude": user.Longitude,
+			},
+		},
+	})
+}
+
+// SaveLocationRequest represents request to save location data
+type SaveLocationRequest struct {
+	AddressLine string   `json:"addressLine"`
+	City        string   `json:"city"`
+	State       string   `json:"state"`
+	Pincode     string   `json:"pincode"`
+	Country     string   `json:"country"`
+	Latitude    float64  `json:"latitude"`
+	Longitude   float64  `json:"longitude"`
+}
+
+// SaveLocation saves location data for the authenticated user
+func (h *Handler) SaveLocation(w http.ResponseWriter, r *http.Request) {
+	claims, ok := appauth.FromContext(r.Context())
+	if !ok {
+		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req SaveLocationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if req.Latitude == 0 || req.Longitude == 0 {
+		httpjson.Error(w, http.StatusBadRequest, "latitude and longitude are required")
+		return
+	}
+
+	// Fetch user
+	var user models.User
+	if err := h.DB.First(&user, claims.UserID).Error; err != nil {
+		httpjson.Error(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	// Update location fields
+	user.AddressLine = req.AddressLine
+	user.City = req.City
+	user.State = req.State
+	user.Pincode = req.Pincode
+	user.Country = req.Country
+	user.Latitude = &req.Latitude
+	user.Longitude = &req.Longitude
+
+	// Save updated user
+	if err := h.DB.Save(&user).Error; err != nil {
+		log.Printf("[AUTH] Error saving location: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "failed to save location")
+		return
+	}
+
+	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Location saved successfully",
 	})
 }

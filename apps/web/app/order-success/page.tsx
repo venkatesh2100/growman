@@ -75,7 +75,7 @@ export default function OrderSuccessPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
                   <span className="font-semibold text-emerald-600 capitalize">
-                    {order.status}
+                    {order.paymentStatus === "paid" || order.status === "paid" ? "Paid" : order.status || order.paymentStatus || "Pending"}
                   </span>
                 </div>
                 {order.razorpayPaymentId && (

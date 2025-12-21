@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
-import { ShoppingBag, CreditCard, CheckCircle, XCircle, Loader2, Mail, LogIn } from "lucide-react";
+import { ShoppingBag, CreditCard, CheckCircle, XCircle, Loader2, Mail, LogIn, Navigation } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "../../lib/store/cartStore";
+import { useAuthStore } from "../../lib/store/authStore";
+import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
+import { getCurrentLocation } from "../../lib/utils/geolocation";
 
 interface CartItem {
   id: string;
@@ -26,12 +29,14 @@ interface CustomerInfo {
   city: string;
   state: string;
   pincode: string;
+  country: string;
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
   const cart = useCartStore((state) => state.items);
   const getSubtotal = useCartStore((state) => state.getSubtotal);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -42,6 +47,8 @@ export default function CheckoutPage() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "",
     email: "",
@@ -50,11 +57,141 @@ export default function CheckoutPage() {
     city: "",
     state: "",
     pincode: "",
+    country: "India",
   });
 
   useEffect(() => {
     setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    // Auto-fill address if user is logged in
+    if (isAuthenticated) {
+      loadUserAddress();
+      // Auto-verify email for logged-in users (skip OTP)
+      setOtpVerified(true);
+    } else {
+      // Reset OTP verification for non-logged-in users
+      setOtpVerified(false);
+      setOtpSent(false);
+      setOtp("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  // Note: City is now a free text input, so we don't need to filter cities based on state
+
+  const loadUserAddress = async () => {
+    try {
+      const res = await apiFetch("/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.address) {
+          setCustomerInfo({
+            name: data.name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            addressLine: data.address.line || "",
+            city: data.address.city || "",
+            state: data.address.state || "",
+            pincode: data.address.pincode || "",
+            country: data.address.country || "India",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user address:", error);
+    }
+  };
+
+  const handleLocateMe = async () => {
+    setLocating(true);
+    try {
+      const locationData = await getCurrentLocation();
+      
+      // Find matching state from Indian states
+      let matchedState = "";
+      if (locationData.state) {
+        const stateMatch = indianStates.find(
+          (state) =>
+            state.name.toLowerCase().includes(locationData.state!.toLowerCase()) ||
+            locationData.state!.toLowerCase().includes(state.name.toLowerCase())
+        );
+        if (stateMatch) {
+          matchedState = stateMatch.name;
+        }
+      }
+
+      const updatedInfo = {
+        ...customerInfo,
+        addressLine: locationData.addressLine || customerInfo.addressLine,
+        city: locationData.city || customerInfo.city,
+        state: matchedState || customerInfo.state,
+        pincode: locationData.pincode || customerInfo.pincode,
+        country: locationData.country || "India",
+      };
+
+      setCustomerInfo(updatedInfo);
+
+
+      // Save location to backend if user is authenticated
+      if (isAuthenticated && locationData.latitude && locationData.longitude) {
+        try {
+          const res = await apiFetch("/auth/save-location", {
+            method: "POST",
+            body: JSON.stringify({
+              addressLine: updatedInfo.addressLine,
+              city: updatedInfo.city,
+              state: updatedInfo.state,
+              pincode: updatedInfo.pincode,
+              country: updatedInfo.country,
+              latitude: locationData.latitude,
+              longitude: locationData.longitude,
+            }),
+          });
+
+          if (!res.ok) {
+            console.error("Failed to save location to backend");
+          }
+        } catch (error) {
+          console.error("Error saving location:", error);
+          // Don't show error to user, location is still filled in form
+        }
+      }
+    } catch (error: any) {
+      setError(`Failed to get location: ${error.message}`);
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  // Check if user exists when email or phone is entered
+  const checkUserExists = async (email?: string, phone?: string) => {
+    if (!email && !phone) return;
+    
+    setCheckingUser(true);
+    try {
+      const params = new URLSearchParams();
+      if (email) params.append("email", email);
+      if (phone) params.append("phone", phone);
+      
+      const res = await apiFetch(`/auth/check-user?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.exists && !isAuthenticated) {
+          // User exists but not logged in - redirect to login
+          setShowLoginPrompt(true);
+          setError("An account with this email or phone already exists. Please login to continue.");
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking user:", error);
+    } finally {
+      setCheckingUser(false);
+    }
+    return false;
+  };
 
   const subtotal = getSubtotal();
   // Tax calculation commented out for now (as per requirements)
@@ -78,7 +215,7 @@ export default function CheckoutPage() {
     });
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = async (): Promise<boolean> => {
     if (!customerInfo.name.trim()) {
       setError("Please enter your name");
       return false;
@@ -98,11 +235,11 @@ export default function CheckoutPage() {
       return false;
     }
     if (!customerInfo.city.trim()) {
-      setError("Please enter your city");
+      setError("Please select your city");
       return false;
     }
     if (!customerInfo.state.trim()) {
-      setError("Please enter your state");
+      setError("Please select your state");
       return false;
     }
     const pincodeRegex = /^[1-9][0-9]{5}$/;
@@ -110,11 +247,29 @@ export default function CheckoutPage() {
       setError("Please enter a valid 6-digit pincode");
       return false;
     }
+
+    // Check if user exists (only if not authenticated)
+    if (!isAuthenticated) {
+      const userExists = await checkUserExists(customerInfo.email, customerInfo.phone);
+      if (userExists) {
+        return false;
+      }
+    }
+
     return true;
   };
 
   const handleSendOTP = async () => {
-    if (!validateForm()) {
+    // Skip if user is logged in
+    if (isAuthenticated) {
+      setOtpVerified(true);
+      return;
+    }
+
+    // Basic email validation only
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!customerInfo.email.trim() || !emailRegex.test(customerInfo.email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -134,12 +289,15 @@ export default function CheckoutPage() {
           setError("An account with this email already exists. Please login to continue.");
           return;
         }
-        throw new Error(errorData.error || "Failed to send OTP");
+        // Don't block checkout if OTP fails - allow user to skip
+        setError("Could not send OTP. You can skip verification and proceed to payment.");
+        return;
       }
 
       setOtpSent(true);
     } catch (err: any) {
-      setError(err.message || "Failed to send OTP. Please try again.");
+      // Don't block checkout - allow skipping
+      setError("Could not send OTP. You can skip verification and proceed to payment.");
     } finally {
       setSendingOtp(false);
     }
@@ -174,7 +332,8 @@ export default function CheckoutPage() {
   };
 
   const handlePayment = async () => {
-    if (!otpVerified) {
+    // Only require OTP verification for non-logged-in users
+    if (!isAuthenticated && !otpVerified) {
       setError("Please verify your email with OTP first");
       return;
     }
@@ -241,7 +400,50 @@ export default function CheckoutPage() {
         order_id: orderData.id,
         handler: async function (response: any) {
           try {
+            // Verify payment with backend
+            const verifyRes = await apiFetch("/razorpay/verify", {
+              method: "POST",
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const errorData = await verifyRes.json().catch(() => ({ error: "Unknown error" }));
+              console.error("Payment verification error:", errorData);
+              throw new Error(errorData.error || "Payment verification failed");
+            }
+
             setPaymentStatus("success");
+            
+            // Auto-save address if user entered new details and is not logged in
+            // This will create a guest account or save to existing account
+            if (!isAuthenticated && customerInfo.email) {
+              try {
+                // Save address to user account (create account if doesn't exist)
+                await apiFetch("/checkout/save-address", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    email: customerInfo.email,
+                    phone: customerInfo.phone,
+                    name: customerInfo.name,
+                    address: {
+                      line: customerInfo.addressLine,
+                      city: customerInfo.city,
+                      state: customerInfo.state,
+                      pincode: customerInfo.pincode,
+                      country: customerInfo.country,
+                    },
+                  }),
+                });
+              } catch (err) {
+                console.error("Error saving address:", err);
+                // Don't block payment success if address save fails
+              }
+            }
+            
             // Clear cart
             useCartStore.getState().clearCart();
             // Redirect to success page after 2 seconds
@@ -347,9 +549,19 @@ export default function CheckoutPage() {
                   <input
                     type="email"
                     value={customerInfo.email}
-                    onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, email: e.target.value })
-                    }
+                    onChange={async (e) => {
+                      const email = e.target.value;
+                      setCustomerInfo({ ...customerInfo, email });
+                      // Check if email exists when user finishes typing
+                      if (email.includes("@") && !isAuthenticated) {
+                        await checkUserExists(email, undefined);
+                      }
+                    }}
+                    onBlur={async () => {
+                      if (customerInfo.email.includes("@") && !isAuthenticated) {
+                        await checkUserExists(customerInfo.email, undefined);
+                      }
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="john@example.com"
                   />
@@ -361,9 +573,19 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     value={customerInfo.phone}
-                    onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
-                    }
+                    onChange={async (e) => {
+                      const phone = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setCustomerInfo({ ...customerInfo, phone });
+                      // Check if phone exists when user finishes typing
+                      if (phone.length === 10 && !isAuthenticated) {
+                        await checkUserExists(undefined, phone);
+                      }
+                    }}
+                    onBlur={async () => {
+                      if (customerInfo.phone.length === 10 && !isAuthenticated) {
+                        await checkUserExists(undefined, customerInfo.phone);
+                      }
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="9876543210"
                     maxLength={10}
@@ -372,19 +594,73 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address Line *
+                    Country
                   </label>
-                  <input
-                    type="text"
-                    value={customerInfo.addressLine}
+                  <select
+                    value={customerInfo.country}
                     onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, addressLine: e.target.value })
+                      setCustomerInfo({ ...customerInfo, country: e.target.value })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="Street / House No"
-                  />
+                  >
+                    <option value="India">India</option>
+                  </select>
                 </div>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Address Line * (include Door No, Building Name, Street)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleLocateMe}
+                    disabled={locating}
+                    className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium disabled:opacity-50 mb-2"
+                  >
+                    {locating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Locating...
+                      </>
+                    ) : (
+                      <>
+                        <Navigation className="w-4 h-4" />
+                        Locate Me
+                      </>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={customerInfo.addressLine}
+                  onChange={(e) =>
+                    setCustomerInfo({ ...customerInfo, addressLine: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="House/Flat No., Building Name, Street"
+                />
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      State *
+                    </label>
+                    <select
+                      value={customerInfo.state}
+                      onChange={(e) =>
+                        setCustomerInfo({
+                          ...customerInfo,
+                          state: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value="">Select State</option>
+                      {getAllStateNames().map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       City *
@@ -396,21 +672,7 @@ export default function CheckoutPage() {
                         setCustomerInfo({ ...customerInfo, city: e.target.value })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="City"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      value={customerInfo.state}
-                      onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, state: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="State"
+                      placeholder="Enter city name"
                     />
                   </div>
                 </div>
@@ -433,15 +695,15 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Email OTP Verification */}
-            {!otpVerified && (
+            {/* Email OTP Verification - Only for non-logged-in users */}
+            {!isAuthenticated && !otpVerified && (
               <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-emerald-200">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <Mail className="w-5 h-5 mr-2 text-emerald-600" />
-                  Verify Email
+                  Verify Email (Optional)
                 </h2>
                 <p className="text-sm text-gray-600 mb-4">
-                  We'll send a verification code to your email to continue with payment.
+                  Verify your email to receive order updates. You can skip this and proceed directly to payment.
                 </p>
                 {!otpSent ? (
                   <button
@@ -507,6 +769,30 @@ export default function CheckoutPage() {
                     <p className="text-sm text-green-700">Email verified successfully!</p>
                   </div>
                 )}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      // Allow skipping OTP verification
+                      setOtpVerified(true);
+                    }}
+                    className="w-full text-gray-600 py-2 text-sm hover:text-gray-800 underline"
+                  >
+                    Skip verification and proceed to payment
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Show verification status for logged-in users */}
+            {isAuthenticated && (
+              <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Email Verified</h3>
+                    <p className="text-xs text-gray-600">You're logged in. No verification needed.</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -523,7 +809,7 @@ export default function CheckoutPage() {
                   </p>
                   <div className="flex gap-3">
                     <Link
-                      href={`/login?email=${encodeURIComponent(customerInfo.email)}&redirect=/checkout`}
+                      href={`/login?email=${encodeURIComponent(customerInfo.email)}&phone=${encodeURIComponent(customerInfo.phone)}&redirect=/checkout`}
                       className="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center"
                     >
                       <LogIn className="w-5 h-5 mr-2" />
@@ -620,7 +906,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handlePayment}
-                disabled={loading || paymentStatus === "processing" || !otpVerified}
+                disabled={loading || paymentStatus === "processing" || (!isAuthenticated && !otpVerified)}
                 className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading || paymentStatus === "processing" ? (
@@ -628,7 +914,7 @@ export default function CheckoutPage() {
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Processing...
                   </>
-                ) : !otpVerified ? (
+                ) : !isAuthenticated && !otpVerified ? (
                   "Verify Email to Pay"
                 ) : (
                   <>

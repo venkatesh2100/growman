@@ -131,6 +131,14 @@ type User struct {
 	EmailVerified bool     `gorm:"default:false" json:"emailVerified"`
 	Provider      string   `gorm:"default:'local'" json:"provider"` // 'local' or 'google'
 	Role          string   `json:"role"`
+	// Address fields
+	AddressLine   string   `json:"addressLine,omitempty"`
+	City          string   `json:"city,omitempty"`
+	State         string   `json:"state,omitempty"`
+	Pincode       string   `json:"pincode,omitempty"`
+	Country       string   `json:"country,omitempty"`
+	Latitude      *float64 `json:"latitude,omitempty"`
+	Longitude     *float64 `json:"longitude,omitempty"`
 	Reviews       []Review `json:"reviews"`
 }
 

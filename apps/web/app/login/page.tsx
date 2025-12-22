@@ -82,6 +82,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
             Or{" "}
             <Link
               href="/signup"
+              prefetch={false}
               className="font-medium text-emerald-600 hover:text-emerald-500 active:text-emerald-700 touch-manipulation"
             >
               create a new account
@@ -186,6 +187,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
           <div className="text-center">
             <Link
               href="/forgot-password"
+              prefetch={false}
               className="text-sm text-emerald-600 hover:text-emerald-500"
             >
               Forgot your password?

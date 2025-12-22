@@ -71,71 +71,135 @@ export default function CartPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+            <div className="lg:col-span-2 space-y-2 md:space-y-4">
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center"
+                  className="bg-white md:rounded-xl md:shadow-sm md:p-6 p-3 flex gap-3 md:gap-4 items-start md:items-center"
                 >
-                  <img
-                    src={item.image}
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover flex-shrink-0"
-                    alt={item.name}
-                  />
-
-                  <div className="flex-1 min-w-0 w-full sm:w-auto">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                      {item.name}
-                    </h3>
-                    {item.label && (
-                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">{item.label}</p>
-                    )}
-                    <div className="mt-1.5 sm:mt-2 flex items-center gap-2">
-                      <p className="text-sm sm:text-base text-emerald-600 font-semibold">
-                        ₹{item.price.toFixed(2)}
-                      </p>
-                      {item.mrp && item.mrp > item.price && (
-                        <p className="text-xs sm:text-sm text-gray-500 line-through">
-                          ₹{item.mrp.toFixed(2)}
+                  {/* Mobile: Minimal design */}
+                  <div className="md:hidden flex-1">
+                    <div className="flex gap-3">
+                      <img
+                        src={item.image}
+                        className="w-20 h-20 rounded object-cover flex-shrink-0"
+                        alt={item.name}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                          {item.name}
+                        </h3>
+                        {item.label && (
+                          <p className="text-xs text-gray-500 mb-1.5">{item.label}</p>
+                        )}
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            ₹{item.price.toFixed(0)}
+                          </p>
+                          {item.mrp && item.mrp > item.price && (
+                            <p className="text-xs text-gray-500 line-through">
+                              ₹{item.mrp.toFixed(0)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 bg-gray-100 rounded p-1">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="w-6 h-6 flex items-center justify-center rounded active:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                              aria-label="Decrease quantity"
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus className="w-3.5 h-3.5 text-gray-700" />
+                            </button>
+                            <span className="text-sm font-medium text-gray-900 w-6 text-center">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="w-6 h-6 flex items-center justify-center rounded active:bg-gray-200 transition-colors touch-manipulation"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-gray-700" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="text-red-500 active:text-red-700 p-1.5 active:bg-red-50 rounded transition-colors touch-manipulation"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900 mt-2">
+                          ₹{(item.price * item.quantity).toFixed(0)}
                         </p>
-                      )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-2 sm:gap-3 bg-gray-100 rounded-lg p-1.5 sm:p-2 w-full sm:w-auto justify-between sm:justify-start">
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                      aria-label="Decrease quantity"
-                      disabled={item.quantity <= 1}
-                    >
-                      <Minus className="w-4 h-4 text-gray-700" />
-                    </button>
-                    <span className="text-base sm:text-lg font-medium text-gray-900 w-8 text-center">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-4 h-4 text-gray-700" />
-                    </button>
-                  </div>
+                  {/* Desktop: Original design */}
+                  <div className="hidden md:flex md:flex-row md:gap-4 md:items-center md:w-full">
+                    <img
+                      src={item.image}
+                      className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+                      alt={item.name}
+                    />
 
-                  {/* Price and Delete */}
-                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                    <p className="text-base sm:text-lg font-bold text-gray-900">
-                      ₹{(item.price * item.quantity).toFixed(2)}
-                    </p>
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="text-red-500 hover:text-red-700 active:text-red-800 p-1.5 sm:p-2 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
-                      aria-label="Remove item"
-                    >
-                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        {item.name}
+                      </h3>
+                      {item.label && (
+                        <p className="text-sm text-gray-500 mt-1">{item.label}</p>
+                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-base text-emerald-600 font-semibold">
+                          ₹{item.price.toFixed(2)}
+                        </p>
+                        {item.mrp && item.mrp > item.price && (
+                          <p className="text-sm text-gray-500 line-through">
+                            ₹{item.mrp.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-2">
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                        aria-label="Decrease quantity"
+                        disabled={item.quantity <= 1}
+                      >
+                        <Minus className="w-4 h-4 text-gray-700" />
+                      </button>
+                      <span className="text-lg font-medium text-gray-900 w-8 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="w-4 h-4 text-gray-700" />
+                      </button>
+                    </div>
+
+                    {/* Price and Delete */}
+                    <div className="flex flex-col items-end gap-2">
+                      <p className="text-lg font-bold text-gray-900">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </p>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="text-red-500 hover:text-red-700 active:text-red-800 p-2 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

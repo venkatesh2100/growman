@@ -27,8 +27,9 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Origin", "X-Requested-With"},
+		ExposedHeaders:   []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))

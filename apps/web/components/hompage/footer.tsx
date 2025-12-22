@@ -68,25 +68,25 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/indoor-plants" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link href="/indoor-plants" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
                   <FaLeaf className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Indoor Plants</span>
                 </Link>
               </li>
               <li>
-                <Link href="/outdoor-plants" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link href="/outdoor-plants" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
                   <GiPlantSeed className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Outdoor Plants</span>
                 </Link>
               </li>
               <li>
-                <Link href="/seeds" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link href="/seeds" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
                   <FaSeedling className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Seeds</span>
                 </Link>
               </li>
               <li>
-                <Link href="/pots" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link href="/pots" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
                   <GiFlowerPot className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Pots & Planters</span>
                 </Link>
@@ -102,22 +102,22 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/contact" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link href="/contact" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
                   <span>Contact Us</span>
                 </Link>
               </li>
               <li>
-                <Link href="/shipping" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link href="/shipping" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
                   <span>Shipping</span>
                 </Link>
               </li>
               <li>
-                <Link href="/returns" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link href="/returns" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
                   <span>Returns</span>
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link href="/faq" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
                   <span>FAQ</span>
                 </Link>
               </li>
@@ -157,18 +157,21 @@ export default function Footer() {
           <div className="flex justify-center gap-4">
             <Link
               href="/privacy"
+              prefetch={false}
               className="hover:text-white transition-colors flex items-center gap-1"
             >
               <span>Privacy</span>
             </Link>
             <Link
               href="/terms"
+              prefetch={false}
               className="hover:text-white transition-colors flex items-center gap-1"
             >
               <span>Terms</span>
             </Link>
             <Link
               href="/shipping"
+              prefetch={false}
               className="hover:text-white transition-colors flex items-center gap-1"
             >
               <span>Shipping Policy</span>

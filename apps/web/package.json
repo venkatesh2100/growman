@@ -17,7 +17,7 @@
   "dependencies": {
     "@opennextjs/cloudflare": "^1.14.6",
     "@react-oauth/google": "^0.13.0",
-    "@repo/ui": "workspace:*",
+    "@repo/ui": "*",
     "framer-motion": "^12.23.25",
     "link": "^2.1.1",
     "lottie-react": "^2.4.1",

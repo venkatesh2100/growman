@@ -360,13 +360,13 @@ export default function Navbar() {
                   </button>
                 </div>
               ))}
-              <Link href="/buy-again" className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
+              <Link href="/buy-again" prefetch={false} className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Buy Again
               </Link>
-              <Link href="/gift-options" className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
+              <Link href="/gift-options" prefetch={false} className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                 </svg>
@@ -400,6 +400,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={link.href === "/about" ? false : undefined}
                 className={`px-3 sm:px-4 py-2 font-medium rounded-lg transition-colors text-sm sm:text-base ${
                   pathname === link.href ? "text-emerald-700 bg-emerald-50 font-semibold" : "text-green-800 hover:text-emerald-600 hover:bg-emerald-50"
                 }`}
@@ -484,6 +485,7 @@ export default function Navbar() {
                       <>
                         <Link
                           href="/orders"
+                          prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
                           onClick={() => setShowAccountMenu(false)}
                         >
@@ -500,6 +502,7 @@ export default function Navbar() {
                         </Link>
                         <Link
                           href="/account"
+                          prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
                           onClick={() => setShowAccountMenu(false)}
                         >
@@ -519,6 +522,7 @@ export default function Navbar() {
                       <>
                         <Link
                           href="/login"
+                          prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
                           onClick={() => setShowAccountMenu(false)}
                         >
@@ -535,6 +539,7 @@ export default function Navbar() {
                         </Link>
                         <Link
                           href="/login"
+                          prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
                           onClick={() => setShowAccountMenu(false)}
                         >
@@ -544,6 +549,7 @@ export default function Navbar() {
                         <div className="border-t border-gray-200 my-1"></div>
                         <Link
                           href="/login"
+                          prefetch={false}
                           className="w-full flex items-center px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
                           onClick={() => setShowAccountMenu(false)}
                         >
@@ -590,13 +596,13 @@ export default function Navbar() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-t border-emerald-100 max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain">
               <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-col space-y-1 sm:space-y-2">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">
+                  <Link key={link.href} href={link.href} prefetch={link.href === "/about" ? false : undefined} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">
                     {link.label}
                   </Link>
                 ))}
-                <Link href="/contact" className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">Contact</Link>
+                <Link href="/contact" prefetch={false} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">Contact</Link>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-2 sm:pb-3">
-                  <Link href="/account" className="flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
+                  <Link href="/account" prefetch={false} className="flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
                     <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><UserIcon /></span>Account
                   </Link>
                   <Link href="/cart" className="relative flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
@@ -653,14 +659,14 @@ export default function Navbar() {
                 )}
               </div>
             ))}
-            <Link href="/buy-again" className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
+            <Link href="/buy-again" prefetch={false} className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span className="hidden sm:inline">Buy Again</span>
               <span className="sm:hidden">Buy Again</span>
             </Link>
-            <Link href="/gift-options" className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
+            <Link href="/gift-options" prefetch={false} className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
               </svg>

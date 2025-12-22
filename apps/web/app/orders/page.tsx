@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Package, CheckCircle, Truck, Clock, XCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -20,7 +19,6 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,7 +94,7 @@ export default function OrdersPage() {
               No orders yet
             </h2>
             <p className="text-gray-600 mb-6">
-              You haven't placed any orders yet. Start shopping to see your orders here.
+              You haven&apos;t placed any orders yet. Start shopping to see your orders here.
             </p>
             <Link
               href="/shop"
@@ -106,56 +104,107 @@ export default function OrdersPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {orders.map((order) => (
               <div
                 key={order.id}
-                className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+                className="bg-white md:rounded-xl md:shadow-sm md:p-6 md:hover:shadow-md md:transition-shadow p-3"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Order #{order.orderId}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Placed on {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
+                {/* Mobile: Minimal design */}
+                <div className="md:hidden">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                        Order #{order.orderId}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
+                        {getStatusIcon(order.status)}
+                        <span className="hidden">{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                      </span>
+                      <span className="text-base font-bold text-gray-900">
+                        ₹{order.total.toFixed(0)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-2 sm:mt-0">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ₹{order.total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="space-y-3">
+                  <div className="space-y-2 pt-3 border-t border-gray-100">
                     {order.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-4">
+                      <div key={idx} className="flex items-center gap-2.5">
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="w-16 h-16 rounded-lg object-cover"
+                          className="w-14 h-14 rounded object-cover shrink-0"
                         />
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{item.name}</p>
-                          <p className="text-sm text-gray-500">
-                            Quantity: {item.quantity}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.name}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Qty: {item.quantity}
                           </p>
                         </div>
-                        <p className="text-gray-700 font-medium">
-                          ₹{(item.price * item.quantity).toFixed(2)}
+                        <p className="text-sm font-semibold text-gray-900">
+                          ₹{(item.price * item.quantity).toFixed(0)}
                         </p>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Desktop: Original design */}
+                <div className="hidden md:block">
+                  <div className="flex flex-row items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Order #{order.orderId}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Placed on {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
+                        {getStatusIcon(order.status)}
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </span>
+                      <span className="text-lg font-bold text-gray-900">
+                        ₹{order.total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="space-y-3">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-4">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{item.name}</p>
+                            <p className="text-sm text-gray-500">
+                              Quantity: {item.quantity}
+                            </p>
+                          </div>
+                          <p className="text-gray-700 font-medium">
+                            ₹{(item.price * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function CartItems({ isOpen, onClose }: {
   isOpen: boolean;
@@ -60,19 +61,20 @@ export default function CartItems({ isOpen, onClose }: {
           <p className="text-right text-lg font-bold">Subtotal: ₹{subtotal}</p>
 
           <div className="mt-4 flex flex-col gap-3">
-            <a
+            <Link
               href="/cart"
               className="bg-green-700 py-3 rounded text-center hover:bg-green-800"
             >
               View Cart ({cart.length})
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/checkout"
+              prefetch={false}
               className="bg-green-600 py-3 rounded text-center hover:bg-green-700"
             >
               Checkout
-            </a>
+            </Link>
           </div>
         </div>
       </div>

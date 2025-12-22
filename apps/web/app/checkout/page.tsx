@@ -836,6 +836,7 @@ export default function CheckoutPage() {
                   <div className="flex gap-3">
                     <Link
                       href={`/login?email=${encodeURIComponent(customerInfo.email)}&phone=${encodeURIComponent(customerInfo.phone)}&redirect=/checkout`}
+                      prefetch={false}
                       className="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center"
                     >
                       <LogIn className="w-5 h-5 mr-2" />
@@ -856,33 +857,59 @@ export default function CheckoutPage() {
             )}
 
             {/* Order Items */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Items</h2>
-              <div className="space-y-4">
+            <div className="bg-white md:rounded-xl md:shadow-sm md:p-6 p-3">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Order Items</h2>
+              <div className="space-y-2 md:space-y-4">
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
+                    className="flex items-center gap-3 md:gap-4 p-2.5 md:p-4 md:border md:border-gray-200 md:rounded-lg"
                   >
-                    <Image
-                      src={item.image}
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 rounded-lg object-cover"
-                      alt={item.name}
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{item.name}</h3>
-                      {item.label && (
-                        <p className="text-sm text-gray-500">{item.label}</p>
-                      )}
-                      <p className="text-sm text-gray-600 mt-1">
-                        Quantity: {item.quantity}
-                      </p>
+                    {/* Mobile: Minimal design */}
+                    <div className="md:hidden flex items-center gap-2.5 w-full">
+                      <Image
+                        src={item.image}
+                        width={60}
+                        height={60}
+                        className="w-14 h-14 rounded object-cover shrink-0"
+                        alt={item.name}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{item.name}</h3>
+                        {item.label && (
+                          <p className="text-xs text-gray-500 mt-0.5">{item.label}</p>
+                        )}
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">
+                        ₹{(item.price * item.quantity).toFixed(0)}
+                      </span>
                     </div>
-                    <span className="text-lg font-semibold text-gray-900">
-                      ₹{(item.price * item.quantity).toFixed(2)}
-                    </span>
+
+                    {/* Desktop: Original design */}
+                    <div className="hidden md:flex md:items-center md:gap-4 md:w-full">
+                      <Image
+                        src={item.image}
+                        width={80}
+                        height={80}
+                        className="w-20 h-20 rounded-lg object-cover"
+                        alt={item.name}
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{item.name}</h3>
+                        {item.label && (
+                          <p className="text-sm text-gray-500">{item.label}</p>
+                        )}
+                        <p className="text-sm text-gray-600 mt-1">
+                          Quantity: {item.quantity}
+                        </p>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-900">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

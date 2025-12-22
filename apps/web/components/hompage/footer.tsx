@@ -1,6 +1,6 @@
-'use client';
-
-import Link from 'next/link';
+"use client";
+import Image from "next/image";
+import Link from "next/link";
 import {
   FaFacebookF,
   FaInstagram,
@@ -13,16 +13,16 @@ import {
   FaSeedling,
   FaShoppingBag,
   FaHeadset,
-} from 'react-icons/fa';
-import { GiPlantSeed, GiFlowerPot } from 'react-icons/gi';
+} from "react-icons/fa";
+import { GiPlantSeed, GiFlowerPot } from "react-icons/gi";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className=" bg-green-800 text-white">
-      <div className="container mx-auto px-4 py-6 pt-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div className="container mx-auto px-4  pt-12 md:pt-16">
+        <div className="grid grid-cols-2 md:grid-cols-4  gap-4">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -68,25 +68,41 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/indoor-plants" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link
+                  href="/categories/indoor-plants"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                >
                   <FaLeaf className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Indoor Plants</span>
                 </Link>
               </li>
               <li>
-                <Link href="/outdoor-plants" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link
+                  href="/categories/outdoor-plants"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                >
                   <GiPlantSeed className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Outdoor Plants</span>
                 </Link>
               </li>
               <li>
-                <Link href="/seeds" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link
+                  href="/seeds"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                >
                   <FaSeedling className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Seeds</span>
                 </Link>
               </li>
               <li>
-                <Link href="/pots" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group">
+                <Link
+                  href="/pots"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                >
                   <GiFlowerPot className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>Pots & Planters</span>
                 </Link>
@@ -102,22 +118,38 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/contact" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link
+                  href="/account"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
+                >
                   <span>Contact Us</span>
                 </Link>
               </li>
               <li>
-                <Link href="/shipping" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link
+                  href="/orders"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
+                >
                   <span>Shipping</span>
                 </Link>
               </li>
               <li>
-                <Link href="/returns" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link
+                  href="/orders"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
+                >
                   <span>Returns</span>
                 </Link>
               </li>
               <li>
-                <Link href="/faq" prefetch={false} className="text-green-300 hover:text-white flex items-center gap-2 transition-colors">
+                <Link
+                  href="/faq"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
+                >
                   <span>FAQ</span>
                 </Link>
               </li>
@@ -132,13 +164,14 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm text-green-300">
               <li className="flex items-start gap-2">
-                <FaMapMarkerAlt className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+                <FaMapMarkerAlt className="w-3 h-3 text-emerald-400 mt-0.5 shrink-0" />
                 <span>Kadiam, Andhra Pradesh</span>
               </li>
-              <li className="flex items-center gap-2">
-                <FaEnvelope className="w-3 h-3 text-emerald-400" />
-                <span>growman.live@gmail.com</span>
+              <li className="flex items-center gap-2 text-sm">
+                <FaEnvelope className="text-emerald-400  text-[14px] shrink-0" />
+                <span className="">growman.live@gmail.com</span>
               </li>
+
               <li className="flex items-center gap-2">
                 <FaPhone className="w-3 h-3 text-emerald-400" />
                 <span>+91 93463 95054</span>
@@ -151,10 +184,45 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-green-800 pt-6 text-center text-sm text-green-400">
-          <p className="mb-2">© {currentYear} Growman. All rights reserved.</p>
-          <div className="flex justify-center gap-4">
+        <div className="flex flex-col justify-between  md:flex-row items-center   gap-6 text-center md:text-left">
+          {/* QR Section */}
+          <div className="hidden md:flex items-center gap-4 px-4 py-3 rounded-xl">
+            <Image
+              src="/frame.svg"
+              alt="Growman QR Code"
+              height={160}
+              width={160}
+              className="rounded-lg"
+            />
+            <div className="text-sm text-green-200 leading-tight">
+              <p className="font-semibold text-white">Scan to shop</p>
+              <p>Open Growman on mobile</p>
+            </div>
+          </div>
+
+          <div className="font-serif italic tracking-wide text-emerald-300 text-xl">
+            <Image src="/404.png" width={230} height={200} alt="404" />
+          </div>
+
+          {/* Copyright */}
+          <div className="flex flex-col items-center  mb-2 md:items-end">
+            <p className="text-green-300 text-sm">
+              © {currentYear} Growman. All rights reserved.
+            </p>
+
+            <p className="text-emerald-300 text-sm font-medium flex items-center gap-1 mt-1">
+              <FaSeedling className="w-4 h-4" />
+              Powered by Shiridi Sai Nursery
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+{
+  /* <div className="flex justify-center gap-4">
             <Link
               href="/privacy"
               prefetch={false}
@@ -176,9 +244,5 @@ export default function Footer() {
             >
               <span>Shipping Policy</span>
             </Link>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
+          </div> */
 }

@@ -10,6 +10,7 @@ import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
 import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
+import { toast } from "../../lib/toast";
 
 // Razorpay types
 interface RazorpayResponse {
@@ -305,21 +306,43 @@ export default function CheckoutPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        if (errorData.error === "user_exists") {
-          setShowLoginPrompt(true);
-          setError("An account with this email already exists. Please login to continue.");
-          return;
+        let errorMessage = "Could not send OTP";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            if (errorData.error === "user_exists") {
+              setShowLoginPrompt(true);
+              errorMessage = "An account with this email already exists. Please login to continue.";
+              toast(errorMessage, "info");
+              setError(errorMessage);
+              return;
+            }
+            if (errorData.error) {
+              if (errorData.error.includes("wait") || errorData.error.includes("rate limit") || errorData.error.includes("too many")) {
+                errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
+              } else {
+                errorMessage = errorData.error;
+              }
+            }
+          }
+        } catch {
+          // If parsing fails, use default message
         }
+        
         // Don't block checkout if OTP fails - allow user to skip
-        setError("Could not send OTP. You can skip verification and proceed to payment.");
+        toast(errorMessage + ". You can skip verification and proceed to payment.", "error");
+        setError(errorMessage);
         return;
       }
 
+      toast("Verification code sent to your email!", "success");
       setOtpSent(true);
     } catch (err: unknown) {
       // Don't block checkout - allow skipping
-      setError("Could not send OTP. You can skip verification and proceed to payment.");
+      const errorMsg = err instanceof Error ? err.message : "Could not send OTP. You can skip verification and proceed to payment.";
+      toast(errorMsg, "error");
+      setError(errorMsg);
     } finally {
       setSendingOtp(false);
     }
@@ -327,7 +350,9 @@ export default function CheckoutPage() {
 
   const handleVerifyOTP = async () => {
     if (!otp.trim() || otp.length !== 6) {
-      setError("Please enter a valid 6-digit OTP");
+      const errorMsg = "Please enter a valid 6-digit OTP";
+      toast(errorMsg, "error");
+      setError(errorMsg);
       return;
     }
 
@@ -341,13 +366,35 @@ export default function CheckoutPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Invalid OTP");
+        let errorMessage = "Invalid OTP";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            const apiError = errorData.error || errorData.message;
+            if (apiError) {
+              if (apiError.includes("expired")) {
+                errorMessage = "OTP has expired. Please request a new one.";
+              } else if (apiError.includes("invalid") || apiError.includes("incorrect")) {
+                errorMessage = "Invalid OTP. Please check and try again.";
+              } else {
+                errorMessage = apiError;
+              }
+            }
+          }
+        } catch {
+          // If parsing fails, use default message
+        }
+        
+        toast(errorMessage, "error");
+        throw new Error(errorMessage);
       }
 
+      toast("Email verified successfully!", "success");
       setOtpVerified(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid OTP. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : "Invalid OTP. Please try again.";
+      setError(errorMsg);
     } finally {
       setVerifyingOtp(false);
     }
@@ -890,25 +937,25 @@ export default function CheckoutPage() {
 
                     {/* Desktop: Original design */}
                     <div className="hidden md:flex md:items-center md:gap-4 md:w-full">
-                      <Image
-                        src={item.image}
-                        width={80}
-                        height={80}
-                        className="w-20 h-20 rounded-lg object-cover"
-                        alt={item.name}
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{item.name}</h3>
-                        {item.label && (
-                          <p className="text-sm text-gray-500">{item.label}</p>
-                        )}
-                        <p className="text-sm text-gray-600 mt-1">
-                          Quantity: {item.quantity}
-                        </p>
-                      </div>
-                      <span className="text-lg font-semibold text-gray-900">
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </span>
+                    <Image
+                      src={item.image}
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 rounded-lg object-cover"
+                      alt={item.name}
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{item.name}</h3>
+                      {item.label && (
+                        <p className="text-sm text-gray-500">{item.label}</p>
+                      )}
+                      <p className="text-sm text-gray-600 mt-1">
+                        Quantity: {item.quantity}
+                      </p>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </span>
                     </div>
                   </div>
                 ))}

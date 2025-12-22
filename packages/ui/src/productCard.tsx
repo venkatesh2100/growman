@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-
+//! Currently Not using UI Component!
 export default function ProductCard({ product }: { product: any }) {
   const [hovered, setHovered] = useState(false);
 

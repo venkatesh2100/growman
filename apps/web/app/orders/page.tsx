@@ -161,49 +161,49 @@ export default function OrdersPage() {
                 {/* Desktop: Original design */}
                 <div className="hidden md:block">
                   <div className="flex flex-row items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Order #{order.orderId}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Placed on {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(
-                          order.status
-                        )}`}
-                      >
-                        {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
-                      <span className="text-lg font-bold text-gray-900">
-                        ₹{order.total.toFixed(2)}
-                      </span>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Order #{order.orderId}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Placed on {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
+                    <div className="flex items-center gap-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(
+                        order.status
+                      )}`}
+                    >
+                      {getStatusIcon(order.status)}
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                    <span className="text-lg font-bold text-gray-900">
+                      ₹{order.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
 
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="space-y-3">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-4">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{item.name}</p>
-                            <p className="text-sm text-gray-500">
-                              Quantity: {item.quantity}
-                            </p>
-                          </div>
-                          <p className="text-gray-700 font-medium">
-                            ₹{(item.price * item.quantity).toFixed(2)}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="space-y-3">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-4">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-500">
+                            Quantity: {item.quantity}
                           </p>
                         </div>
-                      ))}
+                        <p className="text-gray-700 font-medium">
+                          ₹{(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
                     </div>
                   </div>
                 </div>

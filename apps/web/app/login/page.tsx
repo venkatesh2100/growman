@@ -8,7 +8,7 @@ import { LogIn, Mail, Lock, Loader2, XCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import GoogleLoginButton from "./GoogleLoginButton";
-import { Toaster } from "sonner";
+import { toast } from "../../lib/toast";
 
 function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
@@ -43,14 +43,40 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Login failed");
+        let errorMessage = "Login failed";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            const apiError = errorData.error || errorData.message;
+            
+            // Map common errors to user-friendly messages
+            if (apiError) {
+              if (apiError.includes("invalid credentials") || apiError.includes("unauthorized")) {
+                errorMessage = "Invalid email/phone or password. Please check and try again.";
+              } else if (apiError.includes("not found") || apiError.includes("does not exist")) {
+                errorMessage = "No account found with this email/phone. Please sign up first.";
+              } else {
+                errorMessage = apiError;
+              }
+            }
+          } else {
+            const text = await res.text();
+            errorMessage = text || `Server returned ${res.status}`;
+          }
+        } catch {
+          errorMessage = `Server returned ${res.status}`;
+        }
+        
+        toast(errorMessage, "error");
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
       
       // Store token using auth store
       setToken(data.token);
+      toast("Login successful! Welcome back!", "success");
       setSuccess(true);
 
       // Redirect after short delay
@@ -59,7 +85,8 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
         router.push(redirect);
       }, 1500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : "Login failed. Please try again.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -67,7 +94,6 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 lg:px-8">
-      <Toaster />
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div>
           <div className="flex justify-center">

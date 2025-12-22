@@ -140,65 +140,65 @@ export default function CartPage() {
 
                   {/* Desktop: Original design */}
                   <div className="hidden md:flex md:flex-row md:gap-4 md:items-center md:w-full">
-                    <img
-                      src={item.image}
+                  <img
+                    src={item.image}
                       className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-                      alt={item.name}
-                    />
+                    alt={item.name}
+                  />
 
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
-                        {item.name}
-                      </h3>
-                      {item.label && (
+                      {item.name}
+                    </h3>
+                    {item.label && (
                         <p className="text-sm text-gray-500 mt-1">{item.label}</p>
-                      )}
+                    )}
                       <div className="mt-2 flex items-center gap-2">
                         <p className="text-base text-emerald-600 font-semibold">
-                          ₹{item.price.toFixed(2)}
-                        </p>
-                        {item.mrp && item.mrp > item.price && (
+                        ₹{item.price.toFixed(2)}
+                      </p>
+                      {item.mrp && item.mrp > item.price && (
                           <p className="text-sm text-gray-500 line-through">
-                            ₹{item.mrp.toFixed(2)}
-                          </p>
-                        )}
-                      </div>
+                          ₹{item.mrp.toFixed(2)}
+                        </p>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Quantity Controls */}
+                  {/* Quantity Controls */}
                     <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-2">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                        aria-label="Decrease quantity"
-                        disabled={item.quantity <= 1}
-                      >
-                        <Minus className="w-4 h-4 text-gray-700" />
-                      </button>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      aria-label="Decrease quantity"
+                      disabled={item.quantity <= 1}
+                    >
+                      <Minus className="w-4 h-4 text-gray-700" />
+                    </button>
                       <span className="text-lg font-medium text-gray-900 w-8 text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="w-4 h-4 text-gray-700" />
-                      </button>
-                    </div>
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="w-4 h-4 text-gray-700" />
+                    </button>
+                  </div>
 
-                    {/* Price and Delete */}
+                  {/* Price and Delete */}
                     <div className="flex flex-col items-end gap-2">
                       <p className="text-lg font-bold text-gray-900">
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </p>
-                      <button
-                        onClick={() => removeItem(item.id)}
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => removeItem(item.id)}
                         className="text-red-500 hover:text-red-700 active:text-red-800 p-2 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
-                        aria-label="Remove item"
-                      >
+                      aria-label="Remove item"
+                    >
                         <Trash2 className="w-5 h-5" />
-                      </button>
+                    </button>
                     </div>
                   </div>
                 </div>

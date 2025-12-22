@@ -27,6 +27,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="relative">
+                              {/* <Image src="/logo.png" width={30} height={20} alt="logo" /> */}
                 <FaLeaf className="w-8 h-8 text-emerald-400" />
                 {/* <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-100 rounded-full animate-pulse"></div> */}
               </div>

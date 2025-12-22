@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
-import { Mail, Lock, Loader2, XCircle, CheckCircle, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Loader2, XCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { Toaster } from "sonner";
+import { toast } from "../../lib/toast";
 
 type Step = "email" | "otp" | "reset";
 
@@ -34,18 +33,42 @@ export default function ForgotPasswordPage() {
 
       if (!res.ok) {
         let errorMessage = "Failed to send OTP";
+        const status = res.status;
+        
         try {
-          const text = await res.text();
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch {
-            // If JSON parsing fails, use the text as error message
-            errorMessage = text || errorMessage;
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            const apiError = errorData.error || errorData.message;
+            
+            if (apiError) {
+              if (apiError.includes("wait") || apiError.includes("rate limit") || apiError.includes("too many") || status === 429) {
+                errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
+              } else if (apiError.includes("not found") || apiError.includes("does not exist")) {
+                errorMessage = "No account found with this email address.";
+              } else {
+                errorMessage = apiError;
+              }
+            }
+          } else {
+            const text = await res.text();
+            if (text) {
+              try {
+                const errorData = JSON.parse(text);
+                errorMessage = errorData.error || errorData.message || text;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
           }
         } catch {
-          // If reading fails, use default message
+          // If parsing fails, use status-based message
+          if (status === 429) {
+            errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
+          }
         }
+        
+        toast(errorMessage, "error");
         throw new Error(errorMessage);
       }
 
@@ -56,12 +79,11 @@ export default function ForgotPasswordPage() {
         // Ignore if reading fails
       }
 
-      toast.success("OTP sent to your email");
+      toast("OTP sent to your email!", "success");
       setStep("otp");
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to send OTP. Please try again.";
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setSendingOtp(false);
     }
@@ -81,17 +103,35 @@ export default function ForgotPasswordPage() {
       if (!res.ok) {
         let errorMessage = "Invalid OTP";
         try {
-          const text = await res.text();
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch {
-            // If JSON parsing fails, use the text as error message
-            errorMessage = text || errorMessage;
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            const apiError = errorData.error || errorData.message;
+            if (apiError) {
+              if (apiError.includes("expired")) {
+                errorMessage = "OTP has expired. Please request a new one.";
+              } else if (apiError.includes("invalid") || apiError.includes("incorrect")) {
+                errorMessage = "Invalid OTP. Please check and try again.";
+              } else {
+                errorMessage = apiError;
+              }
+            }
+          } else {
+            const text = await res.text();
+            if (text) {
+              try {
+                const errorData = JSON.parse(text);
+                errorMessage = errorData.error || errorData.message || text;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
           }
         } catch {
-          // If reading fails, use default message
+          // If parsing fails, use default message
         }
+        
+        toast(errorMessage, "error");
         throw new Error(errorMessage);
       }
 
@@ -102,12 +142,11 @@ export default function ForgotPasswordPage() {
         // Ignore if reading fails
       }
 
-      toast.success("OTP verified successfully");
+      toast("OTP verified successfully!", "success");
       setStep("reset");
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Invalid or expired OTP";
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -118,14 +157,16 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
-      toast.error("Password must be at least 6 characters");
+      const errorMsg = "Password must be at least 6 characters";
+      setError(errorMsg);
+      toast(errorMsg, "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      toast.error("Passwords do not match");
+      const errorMsg = "Passwords do not match";
+      setError(errorMsg);
+      toast(errorMsg, "error");
       return;
     }
 
@@ -145,17 +186,26 @@ export default function ForgotPasswordPage() {
       if (!res.ok) {
         let errorMessage = "Failed to reset password";
         try {
-          const text = await res.text();
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch {
-            // If JSON parsing fails, use the text as error message
-            errorMessage = text || errorMessage;
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } else {
+            const text = await res.text();
+            if (text) {
+              try {
+                const errorData = JSON.parse(text);
+                errorMessage = errorData.error || errorData.message || text;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
           }
         } catch {
-          // If reading fails, use default message
+          // If parsing fails, use default message
         }
+        
+        toast(errorMessage, "error");
         throw new Error(errorMessage);
       }
 
@@ -166,14 +216,13 @@ export default function ForgotPasswordPage() {
         // Ignore if reading fails
       }
 
-      toast.success("Password reset successfully! Redirecting to login...");
+      toast("Password reset successfully! Redirecting to login...", "success");
       setTimeout(() => {
         router.push("/login");
       }, 1500);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to reset password";
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -181,7 +230,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Toaster />
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">

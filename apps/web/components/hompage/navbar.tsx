@@ -149,12 +149,12 @@ const SearchResults = ({ results, onProductClick, onClose }: { results: Product[
               className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors text-left touch-manipulation"
             >
               {product.imageUrl && (
-                <Image 
-                  src={product.imageUrl} 
-                  alt={product.name} 
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
                   width={48}
                   height={48}
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0" 
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -190,20 +190,20 @@ export default function Navbar() {
   const navbarRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Cart store
   const totalQuantity = useCartStore((state) => state.getTotalQuantity());
-  
+
   // Auth store
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  
+
   // Check auth status on mount and when pathname changes (after navigation)
   useEffect(() => {
     checkAuth();
   }, [checkAuth, pathname]);
-  
+
   // Close account menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -214,7 +214,7 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   const handleLogout = () => {
     clearAuth();
     setShowAccountMenu(false);
@@ -390,6 +390,7 @@ export default function Navbar() {
         <div className="container mx-auto px-3 sm:px-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-1.5 sm:space-x-2 group touch-manipulation">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center group-hover:from-green-700 group-hover:to-emerald-600">
+              {/* <Image src="/logo.png" width={120} height={120} alt="logo" /> */}
               <FaLeaf className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
             </div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-green-800 group-hover:text-emerald-700 transition-colors">Growman</h1>
@@ -438,11 +439,11 @@ export default function Navbar() {
             <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
               <SearchIcon />
             </button>
-            
+
             {/* Cart Icon with Badge */}
-            <Link 
-              href="/cart" 
-              className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative touch-manipulation active:scale-95" 
+            <Link
+              href="/cart"
+              className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative touch-manipulation active:scale-95"
               aria-label="Cart"
               data-cart-icon
             >
@@ -457,7 +458,7 @@ export default function Navbar() {
                 </motion.span>
               )}
             </Link>
-            
+
             {/* Account Menu */}
             <div ref={accountMenuRef} className="relative">
               <button
@@ -469,7 +470,7 @@ export default function Navbar() {
               >
                 <UserIcon />
               </button>
-              
+
               {/* Account Dropdown Menu */}
               <AnimatePresence>
                 {showAccountMenu && (
@@ -562,7 +563,7 @@ export default function Navbar() {
                 )}
               </AnimatePresence>
             </div>
-            
+
             <button className="md:hidden p-1.5 sm:p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-1 sm:ml-2 touch-manipulation active:scale-95" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>
               {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
@@ -638,16 +639,16 @@ export default function Navbar() {
                   <ChevronDown className={`ml-1 ${activeCategory === index ? "rotate-180" : ""}`} />
                 </button>
                 {activeCategory === index && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     className="absolute left-0 mt-1 w-56 sm:w-64 bg-white border border-emerald-100 rounded-lg shadow-lg z-50 max-h-[60vh] overflow-y-auto overscroll-contain"
                   >
                     <div className="py-2">
                       {category.subcategories.map((sub, subIndex) => (
-                        <Link 
-                          key={subIndex} 
-                          href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`} 
+                        <Link
+                          key={subIndex}
+                          href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                           className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 hover:text-emerald-900 transition-colors touch-manipulation"
                           onClick={() => setActiveCategory(null)}
                         >

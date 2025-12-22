@@ -95,16 +95,16 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
     ) ?? product?.stock ?? 0;
 
   const firstPrice = numericPrices.length > 0 ? numericPrices[0] : null;
-  const discountPercent = firstPrice && product.mrp && firstPrice > 0 && product.mrp > firstPrice 
-    ? Math.round((1 - firstPrice / product.mrp) * 100) 
+  const discountPercent = firstPrice && product.mrp && firstPrice > 0 && product.mrp > firstPrice
+    ? Math.round((1 - firstPrice / product.mrp) * 100)
     : 0;
 
   return (
     <div className="w-full bg-white md:rounded-xl md:overflow-hidden md:shadow-sm md:hover:shadow-xl md:active:shadow-lg md:transition-shadow md:duration-200 md:border md:border-gray-100 flex flex-col group h-full touch-manipulation md:flex-col">
       {/* Mobile: Amazon-like minimal design */}
       <div className="md:hidden">
-        <Link 
-          href={`/product/${product?.slug ?? ""}`} 
+        <Link
+          href={`/product/${product?.slug ?? ""}`}
           className="relative block bg-gray-50 touch-manipulation"
         >
           <div className="relative w-full aspect-square">
@@ -138,7 +138,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
         <div className="p-2.5 flex flex-col">
           {/* Product Name - 2 line clamp */}
           <Link href={`/product/${product?.slug ?? ""}`} className="touch-manipulation mb-1.5">
-            <h2 className="font-medium text-gray-900 text-sm leading-tight line-clamp-2 min-h-10">
+            <h2 className="font-medium text-gray-900 text-sm leading-tight  min-h-10">
               {product.name}
             </h2>
           </Link>
@@ -238,8 +238,8 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
 
       {/* Desktop: Original design */}
       <div className="hidden md:block">
-        <Link 
-          href={`/product/${product?.slug ?? ""}`} 
+        <Link
+          href={`/product/${product?.slug ?? ""}`}
           className="relative block overflow-hidden aspect-square bg-gray-50 touch-manipulation"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}

@@ -235,7 +235,7 @@ export default function ProductPageClient({
             {/* Add to Cart - Mobile optimized */}
             {selectedSize && (
               <div className="mb-4 sm:mb-0">
-                <AddToCart product={product} selectedSize={selectedSize} />
+              <AddToCart product={product} selectedSize={selectedSize} />
               </div>
             )}
           </div>
@@ -268,11 +268,11 @@ export default function ProductPageClient({
 
       {/* Tabs - Mobile optimized */}
       <div className="mt-6 sm:mt-8">
-        <ProductTabs
-          fullDescription={product.fullDescription || product.description || ''}
-          specifications={product.specifications}
-          reviews={product.reviews}
-        />
+      <ProductTabs
+        fullDescription={product.fullDescription || product.description || ''}
+        specifications={product.specifications}
+        reviews={product.reviews}
+      />
       </div>
 
       {/* Related Products - Mobile optimized */}
@@ -285,7 +285,7 @@ export default function ProductPageClient({
         </div>
       ) : (
         <div className="mt-6 sm:mt-10">
-          <RelatedProducts products={relatedProducts} />
+        <RelatedProducts products={relatedProducts} />
         </div>
       )}
     </div>

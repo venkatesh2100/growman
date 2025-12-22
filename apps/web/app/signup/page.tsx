@@ -7,7 +7,84 @@ import { useAuthStore } from "../../lib/store/authStore";
 import { UserPlus, Mail, Lock, Phone, User, Loader2, XCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import GoogleSignupButton from "./GoogleSignupButton";
+import { toast } from "../../lib/toast";
+// import GoogleSignupButton from "./GoogleSignupButton";
+
+// Helper function to safely parse error responses and return user-friendly messages
+async function parseErrorResponse(res: Response): Promise<{ message: string; showToast: boolean }> {
+  const contentType = res.headers.get("content-type");
+  const status = res.status;
+  let errorMessage = "An error occurred";
+  const showToast = true;
+  
+  // Handle specific status codes with user-friendly messages
+  if (status === 429) {
+    return {
+      message: "Too many requests. Please wait a minute before requesting another OTP.",
+      showToast: true,
+    };
+  }
+  
+  if (status === 404) {
+    return {
+      message: "Service temporarily unavailable. Please try again later.",
+      showToast: true,
+    };
+  }
+  
+  if (status === 500) {
+    return {
+      message: "Server error. Please try again in a moment.",
+      showToast: true,
+    };
+  }
+  
+  try {
+    if (contentType && contentType.includes("application/json")) {
+      const errorData = await res.json();
+      const apiError = errorData.error || errorData.message;
+      
+      // Map common API errors to user-friendly messages
+      if (apiError) {
+        if (apiError.includes("wait") || apiError.includes("rate limit") || apiError.includes("too many")) {
+          errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
+        } else if (apiError === "user_exists") {
+          errorMessage = "An account with this email already exists. Please login instead.";
+        } else if (apiError.includes("invalid email") || apiError.includes("email format")) {
+          errorMessage = "Please enter a valid email address.";
+        } else if (apiError.includes("OTP") && apiError.includes("invalid")) {
+          errorMessage = "Invalid OTP. Please check and try again.";
+        } else if (apiError.includes("expired")) {
+          errorMessage = "OTP has expired. Please request a new one.";
+        } else {
+          errorMessage = apiError;
+        }
+      } else {
+        errorMessage = `Server returned ${status}`;
+      }
+    } else {
+      const text = await res.text();
+      if (text) {
+        // Try to parse as JSON if it looks like JSON
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || text.trim() || `Server returned ${status}`;
+        } catch (_) {
+          // If not JSON, use the text or status
+          errorMessage = text.trim() || `Server returned ${status}`;
+        }
+      } else {
+        errorMessage = `Server returned ${status}`;
+      }
+    }
+  } catch (_) {
+    // If parsing fails, return status code
+    console.error("Error parsing error response:", _);
+    errorMessage = `Server returned ${status}`;
+  }
+  
+  return { message: errorMessage, showToast };
+}
 
 function SignupPageContent({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
@@ -72,19 +149,29 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
     setError(null);
 
     try {
-      const res = await apiFetch("/auth/send-verification-email", {
+      // Use checkout OTP endpoint which handles new user verification
+      const res = await apiFetch("/checkout/send-email-otp", {
         method: "POST",
         body: JSON.stringify({ email: formData.email }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to send verification email");
+        const { message, showToast } = await parseErrorResponse(res);
+        if (showToast) {
+          toast(message, "error");
+        }
+        throw new Error(message);
       }
 
+      toast("Verification code sent to your email!", "success");
       setOtpSent(true);
     } catch (err: any) {
-      setError(err.message || "Failed to send verification email. Please try again.");
+      const errorMsg = err.message || "Failed to send verification email. Please try again.";
+      setError(errorMsg);
+      // Only show toast if not already shown
+      if (!err.message || !err.message.includes("Too many requests")) {
+        toast(errorMsg, "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,21 +187,31 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
     setError(null);
 
     try {
-      const res = await apiFetch("/auth/verify-email", {
+      // Use checkout verify OTP endpoint
+      const res = await apiFetch("/checkout/verify-email-otp", {
         method: "POST",
         body: JSON.stringify({ email: formData.email, otp }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Invalid OTP");
+        const { message, showToast } = await parseErrorResponse(res);
+        if (showToast) {
+          toast(message, "error");
+        }
+        throw new Error(message);
       }
 
+      toast("Email verified successfully!", "success");
       setEmailVerified(true);
       // Proceed with signup
       await handleSignup();
     } catch (err: any) {
-      setError(err.message || "Invalid OTP. Please try again.");
+      const errorMsg = err.message || "Invalid OTP. Please try again.";
+      setError(errorMsg);
+      // Only show toast if not already shown
+      if (!err.message || !err.message.includes("Invalid OTP")) {
+        toast(errorMsg, "error");
+      }
     } finally {
       setVerifyingOtp(false);
     }
@@ -136,14 +233,18 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Signup failed");
+        const { message, showToast } = await parseErrorResponse(res);
+        if (showToast) {
+          toast(message, "error");
+        }
+        throw new Error(message);
       }
 
       const data = await res.json();
       
       // Store token using auth store
       setToken(data.token);
+      toast("Account created successfully! Welcome!", "success");
       setSuccess(true);
 
       // Redirect after short delay
@@ -151,7 +252,12 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
         router.push("/");
       }, 1500);
     } catch (err: any) {
-      setError(err.message || "Signup failed. Please try again.");
+      const errorMsg = err.message || "Signup failed. Please try again.";
+      setError(errorMsg);
+      // Only show toast if not already shown
+      if (!err.message || !err.message.includes("Signup failed")) {
+        toast(errorMsg, "error");
+      }
     } finally {
       setLoading(false);
     }

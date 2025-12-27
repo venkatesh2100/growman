@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -43,6 +44,8 @@ func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	
 	if hit && totalHit {
 		log.Printf("[CACHE] Products page %d served from Redis", paginationParams.Page)
+		// Resolve image URLs even for cached products
+		h.ResolveProductImageURLsSlice(products)
 		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
 		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 			Data:       products,
@@ -84,6 +87,9 @@ func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[CACHE] Failed to cache total count: %v", err)
 	}
 
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(products)
+
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
 	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 		Data:       products,
@@ -105,6 +111,8 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if hit {
 		log.Printf("[CACHE] Product detail for '%s' served from Redis", slug)
+		// Resolve image URLs even for cached products
+		h.ResolveProductImageURLs(&product)
 		httpjson.JSON(w, http.StatusOK, product)
 		return
 	}
@@ -129,6 +137,9 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLs(&product)
+
 	// Store in cache
 	if err := productCache.SetProductDetail(ctx, slug, product); err != nil {
 		log.Printf("[CACHE] Failed to cache product detail: %v", err)
@@ -137,15 +148,105 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, product)
 }
 
+// CreateProductRequest represents the product creation request with optional new category/subcategory
+type CreateProductRequest struct {
+	models.Product
+	NewCategory    string `json:"newCategory,omitempty"`
+	NewSubcategory string `json:"newSubcategory,omitempty"`
+}
+
 // CreateProduct creates a new product and invalidates relevant caches.
+// Supports creating new categories/subcategories if provided.
 func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	var input models.Product
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+	var req CreateProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
 		return
 	}
 
-	if err := h.DB.Create(&input).Error; err != nil {
+	// Handle new category creation if provided
+	if req.NewCategory != "" && req.CategoryID == 0 {
+		categorySlug := generateSlug(req.NewCategory)
+		category := models.Category{
+			Name:        req.NewCategory,
+			Slug:        categorySlug,
+			Description: "",
+		}
+		
+		// Try to find existing category by slug, or create new one
+		if err := h.DB.Where("slug = ?", categorySlug).FirstOrCreate(&category).Error; err != nil {
+			log.Printf("[DB] Error creating/finding category: %v", err)
+			httpjson.Error(w, http.StatusInternalServerError, "failed to create category")
+			return
+		}
+		
+		// Update category name if it was just created
+		if category.Name != req.NewCategory {
+			h.DB.Model(&category).Update("name", req.NewCategory)
+		}
+		
+		req.CategoryID = category.ID
+	}
+
+	// Handle new subcategory creation if provided
+	if req.NewSubcategory != "" && req.CategoryID > 0 {
+		subcategorySlug := generateSlug(req.NewSubcategory)
+		subcategory := models.Subcategory{
+			Name:       req.NewSubcategory,
+			Slug:       subcategorySlug,
+			CategoryID: req.CategoryID,
+		}
+		
+		// Try to find existing subcategory by slug and category, or create new one
+		if err := h.DB.Where("slug = ? AND category_id = ?", subcategorySlug, req.CategoryID).FirstOrCreate(&subcategory).Error; err != nil {
+			log.Printf("[DB] Error creating/finding subcategory: %v", err)
+			httpjson.Error(w, http.StatusInternalServerError, "failed to create subcategory")
+			return
+		}
+		
+		// Update subcategory name if it was just created
+		if subcategory.Name != req.NewSubcategory {
+			h.DB.Model(&subcategory).Update("name", req.NewSubcategory)
+		}
+		
+		req.SubcategoryID = &subcategory.ID
+	}
+
+	// Validate that categoryId is set and valid
+	if req.CategoryID == 0 {
+		httpjson.Error(w, http.StatusBadRequest, "categoryId is required")
+		return
+	}
+
+	// Verify category exists
+	var category models.Category
+	if err := h.DB.Where("id = ?", req.CategoryID).First(&category).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			httpjson.Error(w, http.StatusBadRequest, "category not found")
+			return
+		}
+		log.Printf("[DB] Error verifying category: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "failed to verify category")
+		return
+	}
+
+	// Verify subcategory if provided
+	if req.SubcategoryID != nil {
+		var subcategory models.Subcategory
+		if err := h.DB.Where("id = ? AND category_id = ?", *req.SubcategoryID, req.CategoryID).First(&subcategory).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				httpjson.Error(w, http.StatusBadRequest, "subcategory not found or doesn't belong to category")
+				return
+			}
+			log.Printf("[DB] Error verifying subcategory: %v", err)
+			httpjson.Error(w, http.StatusInternalServerError, "failed to verify subcategory")
+			return
+		}
+	}
+
+	// Create the product
+	if err := h.DB.Create(&req.Product).Error; err != nil {
+		log.Printf("[DB] Error creating product: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to create product")
 		return
 	}
@@ -157,7 +258,23 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[CACHE] Failed to invalidate caches after product creation: %v", err)
 	}
 
-	httpjson.JSON(w, http.StatusCreated, input)
+	httpjson.JSON(w, http.StatusCreated, req.Product)
+}
+
+// generateSlug generates a URL-friendly slug from a name
+func generateSlug(name string) string {
+	// Simple slug generation - convert to lowercase, replace spaces with hyphens
+	slug := strings.ToLower(name)
+	slug = strings.ReplaceAll(slug, " ", "-")
+	slug = strings.ReplaceAll(slug, "_", "-")
+	// Remove special characters, keep only alphanumeric and hyphens
+	var result strings.Builder
+	for _, r := range slug {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
 }
 
 // UpdateProduct updates a product and invalidates relevant caches.
@@ -234,6 +351,8 @@ func (h *Handler) RelatedProducts(w http.ResponseWriter, r *http.Request) {
 
 	if hit {
 		log.Printf("[CACHE] Related products for '%s' served from Redis", slug)
+		// Resolve image URLs even for cached products
+		h.ResolveProductImageURLsSlice(related)
 		httpjson.JSON(w, http.StatusOK, related)
 		return
 	}
@@ -263,6 +382,9 @@ func (h *Handler) RelatedProducts(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch related products")
 		return
 	}
+
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(related)
 
 	// Store in cache
 	if err := productCache.SetRelatedProducts(ctx, slug, related); err != nil {
@@ -298,6 +420,8 @@ func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	
 	if hit && totalHit {
 		log.Printf("[CACHE] Featured products page %d served from Redis", paginationParams.Page)
+		// Resolve image URLs even for cached products
+		h.ResolveProductImageURLsSlice(products)
 		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
 		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 			Data:       products,
@@ -339,6 +463,9 @@ func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	if err := cacheHelper.Set(ctx, totalCacheKey, total, 30*time.Minute); err != nil {
 		log.Printf("[CACHE] Failed to cache featured products total: %v", err)
 	}
+
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(products)
 
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
 	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
@@ -389,6 +516,8 @@ func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
 
 	if hit && totalHit {
 		log.Printf("[CACHE] Search results for '%s' page %d served from Redis", query, paginationParams.Page)
+		// Resolve image URLs even for cached products
+		h.ResolveProductImageURLsSlice(products)
 		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
 		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 			Data:       products,
@@ -447,6 +576,9 @@ func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
 	if err := cacheHelper.Set(ctx, totalCacheKey, total, 10*time.Minute); err != nil {
 		log.Printf("[CACHE] Failed to cache search total: %v", err)
 	}
+
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(products)
 
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
 	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{

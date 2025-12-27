@@ -333,7 +333,7 @@ export default function Navbar() {
               <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Search"><SearchIcon /></button>
               <Link href="/cart" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full relative" aria-label="Cart" data-cart-icon>
                 <CartIcon />
-                {totalQuantity > 0 && (
+                {isMounted && totalQuantity > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {totalQuantity > 99 ? '99+' : totalQuantity}
                   </span>
@@ -645,7 +645,7 @@ export default function Navbar() {
                     className="absolute left-0 mt-1 w-56 sm:w-64 bg-white border border-emerald-100 rounded-lg shadow-lg z-50 max-h-[60vh] overflow-y-auto overscroll-contain"
                   >
                     <div className="py-2">
-                      {category.subcategories.map((sub, subIndex) => (
+                      {Array.isArray(category.subcategories) && category.subcategories.map((sub, subIndex) => (
                         <Link
                           key={subIndex}
                           href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`}

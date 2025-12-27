@@ -47,6 +47,10 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	
 	if hit && totalHit {
 		log.Printf("[CACHE] Orders page %d for user %d served from Redis", paginationParams.Page, claims.UserID)
+		// Resolve image URLs for order items
+		for i := range orders {
+			h.ResolveOrderItemImageURLsSlice(orders[i].Items)
+		}
 		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
 		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 			Data:       orders,
@@ -85,6 +89,11 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	// Cache total count
 	if err := cacheHelper.Set(ctx, totalCacheKey, total, 10*time.Minute); err != nil {
 		log.Printf("[CACHE] Failed to cache orders total: %v", err)
+	}
+
+	// Resolve image URLs for order items
+	for i := range orders {
+		h.ResolveOrderItemImageURLsSlice(orders[i].Items)
 	}
 
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)

@@ -108,6 +108,8 @@ func (h *Handler) ProductsByCategory(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch products")
 		return
 	}
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(products)
 	httpjson.JSON(w, http.StatusOK, products)
 }
 
@@ -132,6 +134,7 @@ func (h *Handler) ProductsBySubcategory(w http.ResponseWriter, r *http.Request) 
 		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch products")
 		return
 	}
-
+	// Resolve image URLs before returning
+	h.ResolveProductImageURLsSlice(products)
 	httpjson.JSON(w, http.StatusOK, products)
 }

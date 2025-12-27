@@ -4,22 +4,25 @@ import (
     "github.com/go-redis/redis/v8"
     "github.com/venkatesh2100/growman/apps/go-backend/internal/config"
     "github.com/venkatesh2100/growman/apps/go-backend/internal/models"
+    "github.com/venkatesh2100/growman/apps/go-backend/internal/services/storage"
     "gorm.io/gorm"
 )
 
 // Handler aggregates dependencies for HTTP handlers.
 type Handler struct {
-    DB    *gorm.DB
-    Cfg   config.Config
-    Redis *redis.Client
+    DB           *gorm.DB
+    Cfg          config.Config
+    Redis        *redis.Client
+    ImageService *storage.ImageService
 }
 
 // New constructs a handler bundle.
-func New(db *gorm.DB, cfg config.Config, rdb *redis.Client) *Handler {
+func New(db *gorm.DB, cfg config.Config, rdb *redis.Client, imageService *storage.ImageService) *Handler {
     return &Handler{
-        DB:    db,
-        Cfg:   cfg,
-        Redis: rdb,
+        DB:           db,
+        Cfg:          cfg,
+        Redis:        rdb,
+        ImageService: imageService,
     }
 }
 

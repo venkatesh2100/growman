@@ -25,6 +25,13 @@ type Config struct {
 	SMTPPassword   string
 	SMTPHost       string
 	SMTPPort       string
+	// Image storage configuration
+	ImageBaseURL   string // Base URL for image storage (e.g., "https://youraccount.blob.core.windows.net/container")
+	AzureAccountName string // Azure storage account name (optional, for Azure provider)
+	AzureAccountKey  string // Azure storage account key (optional, for Azure provider)
+	AzureContainerName string // Azure container name (optional, for Azure provider)
+	GCSBucketName     string // Google Cloud Storage bucket name (optional, for GCS provider)
+	GCSProjectID       string // Google Cloud project ID (optional, for GCS provider)
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -46,6 +53,13 @@ func Load() (Config, error) {
 		SMTPPassword:  os.Getenv("SMTP_PASSWORD"),
 		SMTPHost:      getenv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:      getenv("SMTP_PORT", "587"),
+		// Image storage configuration
+		ImageBaseURL:      os.Getenv("IMAGE_BASE_URL"),
+		AzureAccountName:  os.Getenv("AZURE_STORAGE_ACCOUNT_NAME"),
+		AzureAccountKey:    os.Getenv("AZURE_STORAGE_ACCOUNT_KEY"),
+		AzureContainerName: os.Getenv("AZURE_STORAGE_CONTAINER_NAME"),
+		GCSBucketName:      os.Getenv("GCS_BUCKET_NAME"),
+		GCSProjectID:       os.Getenv("GCS_PROJECT_ID"),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")

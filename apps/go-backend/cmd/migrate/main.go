@@ -6,6 +6,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/db"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/services/storage"
 )
 
 func main() {
@@ -23,8 +24,19 @@ func main() {
 		log.Fatalf("db connection error: %v", err)
 	}
 
-	// Initialize handlers
-	h := handlers.New(dbConn, cfg, nil)
+	// Initialize image service (optional for migrations)
+	var imageService *storage.ImageService
+	if cfg.ImageBaseURL != "" {
+		imgSvc, err := storage.NewImageServiceFromConfig(cfg)
+		if err != nil {
+			log.Printf("[IMAGE] Warning: Image service initialization failed: %v. Continuing with migrations.", err)
+		} else {
+			imageService = imgSvc
+		}
+	}
+
+	// Initialize handlers (imageService can be nil for migrations)
+	h := handlers.New(dbConn, cfg, nil, imageService)
 
 	// Run migrations
 	if err := h.AutoMigrate(); err != nil {

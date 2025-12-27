@@ -180,7 +180,8 @@ type Product struct {
 	Price          float64        `json:"price"` // price in currency units
 	MRP            float64        `json:"mrp"`
 	Currency       string         `json:"currency"`
-	ImageURL       string         `json:"imageUrl"`
+	ImageKey       string         `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
+	ImageURL       string         `gorm:"-" json:"imageUrl"` // Resolved URL (not stored in DB, computed from ImageKey)
 	Status         string         `json:"status"`
 	Featured       bool           `json:"featured"`
 	Tags           StringArray    `gorm:"type:text[]" json:"tags"`
@@ -198,11 +199,12 @@ type Product struct {
 
 type ProductSize struct {
 	Base
-	Label     string         `json:"label"`
-	Price     float64        `json:"price"`
-	Stock     int            `json:"stock"`
-	ProductID uint           `json:"productId"`
-	Images    StringArray    `gorm:"type:text[]" json:"images"`
+	Label      string         `json:"label"`
+	Price      float64        `json:"price"`
+	Stock      int            `json:"stock"`
+	ProductID  uint           `json:"productId"`
+	ImageKeys  StringArray    `gorm:"type:text[];column:image_keys" json:"imageKeys"` // Storage-agnostic image keys
+	Images     StringArray    `gorm:"-" json:"images"` // Resolved URLs (not stored in DB, computed from ImageKeys)
 }
 
 type Attribute struct {
@@ -231,7 +233,8 @@ type OrderItem struct {
 	Quantity    int     `json:"quantity"`
 	Price       float64 `json:"price"`
 	Name        string  `json:"name"`
-	ImageURL    string  `json:"imageUrl"`
+	ImageKey    string  `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key
+	ImageURL    string  `gorm:"-" json:"imageUrl"` // Resolved URL (not stored in DB, computed from ImageKey)
 }
 
 // Order represents a customer order

@@ -9,6 +9,7 @@ import (
     "github.com/venkatesh2100/growman/apps/go-backend/internal/db"
     "github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
     "github.com/venkatesh2100/growman/apps/go-backend/internal/server"
+    "github.com/venkatesh2100/growman/apps/go-backend/internal/services/storage"
     "github.com/venkatesh2100/growman/apps/go-backend/seed"
 )
 
@@ -37,8 +38,22 @@ func main() {
         }
     }()
 
-    // Initialize handlers with Redis
-    h := handlers.New(dbConn, cfg, rdb)
+    // Initialize image service (optional, can be nil if not configured)
+    var imageService *storage.ImageService
+    if cfg.ImageBaseURL != "" {
+        imgSvc, err := storage.NewImageServiceFromConfig(cfg)
+        if err != nil {
+            log.Printf("[IMAGE] Warning: Image service initialization failed: %v. Image uploads will be disabled.", err)
+        } else {
+            imageService = imgSvc
+            log.Printf("[IMAGE] Image service initialized with base URL: %s", cfg.ImageBaseURL)
+        }
+    } else {
+        log.Printf("[IMAGE] IMAGE_BASE_URL not set. Image uploads will be disabled.")
+    }
+
+    // Initialize handlers with Redis and ImageService
+    h := handlers.New(dbConn, cfg, rdb, imageService)
 
     // Run migrations if enabled
     if cfg.AutoMigrate {

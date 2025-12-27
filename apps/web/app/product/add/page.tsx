@@ -16,8 +16,10 @@ export default function AddPlant() {
     { key: '', value: '' }
   ]);
   const [sizes, setSizes] = useState([
-    { dimension: '', label: '', price: '', stock: '0', images: [''] }
+    { dimension: '', label: '', price: '', stock: '0', imageKeys: [''], imageFiles: [null as File | null] }
   ]);
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [mainImageKey, setMainImageKey] = useState<string>('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,15 +53,24 @@ export default function AddPlant() {
   }, []);
 
   useEffect(() => {
-    if (formData.categoryId) {
-      apiFetch(`/categories/${formData.categoryId}/subcategories`)
-        .then(res => res.json())
-        .then(setSubcategories)
-        .catch(() => setErrors({ fetch: 'Failed to load subcategories' }));
+    if (formData.categoryId && formData.categoryId !== '' && formData.categoryId !== '0') {
+      // Find the category slug from the categories list
+      const selectedCategory = categories.find((cat: any) => cat.id.toString() === formData.categoryId.toString());
+      if (selectedCategory && selectedCategory.slug) {
+        apiFetch(`/categories/${selectedCategory.slug}/subcategories`)
+          .then(res => res.json())
+          .then(setSubcategories)
+          .catch(() => {
+            setSubcategories([]);
+            setErrors({ fetch: 'Failed to load subcategories' });
+          });
+      } else {
+        setSubcategories([]);
+      }
     } else {
       setSubcategories([]);
     }
-  }, [formData.categoryId]);
+  }, [formData.categoryId, categories]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -84,38 +95,132 @@ export default function AddPlant() {
   const handleSizeChange = (index: number, field: string, value: string) => {
     const newSizes = [...sizes];
     if (newSizes[index]) {
-      newSizes[index] = { ...newSizes[index], [field]: value };
+      newSizes[index] = { 
+        ...newSizes[index], 
+        [field]: value,
+        imageFiles: newSizes[index].imageFiles || [null],
+        imageKeys: newSizes[index].imageKeys || ['']
+      };
       setSizes(newSizes);
     }
   };
 
-  const handleSizeImageChange = (sizeIndex: number, imgIndex: number, value: string) => {
+  const handleSizeImageFileChange = (sizeIndex: number, imgIndex: number, file: File | null) => {
     const newSizes = [...sizes];
-    if (newSizes[sizeIndex] && newSizes[sizeIndex].images) {
-      newSizes[sizeIndex].images[imgIndex] = value;
+    const size = newSizes[sizeIndex];
+    if (size) {
+      const imageFiles = size.imageFiles || [];
+      const imageKeys = size.imageKeys || [];
+      
+      // Ensure arrays are long enough
+      while (imageFiles.length <= imgIndex) {
+        imageFiles.push(null);
+      }
+      while (imageKeys.length <= imgIndex) {
+        imageKeys.push('');
+      }
+      
+      imageFiles[imgIndex] = file;
+      
+      newSizes[sizeIndex] = {
+        ...size,
+        imageFiles,
+        imageKeys
+      };
       setSizes(newSizes);
     }
   };
 
   const addSizeImageField = (sizeIndex: number) => {
     const newSizes = [...sizes];
-    if (newSizes[sizeIndex] && newSizes[sizeIndex].images) {
-      newSizes[sizeIndex].images.push('');
+    const size = newSizes[sizeIndex];
+    if (size) {
+      const imageFiles = size.imageFiles || [];
+      const imageKeys = size.imageKeys || [];
+      
+      imageFiles.push(null);
+      imageKeys.push('');
+      
+      newSizes[sizeIndex] = {
+        ...size,
+        imageFiles,
+        imageKeys
+      };
       setSizes(newSizes);
     }
   };
 
   const removeSizeImageField = (sizeIndex: number, imgIndex: number) => {
-    if (!sizes[sizeIndex] || !sizes[sizeIndex].images || sizes[sizeIndex].images.length <= 1) return;
+    const size = sizes[sizeIndex];
+    if (!size || !size.imageFiles || size.imageFiles.length <= 1) return;
+    
     const newSizes = [...sizes];
-    if (newSizes[sizeIndex] && newSizes[sizeIndex].images) {
-      newSizes[sizeIndex].images.splice(imgIndex, 1);
+    const updatedSize = newSizes[sizeIndex];
+    if (updatedSize && updatedSize.imageFiles && updatedSize.imageKeys) {
+      updatedSize.imageFiles.splice(imgIndex, 1);
+      updatedSize.imageKeys.splice(imgIndex, 1);
+      newSizes[sizeIndex] = updatedSize;
       setSizes(newSizes);
     }
   };
 
   const addSize = () => {
-    setSizes([...sizes, { dimension: '', label: '', price: '', stock: '0', images: [''] }]);
+    setSizes([...sizes, { dimension: '', label: '', price: '', stock: '0', imageKeys: [''], imageFiles: [null] }]);
+  };
+
+  // Upload image helper function
+  const uploadImage = async (file: File, prefix: string = 'products'): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('prefix', prefix);
+
+    const apiUrl = process.env.NEXT_PUBLIC_GO_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+    const url = `${apiUrl}/images/upload`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      // Don't set Content-Type header - browser will set it with boundary for FormData
+    });
+
+    if (!res.ok) {
+      let errorMessage = 'Failed to upload image';
+      try {
+        const text = await res.text();
+        if (text) {
+          try {
+            const errorData = JSON.parse(text);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // If not JSON, use the text as error message
+            errorMessage = text.substring(0, 100);
+          }
+        } else {
+          errorMessage = res.statusText || errorMessage;
+        }
+      } catch (e) {
+        errorMessage = res.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    let data;
+    try {
+      const text = await res.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      throw new Error('Invalid response from server. Please try again.');
+    }
+
+    if (!data || !data.imageKey) {
+      throw new Error('No imageKey in response');
+    }
+
+    return data.imageKey;
   };
 
   const removeSize = (index: number) => {
@@ -148,7 +253,9 @@ export default function AddPlant() {
     // Required fields validation
     if (!formData.name.trim()) newErrors.name = 'Plant name is required';
     if (!formData.shortDescription) newErrors.shortDescription = 'Short description is required';
-    if (!formData.categoryId && !formData.newCategory.trim()) newErrors.category = 'Category is required';
+    if ((!formData.categoryId || formData.categoryId === '' || formData.categoryId === '0') && !formData.newCategory.trim()) {
+      newErrors.category = 'Category is required';
+    }
 
     // Validate sizes
     sizes.forEach((size, index) => {
@@ -196,39 +303,120 @@ export default function AddPlant() {
       return;
     }
 
+    // Ensure categoryId is valid before proceeding
+    const validCategoryId = formData.categoryId && formData.categoryId !== '' && formData.categoryId !== '0' 
+      ? parseInt(formData.categoryId) 
+      : null;
+    
+    if (!validCategoryId && !formData.newCategory.trim()) {
+      setErrors({ category: 'Category is required' });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
+      // Upload main product image if provided
+      let productImageKey = mainImageKey;
+      if (mainImageFile) {
+        productImageKey = await uploadImage(mainImageFile, 'products');
+        setMainImageKey(productImageKey);
+      }
+
+      // Upload size images
+      const sizesWithImageKeys = await Promise.all(
+        sizes.map(async (size) => {
+          const imageKeys: string[] = [];
+          
+          // Upload each image file for this size
+          if (size.imageFiles && size.imageFiles.length > 0) {
+            for (const file of size.imageFiles) {
+              if (file) {
+                const imageKey = await uploadImage(file, 'products');
+                imageKeys.push(imageKey);
+              }
+            }
+          }
+
+          return {
+            label: size.label,
+            price: parseFloat(size.price),
+            stock: parseInt(size.stock || '0'),
+            imageKeys: imageKeys.filter(key => key && key.trim())
+            // Note: 'dimension' is not stored in ProductSize model, only 'label' is used
+          };
+        })
+      );
+
       // Calculate default price (lowest size price)
       const defaultPrice = Math.min(...sizes.map(size => parseFloat(size.price)));
 
+      // Convert specifications array to string format
+      const specificationsString = specifications
+        .filter(spec => spec.key && spec.value)
+        .map(spec => `${spec.key}: ${spec.value}`)
+        .join(' | ');
+
       const payload = {
-        ...formData,
+        name: formData.name,
         slug: generateSlug(formData.name),
+        description: formData.shortDescription || '', // Use shortDescription as description
+        shortDescription: formData.shortDescription || '',
+        fullDescription: formData.fullDescription || '',
+        specifications: specificationsString, // String format, not array
+        taxInfo: formData.taxInfo || '',
+        price: defaultPrice, // Use 'price' not 'defaultPrice'
+        mrp: formData.mrp ? parseFloat(formData.mrp) : 0,
+        currency: 'INR', // Default currency
+        imageKey: productImageKey || '', // Optional - can be empty string
+        status: 'active', // Default status
+        featured: false, // Default featured
         tags: selectedTags,
-        specifications: specifications.filter(spec => spec.key && spec.value),
-        mrp: formData.mrp || null,
-        taxInfo: formData.taxInfo || null,
-        brandId: formData.brandId || null,
-        defaultPrice,
         stock: sizes.reduce((total, size) => total + parseInt(size.stock || '0'), 0),
-        sizes: sizes.map(size => ({
-          dimension: size.dimension,
-          label: size.label,
-          price: parseFloat(size.price),
-          stock: parseInt(size.stock || '0'),
-          images: size.images.filter(img => img.trim())
-        }))
+        categoryId: validCategoryId!,
+        subcategoryId: formData.subcategoryId && formData.subcategoryId !== '' && formData.subcategoryId !== '0' ? parseInt(formData.subcategoryId) : null,
+        brandId: formData.brandId && formData.brandId !== '' && formData.brandId !== '0' ? parseInt(formData.brandId) : null,
+        // Include new category/subcategory names if provided (for backend to create them)
+        newCategory: formData.newCategory && formData.newCategory.trim() ? formData.newCategory.trim() : '',
+        newSubcategory: formData.newSubcategory && formData.newSubcategory.trim() ? formData.newSubcategory.trim() : '',
+        sizes: sizesWithImageKeys
       };
-      console.log(payload)
+      
+      // console.log(payload);
       const res = await apiFetch('/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-
+      // Read response as text first (can only read once)
+      const responseText = await res.text();
+      
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to add plant');
+        let errorMessage = 'Failed to add plant';
+        try {
+          if (responseText) {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } else {
+            errorMessage = res.statusText || errorMessage;
+          }
+        } catch (e) {
+          // If not JSON, use response text or status text
+          errorMessage = responseText || res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Parse successful response
+      let data;
+      try {
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse JSON response:', e, 'Response text:', responseText.substring(0, 100));
+        throw new Error('Invalid response from server. Please try again.');
       }
 
       setSuccessMessage('🌿 Plant added successfully!');
@@ -247,10 +435,14 @@ export default function AddPlant() {
         brandId: '',
       });
       setSelectedTags([]);
-      setSizes([{ dimension: '', label: '', price: '', stock: '0', images: [''] }]);
+      setSizes([{ dimension: '', label: '', price: '', stock: '0', imageKeys: [''], imageFiles: [null] }]);
       setSpecifications([{ key: '', value: '' }]);
-    } catch (error: any) {
-      setErrors({ submit: error.message || 'An unexpected error occurred' });
+      setMainImageFile(null);
+      setMainImageKey('');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setErrors({ submit: errorMessage });
+      console.error('Error submitting form:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -368,6 +560,30 @@ export default function AddPlant() {
           </div>
         </div>
 
+        {/* Main Product Image Upload */}
+        <div>
+          <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Main Product Image (Optional)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setMainImageFile(file);
+            }}
+            className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500"
+          />
+          {mainImageFile && (
+            <p className="text-sm text-green-600 mt-1">
+              Selected: {mainImageFile.name}
+            </p>
+          )}
+        </div>
+
         <div>
           <label className="block text-green-700 font-medium mb-2">
             Short Description *
@@ -451,22 +667,30 @@ export default function AddPlant() {
 
               <div>
                 <label className="block text-green-700 font-medium mb-2">
-                  Image URLs for this size *
-                  <span className="text-sm text-gray-500 ml-2">(At least one required)</span>
+                  Images for this size (Optional)
+                  <span className="text-sm text-gray-500 ml-2">Upload image files</span>
                 </label>
-                {size.images.map((img, imgIndex) => (
+                {(size.imageFiles || [null]).map((file, imgIndex) => (
                   <div key={imgIndex} className="flex gap-2 mb-2">
                     <input
-                      value={img}
-                      onChange={(e) => handleSizeImageChange(sizeIndex, imgIndex, e.target.value)}
-                      placeholder="https://example.com/plant.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const selectedFile = e.target.files?.[0] || null;
+                        handleSizeImageFileChange(sizeIndex, imgIndex, selectedFile);
+                      }}
                       className={`flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-images`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
                     />
+                    {file && (
+                      <span className="text-sm text-green-600 self-center">
+                        {file.name}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeSizeImageField(sizeIndex, imgIndex)}
                       className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
-                      disabled={size.images.length <= 1}
+                      disabled={(size.imageFiles?.length || 1) <= 1}
                     >
                       Remove
                     </button>

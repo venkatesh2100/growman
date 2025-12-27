@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.toothmountainnursery.com',
+        hostname: 'growman.blob.core.windows.net',
       },
     ],
   },

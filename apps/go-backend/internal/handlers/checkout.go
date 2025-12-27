@@ -211,7 +211,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	var products []models.Product
-	if err := h.DB.Select("id, name, image_url").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
+	if err := h.DB.Select("id, name, image_key").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
 		log.Printf("[DB] Error fetching products: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to validate products")
 		return
@@ -283,8 +283,10 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 			Quantity:    item.Quantity,
 			Price:       item.Price,
 			Name:        product.Name,
-			ImageURL:    product.ImageURL,
+			ImageKey:    product.ImageKey,
 		}
+		// Resolve image URL for order item
+		h.ResolveOrderItemImageURL(&orderItem)
 
 		order.Items = append(order.Items, orderItem)
 	}

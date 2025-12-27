@@ -3551,13 +3551,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
-      "bytes": 14601,
+    ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js": {
+      "bytes": 14637,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js": {
-      "bytes": 14637,
+    ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
+      "bytes": 14601,
       "imports": [],
       "format": "cjs"
     },
@@ -3665,14 +3665,14 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/login/page_client-reference-manifest.js",
@@ -7348,14 +7348,14 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js",
@@ -10370,11 +10370,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js": {
           "bytesInOutput": 18584
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
-          "bytesInOutput": 14060
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js": {
           "bytesInOutput": 14103
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
+          "bytesInOutput": 14060
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/login/page_client-reference-manifest.js": {
           "bytesInOutput": 14258

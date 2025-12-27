@@ -89,6 +89,9 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Get("/brands", h.ListBrands)
 		r.Get("/tags", h.ListTags)
 
+		// Image upload route
+		r.Post("/images/upload", h.UploadImage)
+
 		// Payment routes (legacy)
 		r.Post("/razorpay/order", h.CreateRazorpayOrder)
 		r.Post("/razorpay/verify", h.VerifyPayment)

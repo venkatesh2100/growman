@@ -13,6 +13,9 @@ import {
   FaSeedling,
   FaShoppingBag,
   FaHeadset,
+  FaAddressBook,
+  FaGlobeEurope,
+  FaGlobeAsia,
 } from "react-icons/fa";
 import { GiPlantSeed, GiFlowerPot } from "react-icons/gi";
 
@@ -21,13 +24,13 @@ export default function Footer() {
 
   return (
     <footer className=" bg-green-800 text-white">
-      <div className="container mx-auto px-4  pt-12 md:pt-16">
-        <div className="grid grid-cols-2 md:grid-cols-4  gap-4">
+      <div className="container mx-auto px-4  pt-8 md:pt-12">
+        <div className="grid grid-cols-2 md:grid-cols-4  gap-2">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="relative">
-                              {/* <Image src="/logo.png" width={30} height={20} alt="logo" /> */}
+                {/* <Image src="/logo.png" width={30} height={20} alt="logo" /> */}
                 <FaLeaf className="w-8 h-8 text-emerald-400" />
                 {/* <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-100 rounded-full animate-pulse"></div> */}
               </div>
@@ -36,7 +39,7 @@ export default function Footer() {
             <p className="text-green-200 text-sm mb-4">
               Premium plants & gardening solutions for Indian homes
             </p>
-            <div className="flex gap-3">
+            <div className=" flex gap-3">
               <a
                 href="#"
                 className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
@@ -62,8 +65,8 @@ export default function Footer() {
           </div>
 
           {/* Shop */}
-          <div>
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <div className="hidden md:block">
+            <h3 className="font-semibold mb-3 flex items-center gap-2 ">
               <FaShoppingBag className="w-4 h-4 text-emerald-400" />
               Shop
             </h3>
@@ -112,7 +115,7 @@ export default function Footer() {
           </div>
 
           {/* Help */}
-          <div>
+          <div className="hidden md:block">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <FaHeadset className="w-4 h-4 text-emerald-400" />
               Help
@@ -160,7 +163,7 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <FaMapMarkerAlt className="w-4 h-4 text-emerald-400" />
+              <FaGlobeEurope className="w-4 h-4 text-emerald-400" />
               Contact
             </h3>
             <ul className="space-y-2 text-sm text-green-300">
@@ -185,9 +188,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between  md:flex-row items-center   gap-6 text-center md:text-left">
+        <div className="flex flex-col justify-between  md:flex-row items-center    text-center md:text-left">
           {/* QR Section */}
-          <div className="hidden md:flex items-center gap-4 px-4 py-3 rounded-xl">
+          <div className="hidden md:flex items-center gap-4 rounded-xl">
             <Image
               src="/frame.svg"
               alt="Growman QR Code"
@@ -202,11 +205,11 @@ export default function Footer() {
           </div>
 
           <div className="font-serif italic tracking-wide text-emerald-300 text-xl">
-            <Image src="/404.png" width={230} height={200} alt="404" />
+            <Image src="/404.png" width={140} height={240} alt="404"  className="md:w-50 " />
           </div>
 
           {/* Copyright */}
-          <div className="flex flex-col items-center  mb-2 md:items-end">
+          <div className="flex flex-col items-center  mb-2 md:pr-20">
             <p className="text-green-300 text-sm">
               © {currentYear} Growman. All rights reserved.
             </p>

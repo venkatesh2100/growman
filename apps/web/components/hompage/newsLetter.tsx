@@ -17,12 +17,12 @@ export default function NewsLetterSection() {
   };
 
   return (
-    <section className="max-h-[60vh] overflow-y-auto py-12 bg-gradient-to-br from-emerald-600 to-green-700">
+    <section className="max-h-[60vh]   py-4 bg-gradient-to-br from-emerald-600 to-green-700">
       <div className="container mx-auto px-4 max-w-2xl">
         {isSubscribed && (
           <div className="mb-6  text-white p-4 rounded-xl text-center animate-fade-in">
             <FaCheck className="inline mr-2" />
-            Welcome! Check your email for newsletter Weekly 
+            Welcome! Check your email for newsletter Weekly
           </div>
         )}
 
@@ -32,7 +32,7 @@ export default function NewsLetterSection() {
             Join India's Green Community
           </h2>
           <p className="text-emerald-100 mb-6">
-            Get plant care tips, exclusive offers & 15% off first order
+            Get plant care tips, exclusive offers 
           </p>
 
           <form onSubmit={handleSubmit} className="flex gap-3 mb-6">
@@ -46,7 +46,7 @@ export default function NewsLetterSection() {
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-white text-emerald-700 font-semibold rounded-lg hover:bg-emerald-50 transition-colors"
+              className="px-2 md:px-6 py-3 bg-white text-emerald-700 font-semibold rounded-lg hover:bg-emerald-50 transition-colors"
             >
               Subscribe
             </button>

@@ -11,13 +11,13 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
 
-export default function ProductPageClient({ 
-  product, 
-  searchParams, 
-  productSlug 
-}: { 
-  product: Product; 
-  searchParams: { size?: string }; 
+export default function ProductPageClient({
+  product,
+  searchParams,
+  productSlug
+}: {
+  product: Product;
+  searchParams: { size?: string };
   productSlug: string;
 }) {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -35,7 +35,7 @@ export default function ProductPageClient({
     product.reviews.length > 0
       ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
         product.reviews.length
-      : 0;
+      : 4;
 
   // Fetch related products from API
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function ProductPageClient({
                     size={16}
                     className={
                       i < Math.floor(avgRating)
-                        ? "text-yellow-500 fill-yellow-400"
+                        ? "text-green-500 fill-green-400"
                         : "text-gray-300"
                     }
                   />
@@ -139,7 +139,7 @@ export default function ProductPageClient({
               </div>
 
               <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
-                {product.reviews.length} reviews
+                {product.reviews.length || "" } reviews
               </span>
 
               <span className="hidden sm:inline mx-2 text-gray-300">|</span>
@@ -147,8 +147,9 @@ export default function ProductPageClient({
               <span
                 className={`text-xs sm:text-sm font-medium ${
                   (selectedSize?.stock ?? 0) > 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
+                  }`}
+                  >
+                {/* <span className="pr-1">{selectedSize?.stock}</span> */}
                 {(selectedSize?.stock ?? 0) > 0 ? "In Stock" : "Out of Stock"}
               </span>
             </div>
@@ -186,9 +187,9 @@ export default function ProductPageClient({
                 )}
               </div>
 
-              {product.taxInfo && (
+              {/* {product.taxInfo && (
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">+ {product.taxInfo}</p>
-              )}
+              )} */}
             </div>
 
             {/* Description - Mobile compact */}

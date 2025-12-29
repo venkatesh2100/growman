@@ -12,6 +12,14 @@
     opacity: 1;
   }
 }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none; /* Firefox */
+}
 
 .animate-slideInRight {
   animation: slideInRight 0.3s ease-out;
@@ -27,7 +35,7 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  
+
   .animate-slideInRight {
     animation: none !important;
   }
@@ -46,17 +54,17 @@ img {
   a {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   /* Optimize scrolling */
   * {
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* Reduce animations on mobile for better performance */
   .group-hover\:scale-105 {
     transition: transform 0.2s ease-out;
   }
-  
+
   /* Optimize image loading */
   img {
     content-visibility: auto;
@@ -74,7 +82,7 @@ img {
   html {
     scroll-behavior: smooth;
   }
-  
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -97,22 +105,22 @@ img {
   * {
     touch-action: pan-x pan-y;
   }
-  
+
   /* Prevent overscroll bounce on iOS */
   body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
   }
-  
+
   html {
     overscroll-behavior: none;
   }
-  
+
   /* Smooth native-like transitions */
   a, button {
     transition: all 0.2s ease;
   }
-  
+
   /* Prevent text selection on buttons for better UX */
   button {
     -webkit-user-select: none;

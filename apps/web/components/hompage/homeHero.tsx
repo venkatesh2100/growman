@@ -44,9 +44,17 @@ export default function HomeHero() {
                 src="/plant.avif"
                 alt="Large Monstera plant"
                 width={256}
-                height={456}
-                className="rounded-xl w-full "
+                height={4}
+                className="rounded-xl  w-full "
               />
+                 <Image
+                src="/shape.png"
+                alt="Large Monstera plant"
+                width={326}
+                height={356}
+                className="rounded-xl  pl-10 md:hidden"
+              />
+
             </div>
             <div className="mt-10">
               <div className=" p-4 rounded-2xl shadow-lg mb-4">

@@ -12,7 +12,7 @@ export default function SizeSelector({
   productSlug: string;
 }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide  md:grid grid-cols-2 sm:grid-cols-3 gap-3">
       {sizes.map((size) => (
         <Link
           key={size.id}
@@ -23,7 +23,7 @@ export default function SizeSelector({
               : 'border-gray-200 hover:border-green-300'
             }`}
         >
-          <div className="font-medium">{size.label}</div>
+          <div className="md:font-medium">{size.label}</div>
           {size.dimension && (
             <div className="text-gray-600 text-sm">{size.dimension}</div>
           )}

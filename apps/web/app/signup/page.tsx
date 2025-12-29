@@ -1,56 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
-import { UserPlus, Mail, Lock, Phone, User, Loader2, XCircle, CheckCircle } from "lucide-react";
+import {
+  UserPlus,
+  Mail,
+  Lock,
+  Phone,
+  User,
+  Loader2,
+  XCircle,
+  CheckCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { toast } from "../../lib/toast";
 // import GoogleSignupButton from "./GoogleSignupButton";
 
 // Helper function to safely parse error responses and return user-friendly messages
-async function parseErrorResponse(res: Response): Promise<{ message: string; showToast: boolean }> {
+async function parseErrorResponse(
+  res: Response
+): Promise<{ message: string; showToast: boolean }> {
   const contentType = res.headers.get("content-type");
   const status = res.status;
   let errorMessage = "An error occurred";
   const showToast = true;
-  
+
   // Handle specific status codes with user-friendly messages
   if (status === 429) {
     return {
-      message: "Too many requests. Please wait a minute before requesting another OTP.",
+      message:
+        "Too many requests. Please wait a minute before requesting another OTP.",
       showToast: true,
     };
   }
-  
+
   if (status === 404) {
     return {
       message: "Service temporarily unavailable. Please try again later.",
       showToast: true,
     };
   }
-  
+
   if (status === 500) {
     return {
       message: "Server error. Please try again in a moment.",
       showToast: true,
     };
   }
-  
+
   try {
     if (contentType && contentType.includes("application/json")) {
       const errorData = await res.json();
       const apiError = errorData.error || errorData.message;
-      
+
       // Map common API errors to user-friendly messages
       if (apiError) {
-        if (apiError.includes("wait") || apiError.includes("rate limit") || apiError.includes("too many")) {
-          errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
+        if (
+          apiError.includes("wait") ||
+          apiError.includes("rate limit") ||
+          apiError.includes("too many")
+        ) {
+          errorMessage =
+            "Too many requests. Please wait a minute before requesting another OTP.";
         } else if (apiError === "user_exists") {
-          errorMessage = "An account with this email already exists. Please login instead.";
-        } else if (apiError.includes("invalid email") || apiError.includes("email format")) {
+          errorMessage =
+            "An account with this email already exists. Please login instead.";
+        } else if (
+          apiError.includes("invalid email") ||
+          apiError.includes("email format")
+        ) {
           errorMessage = "Please enter a valid email address.";
         } else if (apiError.includes("OTP") && apiError.includes("invalid")) {
           errorMessage = "Invalid OTP. Please check and try again.";
@@ -68,7 +89,11 @@ async function parseErrorResponse(res: Response): Promise<{ message: string; sho
         // Try to parse as JSON if it looks like JSON
         try {
           const errorData = JSON.parse(text);
-          errorMessage = errorData.error || errorData.message || text.trim() || `Server returned ${status}`;
+          errorMessage =
+            errorData.error ||
+            errorData.message ||
+            text.trim() ||
+            `Server returned ${status}`;
         } catch (_) {
           // If not JSON, use the text or status
           errorMessage = text.trim() || `Server returned ${status}`;
@@ -82,7 +107,7 @@ async function parseErrorResponse(res: Response): Promise<{ message: string; sho
     console.error("Error parsing error response:", _);
     errorMessage = `Server returned ${status}`;
   }
-  
+
   return { message: errorMessage, showToast };
 }
 
@@ -103,12 +128,31 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
   const [otp, setOtp] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "phone") {
       // Only allow digits, max 10
-      setFormData({ ...formData, [name]: value.replace(/\D/g, "").slice(0, 10) });
+      setFormData({
+        ...formData,
+        [name]: value.replace(/\D/g, "").slice(0, 10),
+      });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -154,6 +198,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
         method: "POST",
         body: JSON.stringify({ email: formData.email }),
       });
+      setCooldown(60);
 
       if (!res.ok) {
         const { message, showToast } = await parseErrorResponse(res);
@@ -166,7 +211,9 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       toast("Verification code sent to your email!", "success");
       setOtpSent(true);
     } catch (err: any) {
-      const errorMsg = err.message || "Failed to send verification email. Please try again.";
+      const errorMsg =
+        err.message || "Failed to send verification email. Please try again.";
+      setCooldown(err.response.data.retry_after);
       setError(errorMsg);
       // Only show toast if not already shown
       if (!err.message || !err.message.includes("Too many requests")) {
@@ -241,7 +288,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       }
 
       const data = await res.json();
-      
+
       // Store token using auth store
       setToken(data.token);
       toast("Account created successfully! Welcome!", "success");
@@ -286,7 +333,12 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={(e) => { e.preventDefault(); }}>
+        <form
+          className="mt-8 space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+        >
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
               <XCircle className="w-5 h-5 text-red-600 mr-2" />
@@ -297,13 +349,18 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
               <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-              <p className="text-sm text-green-700">Account created successfully! Redirecting...</p>
+              <p className="text-sm text-green-700">
+                Account created successfully! Redirecting...
+              </p>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Full Name
               </label>
               <div className="relative">
@@ -324,7 +381,10 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -345,7 +405,10 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Phone Number
               </label>
               <div className="relative">
@@ -364,11 +427,16 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   maxLength={10}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">10 digits, starting with 6-9</p>
+              <p className="text-xs text-gray-500 mt-1">
+                10 digits, starting with 6-9
+              </p>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
@@ -389,7 +457,10 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Confirm Password
               </label>
               <div className="relative">
@@ -430,7 +501,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   </>
                 )}
               </button>
-{/* 
+              {/*
               {googleClientId && (
                 <>
                   <div className="relative">
@@ -449,7 +520,10 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
           ) : !emailVerified ? (
             <div className="space-y-4">
               <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="otp"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Enter 6-digit OTP sent to {formData.email}
                 </label>
                 <input
@@ -458,7 +532,9 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   type="text"
                   required
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-center text-2xl tracking-widest"
                   placeholder="000000"
                   maxLength={6}
@@ -480,14 +556,16 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                 )}
               </button>
               <button
+                disabled={cooldown > 0}
                 type="button"
-                onClick={() => {
-                  setOtpSent(false);
-                  setOtp("");
-                }}
+                onClick={handleSendOTP}
+                // onClick={() => {
+                //   setOtpSent(false);
+                //   setOtp("");
+                // }}
                 className="w-full text-sm text-emerald-600 hover:text-emerald-700"
               >
-                Resend OTP
+                {cooldown > 0 ? `Resend OTP in ${cooldown}s` : "Resend OTP"}
               </button>
             </div>
           ) : null}
@@ -499,7 +577,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
 
 export default function SignupPage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-  
+
   // Always wrap with provider, but pass clientId to content
   return (
     <GoogleOAuthProvider clientId={googleClientId || "dummy"}>
@@ -507,4 +585,3 @@ export default function SignupPage() {
     </GoogleOAuthProvider>
   );
 }
-

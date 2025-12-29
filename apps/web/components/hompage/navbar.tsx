@@ -150,7 +150,7 @@ const SearchResults = ({ results, onProductClick, onClose }: { results: Product[
             >
               {product.imageUrl && (
                 <Image
-                  src={product.imageUrl}
+                  src={product.imageUrl.trim()}
                   alt={product.name}
                   width={48}
                   height={48}
@@ -310,7 +310,7 @@ export default function Navbar() {
   if (!isMounted) {
     return (
       <div ref={navbarRef}>
-        <header className="fixed w-full z-50 bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3">
+        {/* <header className="fixed w-full z-50 bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3">
           <div className="container mx-auto px-4 flex justify-between items-center">
             <Link href="/" className="flex items-center space-x-2 group">
               <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
@@ -375,7 +375,7 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-        <div className="h-28 md:h-32"></div>
+        <div className="h-28 md:h-32"></div> */}
       </div>
     );
   }

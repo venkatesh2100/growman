@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import ProductCard from '@repo/ui/productCard';
-import { useRouter } from 'next/navigation';
-import { apiFetch } from '../../lib/api';
-import { Product } from '../../lib/types';
+import { useEffect, useState } from "react";
+// import ProductCard from '@repo/ui/productCard';
+import ProductCard from "../productspage/ProductCard";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "../../lib/api";
+import { Product } from "../../lib/types";
 
 export default function PlantSection() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -14,12 +15,12 @@ export default function PlantSection() {
   useEffect(() => {
     async function fetchFeatured() {
       try {
-        const res = await apiFetch('/products/featured');
+        const res = await apiFetch("/products/featured");
         if (!res.ok) {
-          throw new Error('Failed to fetch featured products');
+          throw new Error("Failed to fetch featured products");
         }
         const data = await res.json();
-        
+
         // Handle different response formats
         let products = [];
         if (Array.isArray(data)) {
@@ -31,10 +32,10 @@ export default function PlantSection() {
         } else if (data.featured && Array.isArray(data.featured)) {
           products = data.featured;
         }
-        
+
         setFeaturedProducts(products);
       } catch (err) {
-        console.error('Failed to fetch featured products:', err);
+        console.error("Failed to fetch featured products:", err);
         setFeaturedProducts([]); // Set empty array on error
       } finally {
         setLoading(false);
@@ -59,7 +60,7 @@ export default function PlantSection() {
             </p>
           </div>
           <button
-            onClick={() => router.push('/categories')}
+            onClick={() => router.push("/categories")}
             className="mt-4 md:mt-0 px-5 sm:px-6 py-2 border-2 border-emerald-600 text-emerald-600 rounded-full font-medium hover:bg-emerald-600 hover:text-white active:bg-emerald-700 transition duration-300 text-sm sm:text-base touch-manipulation"
           >
             View All
@@ -67,12 +68,25 @@ export default function PlantSection() {
         </div>
 
         {/* Cards or Skeletons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+        <div
+          className="
+      flex gap-4 overflow-x-auto pb-4
+      snap-x snap-mandatory
+      scrollbar-hide
+      md:grid md:overflow-visible md:snap-none
+     md:grid-cols-3 lg:grid-cols-4
+  "
+        >
           {loading
             ? skeletons.map((_, idx) => (
                 <div
                   key={idx}
-                  className="w-full max-w-xs bg-white rounded-xl border border-green-100 p-4 shadow animate-pulse"
+                  className="
+                     min-w-[75%] sm:min-w-[45%]
+          md:min-w-0
+          snap-start
+
+                   bg-white rounded-xl border border-green-100 p-4 shadow animate-pulse"
                 >
                   <div className="aspect-square bg-gray-200 rounded mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -81,14 +95,24 @@ export default function PlantSection() {
                 </div>
               ))
             : Array.isArray(featuredProducts) && featuredProducts.length > 0
-            ? featuredProducts.map((product: Product) => (
-                <ProductCard key={product.id} product={product} />
-              ))
-            : !loading && (
-                <div className="col-span-full text-center py-8">
-                  <p className="text-gray-600">No featured products available at the moment.</p>
-                </div>
-              )}
+              ? featuredProducts.map((product: Product) => (
+                  <div
+                    key={product.id}
+                    className="
+                 min-w-[75%] sm:min-w-[45%]
+                 md:min-w-0
+               snap-start"
+                  >
+                    <ProductCard key={product.id} product={product} />
+                  </div>
+                ))
+              : !loading && (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-gray-600">
+                      No featured products available at the moment.
+                    </p>
+                  </div>
+                )}
         </div>
       </div>
     </section>

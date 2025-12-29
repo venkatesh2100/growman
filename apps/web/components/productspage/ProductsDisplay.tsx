@@ -17,7 +17,7 @@ export default function ProductsDisplay({
   showCount = true,
   emptyMessage = 'No plants found. Please check back later.',
 }: ProductsDisplayProps) {
-  console.log(products)
+
   return (
     <section>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2 sm:gap-0">

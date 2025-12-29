@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	OTPExpiryMinutes        = 5
-	OTPKeyPrefix            = "otp:email:"
-	PasswordResetOTPPrefix  = "otp:password-reset:"
+	OTPExpiryMinutes       = 5
+	OTPResendCooldown      = 60 * time.Second
+	OTPCooldownPrefix      = "otp:cooldown:"
+	OTPKeyPrefix           = "otp:email:"
+	PasswordResetOTPPrefix = "otp:password-reset:"
 )
 
 type OTPService struct {
@@ -164,3 +166,23 @@ func (s *OTPService) DeletePasswordResetOTP(ctx context.Context, email string) e
 	return s.Redis.Del(ctx, key).Err()
 }
 
+// CanResendOTP checks if user can request a new OTP
+func (s *OTPService) CanResendOTP(ctx context.Context, email string) (bool, time.Duration, error) {
+	key := OTPCooldownPrefix + email
+	ttl, err := s.Redis.TTL(ctx, key).Result()
+	if err != nil && err != redis.Nil {
+		return false, 0, err
+	}
+
+	if ttl <= 0 {
+		return true, 0, nil
+	}
+
+	return false, ttl, nil
+}
+
+// SetResendCooldown sets a 60-second cooldown in Redis
+func (s *OTPService) SetResendCooldown(ctx context.Context, email string) error {
+	key := OTPCooldownPrefix + email
+	return s.Redis.Set(ctx, key, 1, OTPResendCooldown).Err()
+}

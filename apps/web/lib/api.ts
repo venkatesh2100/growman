@@ -10,7 +10,7 @@ export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
     // In browser, only use NEXT_PUBLIC_ prefixed vars
     const apiUrl = browserValue || 'http://localhost:8080/api/v1';
-    
+
     // Debug logging - check if we're using localhost in production
     if (!browserValue && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       console.error('❌ CORS Error: NEXT_PUBLIC_GO_API_URL is not set!');
@@ -20,10 +20,10 @@ export function getApiUrl(): string {
     } else if (browserValue) {
       // Log the API URL being used (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log('✅ API URL configured:', apiUrl);
+        console.log('API URL configured:', apiUrl);
       }
     }
-    
+
     return apiUrl;
   }
 
@@ -38,32 +38,32 @@ export function getApiUrl(): string {
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   const apiUrl = getApiUrl();
   const url = path.startsWith('/') ? `${apiUrl}${path}` : `${apiUrl}/${path}`;
-  
+
   // Get token from store or localStorage (for backward compatibility)
   let token: string | null = null;
   if (typeof window !== 'undefined') {
     const authStore = useAuthStore.getState();
     token = authStore.token || localStorage.getItem('token');
   }
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     ...(options?.headers as Record<string, string>),
   };
-  
+
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
       credentials: 'include', // Important for CORS with credentials
     });
-    
+
     // Enhanced CORS error detection
     if (response.status === 0 || (url.includes('localhost') && typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
       console.error('🚨 CORS/Network Error Detected:', {
@@ -71,24 +71,24 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
         apiUrl,
         currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'server',
         status: response.status,
-        issue: url.includes('localhost') 
+        issue: url.includes('localhost')
           ? 'Frontend is using localhost URL in production! Set NEXT_PUBLIC_GO_API_URL in Cloudflare Pages.'
           : 'CORS configuration issue. Check CORS_ORIGINS in Cloud Run.',
       });
     }
-    
+
     return response;
   } catch (error) {
     // Enhanced error logging
     if (error instanceof TypeError && error.message.includes('fetch')) {
       const isLocalhostIssue = url.includes('localhost') && typeof window !== 'undefined' && window.location.hostname !== 'localhost';
-      
+
       console.error('❌ Network/CORS Error:', {
         error: error.message,
         requestedUrl: url,
         apiUrl,
         currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'server',
-        issue: isLocalhostIssue 
+        issue: isLocalhostIssue
           ? 'Frontend is trying to use localhost in production. Set NEXT_PUBLIC_GO_API_URL in Cloudflare Pages environment variables.'
           : 'Backend may be unreachable or CORS not configured. Check CORS_ORIGINS in Cloud Run.',
         fix: isLocalhostIssue
@@ -110,7 +110,7 @@ export async function searchProducts(query: string, page: number = 1, pageSize: 
   if (!query || query.trim() === '') {
     return { data: [], pagination: { page: 1, pageSize, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
   }
-  
+
   try {
     const res = await apiFetch(`/products/search?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
     if (!res.ok) {

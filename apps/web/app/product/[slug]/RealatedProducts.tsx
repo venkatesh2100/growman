@@ -18,7 +18,7 @@ export default function RelatedProducts({ products }: { products: any[] }) {
   }
 
   // Log what we actually render to catch missing data quickly
-  console.log("RelatedProducts renderable count:", displayableProducts.length);
+  // console.log("RelatedProducts renderable count:", displayableProducts.length);
 
   return (
     <div className="mt-10">
@@ -46,7 +46,7 @@ export default function RelatedProducts({ products }: { products: any[] }) {
       {/* Grid layout for large screens */}
       <div className="hidden lg:grid grid-cols-2 xl:grid-cols-4 gap-6">
         {displayableProducts.map((product) => {
-          console.log("Rendering product in desktop view:", product.id, product.name);
+          // console.log("Rendering product in desktop view:", product.id, product.name);
           return (
             <ProductCard key={product.id} product={product} />
           );

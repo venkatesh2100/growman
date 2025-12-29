@@ -50,12 +50,25 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 	// Check rate limiting (1 OTP per 60 seconds)
 	otpService := services.NewOTPService(h.Redis)
 	ctx := context.Background()
-	
-	exists, err := otpService.CheckOTPExists(ctx, req.Email)
-	if err == nil && exists {
-		httpjson.Error(w, http.StatusTooManyRequests, "please wait before requesting another OTP")
+	canResend, ttl, err := otpService.CanResendOTP(ctx, req.Email)
+	if err != nil {
+		httpjson.Error(w, 500, "internal error")
 		return
 	}
+
+	if !canResend {
+		httpjson.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"error":       "otp_cooldown",
+			"retry_after": int(ttl.Seconds()),
+		})
+		return
+	}
+
+	// exists, err := otpService.CheckOTPExists(ctx, req.Email)
+	// if err == nil && exists {
+	// 	httpjson.Error(w, http.StatusTooManyRequests, "please wait before requesting another OTP")
+	// 	return
+	// }
 
 	// Generate and send OTP
 	otp, err := otpService.GenerateOTP(ctx, req.Email)
@@ -64,7 +77,11 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to generate OTP")
 		return
 	}
-
+	otpService.SetResendCooldown(ctx, req.Email)
+	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+		"message":  "OTP sent successfully",
+		"cooldown": 60, 
+	})
 	// Send email
 	emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
 	if err := emailService.SendOTPEmail(req.Email, otp); err != nil {
@@ -95,7 +112,7 @@ func (h *Handler) VerifyEmailOTP(w http.ResponseWriter, r *http.Request) {
 	// Verify OTP
 	otpService := services.NewOTPService(h.Redis)
 	ctx := context.Background()
-	
+
 	valid, err := otpService.VerifyOTP(ctx, req.Email, req.OTP)
 	if err != nil {
 		log.Printf("[OTP] Error verifying OTP: %v", err)
@@ -209,20 +226,20 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	for i, item := range req.Items {
 		productIDs[i] = item.ProductID
 	}
-	
+
 	var products []models.Product
 	if err := h.DB.Select("id, name, image_key").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
 		log.Printf("[DB] Error fetching products: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to validate products")
 		return
 	}
-	
+
 	// Create a map for quick lookup
 	productMap := make(map[uint]models.Product)
 	for _, product := range products {
 		productMap[product.ID] = product
 	}
-	
+
 	// Validate all products exist
 	for _, item := range req.Items {
 		if _, exists := productMap[item.ProductID]; !exists {
@@ -231,7 +248,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	// Batch fetch product sizes if any are provided
 	productSizeIDs := make([]uint, 0)
 	for _, item := range req.Items {
@@ -239,7 +256,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 			productSizeIDs = append(productSizeIDs, *item.ProductSizeID)
 		}
 	}
-	
+
 	var productSizes []models.ProductSize
 	if len(productSizeIDs) > 0 {
 		if err := h.DB.Select("id, product_id").Where("id IN ? AND product_id IN ?", productSizeIDs, productIDs).Find(&productSizes).Error; err != nil {
@@ -247,7 +264,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusInternalServerError, "failed to validate product sizes")
 			return
 		}
-		
+
 		// Create a map for product size validation
 		sizeMap := make(map[uint]map[uint]bool) // productID -> sizeID -> exists
 		for _, size := range productSizes {
@@ -256,7 +273,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 			}
 			sizeMap[size.ProductID][size.ID] = true
 		}
-		
+
 		// Validate all product sizes
 		for _, item := range req.Items {
 			if item.ProductSizeID != nil {
@@ -300,11 +317,11 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Return order details
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
-		"id":     razorpayOrder.ID,
-		"amount": razorpayOrder.Amount,
+		"id":       razorpayOrder.ID,
+		"amount":   razorpayOrder.Amount,
 		"currency": razorpayOrder.Currency,
-		"status": razorpayOrder.Status,
-		"orderId": order.ID,
+		"status":   razorpayOrder.Status,
+		"orderId":  order.ID,
 	})
 }
 
@@ -360,4 +377,3 @@ func (h *Handler) CreateSoftAccount(email, phone, name string) (*models.User, er
 
 	return &user, nil
 }
-

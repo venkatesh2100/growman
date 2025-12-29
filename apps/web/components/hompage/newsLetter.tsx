@@ -32,7 +32,7 @@ export default function NewsLetterSection() {
             Join India's Green Community
           </h2>
           <p className="text-emerald-100 mb-6">
-            Get plant care tips, exclusive offers 
+            Get plant care tips, exclusive offers
           </p>
 
           <form onSubmit={handleSubmit} className="flex gap-3 mb-6">

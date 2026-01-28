@@ -1,46 +1,49 @@
-"use client"
-import { useState } from 'react';
-import { Star } from 'lucide-react';
+"use client";
+import { useState } from "react";
+import { Star } from "lucide-react";
 
 export default function ProductTabs({
   fullDescription,
   specifications,
-  reviews
+  reviews,
 }: {
   fullDescription: string;
   specifications: any;
   reviews: any[];
 }) {
-  const [activeTab, setActiveTab] = useState('description');
-
+  const [activeTab, setActiveTab] = useState("description");
+  console.log(specifications);
   return (
     <div className=" p-6 rounded-xl shadow-sm mt-8">
       <div className="border-b">
         <div className="flex space-x-8">
           <button
-            className={`py-3 px-1 font-medium border-b-2 transition-colors ${activeTab === 'description'
-              ? 'border-green-600 text-gray-900'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
-              }`}
-            onClick={() => setActiveTab('description')}
+            className={`py-3 px-1 font-medium border-b-2 transition-colors ${
+              activeTab === "description"
+                ? "border-green-600 text-gray-900"
+                : "border-transparent text-gray-500 hover:text-gray-900"
+            }`}
+            onClick={() => setActiveTab("description")}
           >
             Description
           </button>
           <button
-            className={`py-3 px-1 font-medium border-b-2 transition-colors ${activeTab === 'specifications'
-              ? 'border-green-600 text-gray-900'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
-              }`}
-            onClick={() => setActiveTab('specifications')}
+            className={`py-3 px-1 font-medium border-b-2 transition-colors ${
+              activeTab === "specifications"
+                ? "border-green-600 text-gray-900"
+                : "border-transparent text-gray-500 hover:text-gray-900"
+            }`}
+            onClick={() => setActiveTab("specifications")}
           >
             Specifications
           </button>
           <button
-            className={`py-3 px-1 font-medium border-b-2 transition-colors ${activeTab === 'reviews'
-              ? 'border-green-600 text-gray-900'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
-              }`}
-            onClick={() => setActiveTab('reviews')}
+            className={`py-3 px-1 font-medium border-b-2 transition-colors ${
+              activeTab === "reviews"
+                ? "border-green-600 text-gray-900"
+                : "border-transparent text-gray-500 hover:text-gray-900"
+            }`}
+            onClick={() => setActiveTab("reviews")}
           >
             Reviews ({reviews.length})
           </button>
@@ -48,34 +51,56 @@ export default function ProductTabs({
       </div>
 
       <div className="py-6">
-        {activeTab === 'description' && (
+        {activeTab === "description" && (
           <div className="prose max-w-none">
-            {fullDescription.split('\n').map((para, idx) => (
+            {fullDescription.split("\n").map((para, idx) => (
               <p key={idx} className="mb-4 text-gray-700">
                 {para}
               </p>
             ))}
           </div>
         )}
+        {activeTab === "specifications" && specifications && (
+          <div className="space-y-3">
+            {typeof specifications === "string" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {specifications.split("|").map((item, idx) => {
+                  const [label, value] = item.split(":").map((s) => s.trim());
 
-        {activeTab === 'specifications' && specifications && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(specifications).map(([key, value], idx) => (
-              <div key={idx} className="flex border-b pb-2">
-                <span className="text-gray-600 font-medium w-1/3 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                <span className="text-gray-800 w-2/3">{value as string}</span>
+                  return (
+                    <div key={idx} className="flex border-b pb-2">
+                      <span className="text-gray-600 font-medium w-1/3">
+                        {label}:
+                      </span>
+                      <span className="text-gray-800 w-2/3">{value}</span>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            ) : (
+              // fallback if specs come as object later
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(specifications).map(([key, value], idx) => (
+                  <div key={idx} className="flex border-b pb-2">
+                    <span className="text-gray-600 font-medium w-1/3">
+                      {key}:
+                    </span>
+                    <span className="text-gray-800 w-2/3">{String(value)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab === 'reviews' && (
+        {activeTab === "reviews" && (
           <div>
             {reviews.length > 0 ? (
               <div>
                 <div className="flex items-center mb-6">
                   <div className="text-4xl font-bold mr-4">
-                    {reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length}
+                    {reviews.reduce((acc, review) => acc + review.rating, 0) /
+                      reviews.length}
                   </div>
                   <div>
                     <div className="flex">
@@ -83,14 +108,23 @@ export default function ProductTabs({
                         <Star
                           key={i}
                           size={20}
-                          className={i < Math.floor(reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length)
-                            ? "text-yellow-400 fill-yellow-400"
-                            : "text-gray-300"
+                          className={
+                            i <
+                            Math.floor(
+                              reviews.reduce(
+                                (acc, review) => acc + review.rating,
+                                0
+                              ) / reviews.length
+                            )
+                              ? "text-yellow-400 fill-yellow-400"
+                              : "text-gray-300"
                           }
                         />
                       ))}
                     </div>
-                    <p className="text-gray-600">Based on {reviews.length} reviews</p>
+                    <p className="text-gray-600">
+                      Based on {reviews.length} reviews
+                    </p>
                   </div>
                 </div>
 
@@ -103,9 +137,10 @@ export default function ProductTabs({
                             <Star
                               key={i}
                               size={16}
-                              className={i < review.rating
-                                ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-300"
+                              className={
+                                i < review.rating
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
                               }
                             />
                           ))}
@@ -114,14 +149,17 @@ export default function ProductTabs({
                       </div>
                       <p className="text-gray-600 mb-2">{review.comment}</p>
                       <p className="text-sm text-gray-500">
-                        by {review.user?.name || 'Anonymous'} • {new Date(review.date).toLocaleDateString()}
+                        by {review.user?.name || "Anonymous"} •{" "}
+                        {new Date(review.date).toLocaleDateString()}
                       </p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <p className="text-gray-600">No reviews yet. Be the first to review this product!</p>
+              <p className="text-gray-600">
+                No reviews yet. Be the first to review this product!
+              </p>
             )}
 
             <div className="mt-8">
@@ -131,7 +169,11 @@ export default function ProductTabs({
                   <label className="block text-gray-700 mb-2">Rating</label>
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
-                      <button key={i} type="button" className="text-gray-300 hover:text-yellow-400">
+                      <button
+                        key={i}
+                        type="button"
+                        className="text-gray-300 hover:text-yellow-400"
+                      >
                         <Star size={24} />
                       </button>
                     ))}

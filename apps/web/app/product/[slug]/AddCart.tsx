@@ -29,7 +29,7 @@ export default function AddToCart({
 
     const imageUrl = selectedSize.images?.[0] || product.imageUrl || '';
     const qty = Math.min(quantity, selectedSize.stock);
-    
+
     // Add to cart store
     addItem({
       productId: product.id,
@@ -52,10 +52,10 @@ export default function AddToCart({
       toast("This item is out of stock", "error");
       return;
     }
-    
+
     // Add to cart first
     handleAddToCart();
-    
+
     // Navigate to checkout
     setTimeout(() => {
       router.push('/checkout');
@@ -97,7 +97,7 @@ export default function AddToCart({
           <button
             onClick={handleAddToCart}
             disabled={selectedSize.stock === 0}
-            className={`flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all ${
               selectedSize.stock === 0
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg"
@@ -129,7 +129,7 @@ export default function AddToCart({
             }`}
             aria-label="Add to wishlist"
           >
-            <Heart size={24} className={isWishlisted ? "fill-red-500" : ""} />
+            <Heart size={22} className={isWishlisted ? "fill-red-500" : ""} />
           </button>
         </div>
       </div>

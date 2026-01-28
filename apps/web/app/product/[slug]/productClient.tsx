@@ -242,15 +242,17 @@ export default function ProductPageClient({
           </div>
 
           {/* Benefits - Mobile optimized */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6">
             {[
               { icon: Truck, title: "Free Delivery", sub: "Delivery in 2-4 days" },
+              { icon: ShieldCheck, title: "Plant Health ", sub: "Quality checked" },
               { icon: Package, title: "Easy Returns", sub: "10 Day Policy" },
-              { icon: ShieldCheck, title: "Warranty", sub: "Genuine Parts" },
             ].map(({ icon: Icon, title, sub }, i) => (
               <div
                 key={i}
-                className="flex items-center p-2.5 sm:p-3 rounded-lg border border-gray-100"
+                className={`flex
+                       ${i === 2 ? "hidden sm:flex" : ""}
+                       items-center p-2.5 sm:p-3 rounded-lg border border-gray-100`}
               >
                 <div className="bg-green-50 p-1.5 sm:p-2 rounded-full mr-2 sm:mr-3">
                   <Icon className="text-green-600" size={18} />

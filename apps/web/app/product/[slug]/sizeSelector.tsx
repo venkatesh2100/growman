@@ -5,7 +5,7 @@ import type { ProductSize } from "../../../lib/types";
 export default function SizeSelector({
   sizes,
   selectedSize,
-  productSlug
+  productSlug,
 }: {
   sizes: ProductSize[];
   selectedSize: ProductSize;
@@ -18,19 +18,25 @@ export default function SizeSelector({
           key={size.id}
           href={`/product/${productSlug}?size=${size.id}`}
           scroll={false}
-          className={`border rounded-lg p-3 transition-colors ${selectedSize.id === size.id
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200 hover:border-green-300'
-            }`}
+          className={`border rounded-lg p-3 transition-colors ${
+            selectedSize.id === size.id
+              ? "border-green-500 bg-green-50"
+              : "border-gray-200 hover:border-green-300"
+          }`}
         >
-          <div className="md:font-medium">{size.label}</div>
+          <div className="font-base  text-sm md:font-medium">{size.label}</div>
           {size.dimension && (
             <div className="text-gray-600 text-sm">{size.dimension}</div>
           )}
-          <div className="font-bold text-green-700 mt-1">₹{size.price.toFixed(2)}</div>
-          <div className={`text-xs mt-1 ${size.stock > 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-            {size.stock > 0 ? `${size.stock} available` : 'Out of stock'}
+          <div className="font-bold text-green-700 mt-1">
+            ₹{size.price.toFixed(2)}
+          </div>
+          <div
+            className={`text-xs mt-1 ${
+              size.stock > 0 ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {size.stock > 0 ? `${size.stock} available` : "Out of stock"}
           </div>
         </Link>
       ))}

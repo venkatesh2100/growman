@@ -15,7 +15,7 @@ export default function Home() {
 
       <BenefitsSection />
 
-      {/* <Testimonials /> */}
+    {/* <Testimonials /> */}
 
       <NewsLetterSection />
       <Footer />

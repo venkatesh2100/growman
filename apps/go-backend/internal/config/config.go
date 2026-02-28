@@ -32,6 +32,10 @@ type Config struct {
 	AzureContainerName string // Azure container name (optional, for Azure provider)
 	GCSBucketName     string // Google Cloud Storage bucket name (optional, for GCS provider)
 	GCSProjectID       string // Google Cloud project ID (optional, for GCS provider)
+	// AI Chat configuration
+	OpenAIAPIKey      string // OpenAI API key for chat functionality
+	GeminiAPIKey      string // Google Gemini API key for chat functionality
+	AIProvider        string // AI provider: "openai", "gemini", "anthropic", or "custom"
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -60,6 +64,10 @@ func Load() (Config, error) {
 		AzureContainerName: os.Getenv("AZURE_STORAGE_CONTAINER_NAME"),
 		GCSBucketName:      os.Getenv("GCS_BUCKET_NAME"),
 		GCSProjectID:       os.Getenv("GCS_PROJECT_ID"),
+		// AI Chat configuration
+		OpenAIAPIKey:       os.Getenv("OPENAI_API_KEY"),
+		GeminiAPIKey:       os.Getenv("GEMINI_API_KEY"),
+		AIProvider:         getenv("AI_PROVIDER", "openai"),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")

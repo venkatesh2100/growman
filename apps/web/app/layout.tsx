@@ -6,6 +6,7 @@ import Navbar from "../components/hompage/navbar";
 import { ToastContainer } from "../lib/toast";
 import ServiceWorkerRegistration from "../components/pwa/ServiceWorkerRegistration";
 import InstallPrompt from "../components/pwa/InstallPrompt";
+import PlantChatbot from "../components/chatbot/PlantChatbot";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -50,6 +51,7 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <Navbar />
         {children}
+        <PlantChatbot />
         <ToastContainer />
         <InstallPrompt />
       </body>

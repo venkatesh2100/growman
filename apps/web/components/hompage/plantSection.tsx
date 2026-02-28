@@ -70,20 +70,20 @@ export default function PlantSection() {
         {/* Cards or Skeletons */}
         <div
           className="
-      flex gap-4 overflow-x-auto pb-4
-      snap-x snap-mandatory
+      flex flex-nowrap gap-4 overflow-x-auto pb-4
+      snap-x snap-mandatory scroll-smooth
       scrollbar-hide
-      md:grid md:overflow-visible md:snap-none
-     md:grid-cols-3 lg:grid-cols-4
+      -mx-3 sm:-mx-4 px-3 sm:px-4
   "
+          style={{ scrollBehavior: 'smooth' }}
         >
           {loading
             ? skeletons.map((_, idx) => (
                 <div
                   key={idx}
                   className="
-                     min-w-[75%] sm:min-w-[45%]
-          md:min-w-0
+                     shrink-0
+                     w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
           snap-start
 
                    bg-white rounded-xl border border-green-100 p-4 shadow animate-pulse"
@@ -99,8 +99,8 @@ export default function PlantSection() {
                   <div
                     key={product.id}
                     className="
-                 min-w-[75%] sm:min-w-[45%]
-                 md:min-w-0
+                 shrink-0
+                 w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
                snap-start"
                   >
                     <ProductCard key={product.id} product={product} />

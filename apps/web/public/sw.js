@@ -5,9 +5,6 @@ const DYNAMIC_CACHE_NAME = 'growman-dynamic-v1';
 
 // Assets to cache on install
 const STATIC_ASSETS = [
-  '/',
-  '/shop',
-  '/cart',
   '/manifest.json',
 ];
 
@@ -90,4 +87,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-

@@ -173,7 +173,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <FaEnvelope className="text-emerald-400  text-[14px] shrink-0" />
-                <span className="">growman.live@gmail.com</span>
+                <span className="text-[13px]">growman.live@gmail.com</span>
               </li>
 
               <li className="flex items-center gap-2">

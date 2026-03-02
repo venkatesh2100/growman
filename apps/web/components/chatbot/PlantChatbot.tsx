@@ -46,13 +46,13 @@ export default function PlantChatbot() {
   // Load from localStorage only after component mounts (client-side only)
   useEffect(() => {
     setIsMounted(true);
-    
+
     // Load isOpen state
     const savedIsOpen = localStorage.getItem(STORAGE_KEY_IS_OPEN);
     if (savedIsOpen === "true") {
       setIsOpen(true);
     }
-    
+
     // Load messages
     const savedMessages = localStorage.getItem(STORAGE_KEY_MESSAGES);
     if (savedMessages) {
@@ -138,7 +138,7 @@ export default function PlantChatbot() {
       }
 
       const data = await response.json();
-      
+
       if (!data || !data.response) {
         console.error("Invalid response data:", data);
         throw new Error("Invalid response from server");
@@ -157,7 +157,7 @@ export default function PlantChatbot() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "dootha",
-        content: error instanceof Error && error.message 
+        content: error instanceof Error && error.message
           ? `I'm sorry, I encountered an error: ${error.message}. Please check your API key configuration or try again later.`
           : "I'm sorry, I encountered an error. Please try again later.",
       };
@@ -226,7 +226,7 @@ export default function PlantChatbot() {
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   )}
-                  
+
                   {/* Product Recommendations */}
                   {message.products && message.products.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-emerald-200">
@@ -311,4 +311,3 @@ export default function PlantChatbot() {
     </>
   );
 }
-

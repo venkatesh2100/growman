@@ -29,7 +29,7 @@ export default function CartPage() {
   // Tax calculation commented out for now
   // const tax = subtotal * 0.18;
   const discount = 0; // Can be calculated from MRP vs price
-  const shipping = subtotal > 500 ? 0 : 50;
+  const shipping = subtotal > 500 ? 0 : 0;
   const total = subtotal - discount + shipping;
 
   return (

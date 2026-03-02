@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import {  useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { ShoppingBag, CreditCard, CheckCircle, XCircle, Loader2, Mail, LogIn, Navigation } from "lucide-react";
 import Link from "next/link";
@@ -106,7 +106,9 @@ export default function CheckoutPage() {
   }, [isAuthenticated]);
 
   // Note: City is now a free text input, so we don't need to filter cities based on state
-
+const handleCart = () =>{
+  router.push("/cart");
+}
   const loadUserAddress = async () => {
     try {
       const res = await apiFetch("/auth/me");
@@ -134,7 +136,7 @@ export default function CheckoutPage() {
     setLocating(true);
     try {
       const locationData = await getCurrentLocation();
-      
+
       // Find matching state from Indian states
       let matchedState = "";
       if (locationData.state) {
@@ -198,7 +200,7 @@ export default function CheckoutPage() {
       const params = new URLSearchParams();
       if (email) params.append("email", email);
       if (phone) params.append("phone", phone);
-      
+
       const res = await apiFetch(`/auth/check-user?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
@@ -219,7 +221,7 @@ export default function CheckoutPage() {
   // Tax calculation commented out for now (as per requirements)
   // const tax = subtotal * 0.18; // 18% GST
   const discount = 0; // Can be calculated from MRP vs price
-  const shipping = subtotal > 500 ? 0 : 50;
+  const shipping = subtotal > 500 ? 0 : 0;
   const total = subtotal - discount + shipping;
 
   // Load Razorpay Script
@@ -329,7 +331,7 @@ export default function CheckoutPage() {
         } catch {
           // If parsing fails, use default message
         }
-        
+
         // Don't block checkout if OTP fails - allow user to skip
         toast(errorMessage + ". You can skip verification and proceed to payment.", "error");
         setError(errorMessage);
@@ -385,7 +387,7 @@ export default function CheckoutPage() {
         } catch {
           // If parsing fails, use default message
         }
-        
+
         toast(errorMessage, "error");
         throw new Error(errorMessage);
       }
@@ -459,7 +461,8 @@ export default function CheckoutPage() {
       }
 
       const orderData = await orderRes.json();
-
+      console.log(orderData);
+      // console.log('RAZOR',process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
         amount: orderData.amount,
@@ -486,7 +489,7 @@ export default function CheckoutPage() {
             }
 
             setPaymentStatus("success");
-            
+
             // Auto-save address if user entered new details and is not logged in
             // This will create a guest account or save to existing account
             if (!isAuthenticated && customerInfo.email) {
@@ -512,7 +515,7 @@ export default function CheckoutPage() {
                 // Don't block payment success if address save fails
               }
             }
-            
+
             // Clear cart
             useCartStore.getState().clearCart();
             // Redirect to success page after 2 seconds
@@ -855,7 +858,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Show verification status for logged-in users */}
             {isAuthenticated && (
               <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-green-200">
@@ -906,7 +909,7 @@ export default function CheckoutPage() {
             {/* Order Items */}
             <div className="bg-white md:rounded-xl md:shadow-sm md:p-6 p-3">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Order Items</h2>
-              <div className="space-y-2 md:space-y-4">
+              <div onClick={handleCart} className="space-y-2 md:space-y-4">
                 {cart.map((item) => (
                   <div
                     key={item.id}

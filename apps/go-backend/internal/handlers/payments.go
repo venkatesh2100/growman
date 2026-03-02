@@ -93,12 +93,12 @@ func (h *Handler) CreateRazorpayOrder(w http.ResponseWriter, r *http.Request) {
 	for i, item := range req.Items {
 		productIDs[i] = item.ProductID
 	}
-	
+
 	var products []models.Product
 	if err := h.DB.Select("id, name, image_url").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
 		log.Printf("[DB] Error fetching products: %v", err)
 	}
-	
+
 	// Create a map for quick lookup
 	productMap := make(map[uint]models.Product)
 	for _, product := range products {
@@ -151,7 +151,7 @@ func (h *Handler) createRazorpayOrder(amount int, currency string) (*RazorpayOrd
 	}
 
 	url := "https://api.razorpay.com/v1/orders"
-	
+
 	payload := map[string]interface{}{
 		"amount":   amount,
 		"currency": currency,
@@ -221,7 +221,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 
 	// Verify signature (skip in test/development mode if key secret is not configured)
 	isTestMode := h.Cfg.AppEnv == "development" || h.Cfg.AppEnv == "test" || h.Cfg.RazorpayKeySecret == ""
-	
+ log.Printf("TEST MODE: %v", isTestMode)
 	if req.RazorpaySignature != "" && !isTestMode {
 		if !h.verifyRazorpaySignature(req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature) {
 			log.Printf("[PAYMENT] Signature verification failed for order: %s, payment: %s", req.RazorpayOrderID, req.RazorpayPaymentID)
@@ -253,7 +253,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 	order.RazorpayPaymentID = req.RazorpayPaymentID
 	order.PaymentStatus = "paid"
 	order.Status = "paid"
-	
+
 	if err := h.DB.Save(&order).Error; err != nil {
 		log.Printf("[DB] Error updating order: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to update order")
@@ -291,7 +291,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 	if order.CustomerEmail != "" {
 		go func() {
 			emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
-			
+
 			// Prepare items for email
 			items := make([]map[string]interface{}, len(order.Items))
 			for i, item := range order.Items {
@@ -301,7 +301,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 					"price":    item.Price * float64(item.Quantity),
 				}
 			}
-			
+
 			if err := emailService.SendOrderConfirmationEmail(
 				order.CustomerEmail,
 				order.CustomerName,
@@ -356,4 +356,3 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 	httpjson.JSON(w, http.StatusOK, order)
 }
-

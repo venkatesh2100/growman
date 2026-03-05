@@ -43,13 +43,13 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		// Apply rate limiting to all API routes
 		// General rate limit: 100 requests per minute per IP
 		if h.Redis != nil {
-			r.Use(middlewares.IPRateLimiter(h.Redis, 100, time.Minute))
+			r.Use(middlewares.IPRateLimiter(h.Redis, 120, time.Minute))
 		}
 
 		// Stricter rate limits for auth endpoints
 		r.Group(func(r chi.Router) {
 			if h.Redis != nil {
-				r.Use(middlewares.IPRateLimiter(h.Redis, 10, time.Minute)) // 10 requests per minute for auth
+				r.Use(middlewares.IPRateLimiter(h.Redis, 12, time.Minute)) // 10 requests per minute for auth
 			}
 			r.Post("/auth/login", h.Login)
 			r.Post("/auth/signup", h.Signup)

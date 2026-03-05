@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "android/app/build/**", ".expo/**", "ios/build/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -14,6 +14,18 @@
       "dependsOn": ["^check-types"]
     },
     "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "android": {
+      "cache": false,
+      "persistent": false
+    },
+    "ios": {
+      "cache": false,
+      "persistent": false
+    },
+    "web": {
       "cache": false,
       "persistent": true
     }
@@ -27,6 +39,7 @@
     "GO_API_URL",
     "NEXT_PUBLIC_API_URL",
     "NEXT_PUBLIC_GO_API_URL",
+    "EXPO_PUBLIC_*",
     "NODE_ENV"
   ]
 }

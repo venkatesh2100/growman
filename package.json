@@ -8,6 +8,11 @@
     "check-types": "turbo run check-types",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
+
+"pnpm": {
+  "hoistPattern": ["react-native", "@react-native/*", "react-native/*"],
+  "publicHoistPattern": ["react-native", "@react-native/*", "react-native/*"]
+},
   "devDependencies": {
     "prettier": "^3.6.0",
     "prettier-plugin-tailwindcss": "^0.7.1",

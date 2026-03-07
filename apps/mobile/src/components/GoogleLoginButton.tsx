@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { apiFetch } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { GOOGLE_CLIENT_ID } from '../config/env';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-// Complete the auth session
-WebBrowser.maybeCompleteAuthSession();
 
 type RootStackParamList = {
   Signup: undefined;
@@ -23,6 +22,16 @@ export default function GoogleLoginButton() {
   const [loading, setLoading] = useState(false);
   const setToken = useAuthStore((state) => state.setToken);
 
+  useEffect(() => {
+    // Configure Google Sign In
+    if (GOOGLE_CLIENT_ID) {
+      GoogleSignin.configure({
+        webClientId: GOOGLE_CLIENT_ID,
+        offlineAccess: true,
+      });
+    }
+  }, []);
+
   const handleGoogleLogin = async () => {
     if (!GOOGLE_CLIENT_ID) {
       console.warn('Google Client ID not configured');
@@ -31,33 +40,18 @@ export default function GoogleLoginButton() {
 
     try {
       setLoading(true);
-
-      // Create redirect URI
-      const redirectUri = AuthSession.makeRedirectUri();
-
-      // Create auth request
-      const request = new AuthSession.AuthRequest({
-        clientId: GOOGLE_CLIENT_ID,
-        scopes: ['openid', 'profile', 'email'],
-        responseType: AuthSession.ResponseType.Token,
-        redirectUri,
-      });
-
-      // Get discovery document
-      const discovery = {
-        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenEndpoint: 'https://oauth2.googleapis.com/token',
-        revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-      };
-
-      // Start auth session
-      const result = await request.promptAsync(discovery);
-
-      if (result.type === 'success' && result.params.access_token) {
+      
+      // Check if Google Play Services are available
+      await GoogleSignin.hasPlayServices();
+      
+      // Sign in
+      const userInfo = await GoogleSignin.signIn();
+      
+      if (userInfo?.data?.idToken) {
         // Send token to backend for verification
         const res = await apiFetch('/auth/google', {
           method: 'POST',
-          body: JSON.stringify({ token: result.params.access_token }),
+          body: JSON.stringify({ token: userInfo.data.idToken }),
         });
 
         if (!res.ok) {
@@ -74,16 +68,27 @@ export default function GoogleLoginButton() {
         const data = await res.json();
         setToken(data.token);
         // Navigation will automatically switch to Main stack
-      } else if (result.type === 'error') {
-        console.error('Google auth error:', result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google login error:', error);
+      
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the login flow
+        console.log('User cancelled Google sign in');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // Operation (e.g. sign in) is in progress already
+        console.log('Google sign in already in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // Play services not available or outdated
+        console.log('Play services not available');
+      } else {
+        // Some other error happened
+        console.log('Google sign in error:', error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
-
 
   if (!GOOGLE_CLIENT_ID) {
     console.warn('Google Client ID not configured');

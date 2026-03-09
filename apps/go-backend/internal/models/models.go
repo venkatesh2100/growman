@@ -276,3 +276,11 @@ type Payment struct {
 	Method          string  `json:"method,omitempty"`
 	Description     string  `json:"description,omitempty"`
 }
+
+// Wishlist represents a user's wishlist item
+type Wishlist struct {
+	Base
+	UserID    uint    `gorm:"uniqueIndex:idx_user_product" json:"userId"`
+	ProductID uint    `gorm:"uniqueIndex:idx_user_product" json:"productId"`
+	Product   Product `json:"product"`
+}

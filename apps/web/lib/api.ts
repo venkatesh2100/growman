@@ -13,14 +13,14 @@ export function getApiUrl(): string {
 
     // Debug logging - check if we're using localhost in production
     if (!browserValue && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      console.error('❌ CORS Error: NEXT_PUBLIC_GO_API_URL is not set!');
+      console.error('CORS Error: NEXT_PUBLIC_GO_API_URL is not set!');
       console.error('Current origin:', window.location.origin);
       console.error('Set NEXT_PUBLIC_GO_API_URL in Cloudflare Pages environment variables');
       console.error('Expected format: https://your-backend-xxxxx-xx.a.run.app/api/v1');
     } else if (browserValue) {
       // Log the API URL being used (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log('API URL configured:', apiUrl);
+        // console.log('API URL configured:', apiUrl);
       }
     }
 

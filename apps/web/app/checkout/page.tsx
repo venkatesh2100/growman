@@ -461,7 +461,7 @@ const handleCart = () =>{
       }
 
       const orderData = await orderRes.json();
-      console.log(orderData);
+      // console.log(orderData);
       // console.log('RAZOR',process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",

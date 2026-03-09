@@ -36,6 +36,10 @@ type Config struct {
 	OpenAIAPIKey      string // OpenAI API key for chat functionality
 	GeminiAPIKey      string // Google Gemini API key for chat functionality
 	AIProvider        string // AI provider: "openai", "gemini", "anthropic", or "custom"
+	// Pl@ntNet API for plant identification
+	PlantNetAPIKey    string // Pl@ntNet API key from https://my.plantnet.org
+	// Google OAuth - Web Client ID for verifying id_token from mobile/web
+	GoogleClientID string // Web client ID (same as EXPO_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_GOOGLE_CLIENT_ID)
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -68,6 +72,10 @@ func Load() (Config, error) {
 		OpenAIAPIKey:       os.Getenv("OPENAI_API_KEY"),
 		GeminiAPIKey:       os.Getenv("GEMINI_API_KEY"),
 		AIProvider:         getenv("AI_PROVIDER", "openai"),
+		// Pl@ntNet API
+		PlantNetAPIKey:     os.Getenv("PLANTNET_API_KEY"),
+		// Google OAuth - Web Client ID for id_token verification (same as mobile/web apps)
+		GoogleClientID:     firstNonEmpty(os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("NEXT_PUBLIC_GOOGLE_CLIENT_ID")),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
@@ -100,4 +108,13 @@ func getenv(key, fallback string) string {
 		return fallback
 	}
 	return val
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }

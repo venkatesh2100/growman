@@ -14,6 +14,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 )
 
 // AuthRequest captures minimal login input.
@@ -296,36 +297,69 @@ func (h *Handler) GoogleSignup(w http.ResponseWriter, r *http.Request) {
 	h.Google(w, r)
 }
 
-// verifyGoogleToken verifies the Google OAuth token and returns user info
-func (h *Handler) verifyGoogleToken(accessToken string) (*GoogleUserInfo, error) {
-	// Make request to Google's userinfo endpoint
+// verifyGoogleToken verifies the Google token and returns user info.
+// Accepts both:
+// - id_token (JWT) from mobile app (React Native Google Sign-In)
+// - access_token from web app (@react-oauth/google useGoogleLogin)
+func (h *Handler) verifyGoogleToken(token string) (*GoogleUserInfo, error) {
+	// JWT format: header.payload.signature (3 base64 parts separated by dots)
+	if isJWT(token) && h.Cfg.GoogleClientID != "" {
+		return h.verifyGoogleIDToken(token)
+	}
+	// OAuth access token (web app)
+	return h.verifyGoogleAccessToken(token)
+}
+
+func isJWT(s string) bool {
+	parts := strings.Split(s, ".")
+	return len(parts) == 3 && len(parts[0]) > 0 && len(parts[1]) > 0 && len(parts[2]) > 0
+}
+
+func (h *Handler) verifyGoogleIDToken(idToken string) (*GoogleUserInfo, error) {
+	payload, err := idtoken.Validate(context.Background(), idToken, h.Cfg.GoogleClientID)
+	if err != nil {
+		return nil, err
+	}
+	claims := payload.Claims
+	email, _ := claims["email"].(string)
+	if email == "" {
+		return nil, errors.New("email not provided by google")
+	}
+	name, _ := claims["name"].(string)
+	picture, _ := claims["picture"].(string)
+	sub, _ := claims["sub"].(string)
+	verifiedEmail, _ := claims["email_verified"].(bool)
+	return &GoogleUserInfo{
+		ID:            sub,
+		Email:         email,
+		VerifiedEmail: verifiedEmail,
+		Name:          name,
+		Picture:       picture,
+	}, nil
+}
+
+func (h *Handler) verifyGoogleAccessToken(accessToken string) (*GoogleUserInfo, error) {
 	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
 		return nil, err
 	}
-
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("google token verification failed")
 	}
-
 	var userInfo GoogleUserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
 		return nil, err
 	}
-
 	if userInfo.Email == "" {
 		return nil, errors.New("email not provided by google")
 	}
-
 	return &userInfo, nil
 }
 

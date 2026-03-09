@@ -92,6 +92,9 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		// Image upload route
 		r.Post("/images/upload", h.UploadImage)
 
+		// Plant identification (Pl@ntNet)
+		r.Post("/plants/identify", h.IdentifyPlant)
+
 		// AI Chat route
 		r.Post("/chat", h.Chat)
 
@@ -110,6 +113,10 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			pr.Post("/auth/save-location", h.SaveLocation)
 			// Orders endpoint for authenticated users
 			pr.Get("/orders", h.ListOrders)
+			// Wishlist endpoints
+			pr.Get("/wishlist", h.ListWishlist)
+			pr.Post("/wishlist", h.AddToWishlist)
+			pr.Delete("/wishlist/{productId}", h.RemoveFromWishlist)
 		})
 	})
 

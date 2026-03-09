@@ -2,17 +2,38 @@ package handlers
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 )
 
 const plantnetIdentifyURL = "https://my-api.plantnet.org/v2/identify/all"
 
+func contentTypeFromExt(ext string) string {
+	switch strings.ToLower(ext) {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	default:
+		return "image/jpeg"
+	}
+}
+
 // IdentifyPlant handles plant identification requests by proxying to Pl@ntNet API.
 // Expects multipart/form-data with "image" file(s). Optional "organs" (auto, flower, leaf, fruit, bark).
+// Plant images are silently uploaded to Azure storage in the background.
 func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 	apiKey := h.Cfg.PlantNetAPIKey
 	if apiKey == "" {
@@ -42,6 +63,14 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read all files into buffers (needed for Pl@ntNet and Azure upload)
+	type fileData struct {
+		buf         []byte
+		contentType string
+		filename    string
+	}
+	var fileBuffers []fileData
+
 	// Build multipart request to Pl@ntNet
 	body := &bytes.Buffer{}
 	mpw := multipart.NewWriter(body)
@@ -56,25 +85,39 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		_ = mpw.WriteField("organs", organ)
 	}
 
-	// Add image files
+	// Add image files and collect buffers for Azure upload
 	for _, fh := range files {
 		file, err := fh.Open()
 		if err != nil {
 			httpjson.Error(w, http.StatusBadRequest, "failed to read image file")
 			return
 		}
-		part, err := mpw.CreateFormFile("images", fh.Filename)
-		if err != nil {
-			file.Close()
-			httpjson.Error(w, http.StatusInternalServerError, "failed to build request")
-			return
-		}
-		_, err = io.Copy(part, file)
+		buf := &bytes.Buffer{}
+		_, err = io.Copy(buf, file)
 		file.Close()
 		if err != nil {
 			httpjson.Error(w, http.StatusInternalServerError, "failed to read image")
 			return
 		}
+
+		// Write to Pl@ntNet multipart
+		part, err := mpw.CreateFormFile("images", fh.Filename)
+		if err != nil {
+			httpjson.Error(w, http.StatusInternalServerError, "failed to build request")
+			return
+		}
+		_, _ = part.Write(buf.Bytes())
+
+		// Keep copy for silent Azure upload (goroutine will use it)
+		contentType := fh.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = contentTypeFromExt(filepath.Ext(fh.Filename))
+		}
+		fileBuffers = append(fileBuffers, fileData{
+			buf:         append([]byte(nil), buf.Bytes()...),
+			contentType: contentType,
+			filename:    fh.Filename,
+		})
 	}
 
 	// Optional params
@@ -88,6 +131,27 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 	if err := mpw.Close(); err != nil {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to build request")
 		return
+	}
+
+	// Silently upload plant images to Azure in the background (non-blocking)
+	if h.ImageService != nil && len(fileBuffers) > 0 {
+		buffers := fileBuffers
+		go func() {
+			ctx := context.Background()
+			for i, fd := range buffers {
+				filename := fd.filename
+				if len(buffers) > 1 {
+					base := strings.TrimSuffix(filename, filepath.Ext(filename))
+					ext := filepath.Ext(filename)
+					filename = fmt.Sprintf("%s-%d%s", base, i+1, ext)
+				}
+				imageKey := GenerateImageKey("plants", filename)
+				err := h.ImageService.UploadImage(ctx, imageKey, bytes.NewReader(fd.buf), fd.contentType)
+				if err != nil {
+					log.Printf("[plants] silent Azure upload failed for %s: %v", fd.filename, err)
+				}
+			}
+		}()
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, plantnetIdentifyURL+"?api-key="+apiKey, body)

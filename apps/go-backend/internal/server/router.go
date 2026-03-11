@@ -35,21 +35,24 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	}))
 
 	r.Get("/healthz", h.Health)
-
+	
 	// Webhook routes (outside /api/v1, no auth required)
 	r.Post("/webhooks/razorpay", h.RazorpayWebhook)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// Apply rate limiting to all API routes
-		// General rate limit: 100 requests per minute per IP
+		// General rate limit: 100 req/min per IP (production standard, cost-effective)
 		if h.Redis != nil {
-			r.Use(middlewares.IPRateLimiter(h.Redis, 120, time.Minute))
+			r.Use(middlewares.IPRateLimiter(h.Redis, 100, time.Minute))
 		}
+		r.Get("/debug/version", h.Version)
 
-		// Stricter rate limits for auth endpoints
+     	r.Get("/healthz", h.Health)
+
+
+		// Auth: 15 req/min (user-friendly retries, prevents brute force)
 		r.Group(func(r chi.Router) {
 			if h.Redis != nil {
-				r.Use(middlewares.IPRateLimiter(h.Redis, 12, time.Minute)) // 10 requests per minute for auth
+				r.Use(middlewares.IPRateLimiter(h.Redis, 15, time.Minute))
 			}
 			r.Post("/auth/login", h.Login)
 			r.Post("/auth/signup", h.Signup)
@@ -60,10 +63,10 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			r.Post("/auth/forgot-password/reset", h.ResetPassword)
 		})
 
-		// Stricter rate limits for checkout endpoints
+		// Checkout/OTP: 10 req/min (prevents OTP abuse, allows normal flow)
 		r.Group(func(r chi.Router) {
 			if h.Redis != nil {
-				r.Use(middlewares.IPRateLimiter(h.Redis, 20, time.Minute)) // 20 requests per minute for checkout
+				r.Use(middlewares.IPRateLimiter(h.Redis, 10, time.Minute))
 			}
 			r.Post("/checkout/send-email-otp", h.SendEmailOTP)
 			r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
@@ -91,9 +94,11 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 
 		// Image upload route
 		r.Post("/images/upload", h.UploadImage)
+		r.Post("/images/identify-plant", h.IdentifyPlant) // Alias for Cloud Run compatibility
 
 		// Plant identification (Pl@ntNet)
-		r.Post("/plants/identify", h.IdentifyPlant)
+		// r.Post("/plants/identify", h.IdentifyPlant)
+		// r.Post("/plants/identify/", h.IdentifyPlant) // Trailing slash variant
 
 		// AI Chat route
 		r.Post("/chat", h.Chat)

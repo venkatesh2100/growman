@@ -46,13 +46,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(payload.Email, "@") {
 		// Email login
 		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+			httpjson.Error(w, http.StatusUnauthorized, "account not found")
 			return
 		}
 	} else {
 		// Phone login
 		if err := h.DB.Where("phone = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+			httpjson.Error(w, http.StatusUnauthorized, "account not found")
 			return
 		}
 	}

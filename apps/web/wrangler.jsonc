@@ -1,0 +1,36 @@
+{
+  // Worker identity
+  "name": "growman-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-12-17",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Static assets (OpenNext)
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // Custom domain routing
+  "routes": [
+    {
+      "pattern": "growman.live",
+      "custom_domain": true
+    }
+  ],
+
+  // Observability / logging
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
+
+  // Workers Analytics Engine
+   "analytics_engine_datasets": [
+    { "binding": "WAE", "dataset": "wae_events" }
+  ]
+}

@@ -15,6 +15,7 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.5.0",
     "@opennextjs/cloudflare": "^1.14.6",
     "@react-oauth/google": "^0.13.0",
     "@repo/ui": "workspace:*",
@@ -30,6 +31,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
     "@next/eslint-plugin-next": "^15.4.6",
     "@repo/eslint-config": "workspace:*",
     "@repo/tailwind-config": "workspace:*",

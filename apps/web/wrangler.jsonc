@@ -29,8 +29,19 @@
     }
   },
 
+
   // Workers Analytics Engine
    "analytics_engine_datasets": [
-    { "binding": "WAE", "dataset": "wae_events" }
+    { "binding": "WAE", "dataset": "wae_events_v1" }
   ]
+,"kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "7d1c239b89c04e70badd4d156d61e931",
+
+      // Optional: preview_id used when running `wrangler dev` for local dev
+      "preview_id": "<Rate_Limit from cloudflare KV kv_namespaces>"
+    }
+  ]
+
 }

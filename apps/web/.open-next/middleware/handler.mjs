@@ -892,7 +892,7 @@ var require_root_of_the_server_12400766 = __commonJS({
       (() => {
         "use strict";
         let r2, n, i, o, a;
-        var s, l, u, c, d, p, h, f, g, b, v, m, _, w, y, x, S = { 491: (e2, t2, r3) => {
+        var s, l, u, c, d, p, h, f, g, b, v, m, _, w, y, x, E = { 491: (e2, t2, r3) => {
           Object.defineProperty(t2, "__esModule", { value: true }), t2.ContextAPI = void 0;
           let n2 = r3(223), i2 = r3(172), o2 = r3(930), a2 = "context", s2 = new n2.NoopContextManager();
           class l2 {
@@ -1561,75 +1561,75 @@ var require_root_of_the_server_12400766 = __commonJS({
           Object.defineProperty(t2, "__esModule", { value: true }), t2.TraceFlags = void 0, (r3 = t2.TraceFlags || (t2.TraceFlags = {}))[r3.NONE = 0] = "NONE", r3[r3.SAMPLED = 1] = "SAMPLED";
         }, 521: (e2, t2) => {
           Object.defineProperty(t2, "__esModule", { value: true }), t2.VERSION = void 0, t2.VERSION = "1.6.0";
-        } }, E = {};
+        } }, S = {};
         function O(e2) {
-          var t2 = E[e2];
+          var t2 = S[e2];
           if (void 0 !== t2) return t2.exports;
-          var r3 = E[e2] = { exports: {} }, n2 = true;
+          var r3 = S[e2] = { exports: {} }, n2 = true;
           try {
-            S[e2].call(r3.exports, r3, r3.exports, O), n2 = false;
+            E[e2].call(r3.exports, r3, r3.exports, O), n2 = false;
           } finally {
-            n2 && delete E[e2];
+            n2 && delete S[e2];
           }
           return r3.exports;
         }
         O.ab = "/ROOT/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@opentelemetry/api/";
-        var R = {};
-        Object.defineProperty(R, "__esModule", { value: true }), R.trace = R.propagation = R.metrics = R.diag = R.context = R.INVALID_SPAN_CONTEXT = R.INVALID_TRACEID = R.INVALID_SPANID = R.isValidSpanId = R.isValidTraceId = R.isSpanContextValid = R.createTraceState = R.TraceFlags = R.SpanStatusCode = R.SpanKind = R.SamplingDecision = R.ProxyTracerProvider = R.ProxyTracer = R.defaultTextMapSetter = R.defaultTextMapGetter = R.ValueType = R.createNoopMeter = R.DiagLogLevel = R.DiagConsoleLogger = R.ROOT_CONTEXT = R.createContextKey = R.baggageEntryMetadataFromString = void 0, s = O(369), Object.defineProperty(R, "baggageEntryMetadataFromString", { enumerable: true, get: function() {
+        var C = {};
+        Object.defineProperty(C, "__esModule", { value: true }), C.trace = C.propagation = C.metrics = C.diag = C.context = C.INVALID_SPAN_CONTEXT = C.INVALID_TRACEID = C.INVALID_SPANID = C.isValidSpanId = C.isValidTraceId = C.isSpanContextValid = C.createTraceState = C.TraceFlags = C.SpanStatusCode = C.SpanKind = C.SamplingDecision = C.ProxyTracerProvider = C.ProxyTracer = C.defaultTextMapSetter = C.defaultTextMapGetter = C.ValueType = C.createNoopMeter = C.DiagLogLevel = C.DiagConsoleLogger = C.ROOT_CONTEXT = C.createContextKey = C.baggageEntryMetadataFromString = void 0, s = O(369), Object.defineProperty(C, "baggageEntryMetadataFromString", { enumerable: true, get: function() {
           return s.baggageEntryMetadataFromString;
-        } }), l = O(780), Object.defineProperty(R, "createContextKey", { enumerable: true, get: function() {
+        } }), l = O(780), Object.defineProperty(C, "createContextKey", { enumerable: true, get: function() {
           return l.createContextKey;
-        } }), Object.defineProperty(R, "ROOT_CONTEXT", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "ROOT_CONTEXT", { enumerable: true, get: function() {
           return l.ROOT_CONTEXT;
-        } }), u = O(972), Object.defineProperty(R, "DiagConsoleLogger", { enumerable: true, get: function() {
+        } }), u = O(972), Object.defineProperty(C, "DiagConsoleLogger", { enumerable: true, get: function() {
           return u.DiagConsoleLogger;
-        } }), c = O(957), Object.defineProperty(R, "DiagLogLevel", { enumerable: true, get: function() {
+        } }), c = O(957), Object.defineProperty(C, "DiagLogLevel", { enumerable: true, get: function() {
           return c.DiagLogLevel;
-        } }), d = O(102), Object.defineProperty(R, "createNoopMeter", { enumerable: true, get: function() {
+        } }), d = O(102), Object.defineProperty(C, "createNoopMeter", { enumerable: true, get: function() {
           return d.createNoopMeter;
-        } }), p = O(901), Object.defineProperty(R, "ValueType", { enumerable: true, get: function() {
+        } }), p = O(901), Object.defineProperty(C, "ValueType", { enumerable: true, get: function() {
           return p.ValueType;
-        } }), h = O(194), Object.defineProperty(R, "defaultTextMapGetter", { enumerable: true, get: function() {
+        } }), h = O(194), Object.defineProperty(C, "defaultTextMapGetter", { enumerable: true, get: function() {
           return h.defaultTextMapGetter;
-        } }), Object.defineProperty(R, "defaultTextMapSetter", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "defaultTextMapSetter", { enumerable: true, get: function() {
           return h.defaultTextMapSetter;
-        } }), f = O(125), Object.defineProperty(R, "ProxyTracer", { enumerable: true, get: function() {
+        } }), f = O(125), Object.defineProperty(C, "ProxyTracer", { enumerable: true, get: function() {
           return f.ProxyTracer;
-        } }), g = O(846), Object.defineProperty(R, "ProxyTracerProvider", { enumerable: true, get: function() {
+        } }), g = O(846), Object.defineProperty(C, "ProxyTracerProvider", { enumerable: true, get: function() {
           return g.ProxyTracerProvider;
-        } }), b = O(996), Object.defineProperty(R, "SamplingDecision", { enumerable: true, get: function() {
+        } }), b = O(996), Object.defineProperty(C, "SamplingDecision", { enumerable: true, get: function() {
           return b.SamplingDecision;
-        } }), v = O(357), Object.defineProperty(R, "SpanKind", { enumerable: true, get: function() {
+        } }), v = O(357), Object.defineProperty(C, "SpanKind", { enumerable: true, get: function() {
           return v.SpanKind;
-        } }), m = O(847), Object.defineProperty(R, "SpanStatusCode", { enumerable: true, get: function() {
+        } }), m = O(847), Object.defineProperty(C, "SpanStatusCode", { enumerable: true, get: function() {
           return m.SpanStatusCode;
-        } }), _ = O(475), Object.defineProperty(R, "TraceFlags", { enumerable: true, get: function() {
+        } }), _ = O(475), Object.defineProperty(C, "TraceFlags", { enumerable: true, get: function() {
           return _.TraceFlags;
-        } }), w = O(98), Object.defineProperty(R, "createTraceState", { enumerable: true, get: function() {
+        } }), w = O(98), Object.defineProperty(C, "createTraceState", { enumerable: true, get: function() {
           return w.createTraceState;
-        } }), y = O(139), Object.defineProperty(R, "isSpanContextValid", { enumerable: true, get: function() {
+        } }), y = O(139), Object.defineProperty(C, "isSpanContextValid", { enumerable: true, get: function() {
           return y.isSpanContextValid;
-        } }), Object.defineProperty(R, "isValidTraceId", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "isValidTraceId", { enumerable: true, get: function() {
           return y.isValidTraceId;
-        } }), Object.defineProperty(R, "isValidSpanId", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "isValidSpanId", { enumerable: true, get: function() {
           return y.isValidSpanId;
-        } }), x = O(476), Object.defineProperty(R, "INVALID_SPANID", { enumerable: true, get: function() {
+        } }), x = O(476), Object.defineProperty(C, "INVALID_SPANID", { enumerable: true, get: function() {
           return x.INVALID_SPANID;
-        } }), Object.defineProperty(R, "INVALID_TRACEID", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "INVALID_TRACEID", { enumerable: true, get: function() {
           return x.INVALID_TRACEID;
-        } }), Object.defineProperty(R, "INVALID_SPAN_CONTEXT", { enumerable: true, get: function() {
+        } }), Object.defineProperty(C, "INVALID_SPAN_CONTEXT", { enumerable: true, get: function() {
           return x.INVALID_SPAN_CONTEXT;
-        } }), r2 = O(67), Object.defineProperty(R, "context", { enumerable: true, get: function() {
+        } }), r2 = O(67), Object.defineProperty(C, "context", { enumerable: true, get: function() {
           return r2.context;
-        } }), n = O(506), Object.defineProperty(R, "diag", { enumerable: true, get: function() {
+        } }), n = O(506), Object.defineProperty(C, "diag", { enumerable: true, get: function() {
           return n.diag;
-        } }), i = O(886), Object.defineProperty(R, "metrics", { enumerable: true, get: function() {
+        } }), i = O(886), Object.defineProperty(C, "metrics", { enumerable: true, get: function() {
           return i.metrics;
-        } }), o = O(939), Object.defineProperty(R, "propagation", { enumerable: true, get: function() {
+        } }), o = O(939), Object.defineProperty(C, "propagation", { enumerable: true, get: function() {
           return o.propagation;
-        } }), a = O(845), Object.defineProperty(R, "trace", { enumerable: true, get: function() {
+        } }), a = O(845), Object.defineProperty(C, "trace", { enumerable: true, get: function() {
           return a.trace;
-        } }), R.default = { context: r2.context, diag: n.diag, metrics: i.metrics, propagation: o.propagation, trace: a.trace }, t.exports = R;
+        } }), C.default = { context: r2.context, diag: n.diag, metrics: i.metrics, propagation: o.propagation, trace: a.trace }, t.exports = C;
       })();
     }, 4453, (e, t, r) => {
       (() => {
@@ -2102,7 +2102,7 @@ var require_root_of_the_server_12400766 = __commonJS({
       var n = { 226: function(t2, r2) {
         !function(n2, i2) {
           "use strict";
-          var o2 = "function", a = "undefined", s = "object", l = "string", u = "major", c = "model", d = "name", p = "type", h = "vendor", f = "version", g = "architecture", b = "console", v = "mobile", m = "tablet", _ = "smarttv", w = "wearable", y = "embedded", x = "Amazon", S = "Apple", E = "ASUS", O = "BlackBerry", R = "Browser", C = "Chrome", P = "Firefox", T = "Google", N = "Huawei", I = "Microsoft", k = "Motorola", M = "Opera", A = "Samsung", j = "Sharp", L = "Sony", D = "Xiaomi", q = "Zebra", U = "Facebook", $ = "Chromium OS", B = "Mac OS", V = function(e2, t3) {
+          var o2 = "function", a = "undefined", s = "object", l = "string", u = "major", c = "model", d = "name", p = "type", h = "vendor", f = "version", g = "architecture", b = "console", v = "mobile", m = "tablet", _ = "smarttv", w = "wearable", y = "embedded", x = "Amazon", E = "Apple", S = "ASUS", O = "BlackBerry", C = "Browser", R = "Chrome", P = "Firefox", T = "Google", N = "Huawei", I = "Microsoft", k = "Motorola", A = "Opera", M = "Samsung", j = "Sharp", L = "Sony", D = "Xiaomi", U = "Zebra", q = "Facebook", B = "Chromium OS", $ = "Mac OS", V = function(e2, t3) {
             var r3 = {};
             for (var n3 in e2) t3[n3] && t3[n3].length % 2 == 0 ? r3[n3] = t3[n3].concat(e2[n3]) : r3[n3] = e2[n3];
             return r3;
@@ -2126,7 +2126,7 @@ var require_root_of_the_server_12400766 = __commonJS({
               for (var n3 = 0; n3 < t3[r3].length; n3++) if (G(t3[r3][n3], e2)) return "?" === r3 ? void 0 : r3;
             } else if (G(t3[r3], e2)) return "?" === r3 ? void 0 : r3;
             return e2;
-          }, K = { ME: "4.90", "NT 3.11": "NT3.51", "NT 4.0": "NT4.0", 2e3: "NT 5.0", XP: ["NT 5.1", "NT 5.2"], Vista: "NT 6.0", 7: "NT 6.1", 8: "NT 6.2", 8.1: "NT 6.3", 10: ["NT 6.4", "NT 10.0"], RT: "ARM" }, Q = { browser: [[/\b(?:crmo|crios)\/([\w\.]+)/i], [f, [d, "Chrome"]], [/edg(?:e|ios|a)?\/([\w\.]+)/i], [f, [d, "Edge"]], [/(opera mini)\/([-\w\.]+)/i, /(opera [mobiletab]{3,6})\b.+version\/([-\w\.]+)/i, /(opera)(?:.+version\/|[\/ ]+)([\w\.]+)/i], [d, f], [/opios[\/ ]+([\w\.]+)/i], [f, [d, M + " Mini"]], [/\bopr\/([\w\.]+)/i], [f, [d, M]], [/(kindle)\/([\w\.]+)/i, /(lunascape|maxthon|netfront|jasmine|blazer)[\/ ]?([\w\.]*)/i, /(avant |iemobile|slim)(?:browser)?[\/ ]?([\w\.]*)/i, /(ba?idubrowser)[\/ ]?([\w\.]+)/i, /(?:ms|\()(ie) ([\w\.]+)/i, /(flock|rockmelt|midori|epiphany|silk|skyfire|bolt|iron|vivaldi|iridium|phantomjs|bowser|quark|qupzilla|falkon|rekonq|puffin|brave|whale(?!.+naver)|qqbrowserlite|qq|duckduckgo)\/([-\w\.]+)/i, /(heytap|ovi)browser\/([\d\.]+)/i, /(weibo)__([\d\.]+)/i], [d, f], [/(?:\buc? ?browser|(?:juc.+)ucweb)[\/ ]?([\w\.]+)/i], [f, [d, "UC" + R]], [/microm.+\bqbcore\/([\w\.]+)/i, /\bqbcore\/([\w\.]+).+microm/i], [f, [d, "WeChat(Win) Desktop"]], [/micromessenger\/([\w\.]+)/i], [f, [d, "WeChat"]], [/konqueror\/([\w\.]+)/i], [f, [d, "Konqueror"]], [/trident.+rv[: ]([\w\.]{1,9})\b.+like gecko/i], [f, [d, "IE"]], [/ya(?:search)?browser\/([\w\.]+)/i], [f, [d, "Yandex"]], [/(avast|avg)\/([\w\.]+)/i], [[d, /(.+)/, "$1 Secure " + R], f], [/\bfocus\/([\w\.]+)/i], [f, [d, P + " Focus"]], [/\bopt\/([\w\.]+)/i], [f, [d, M + " Touch"]], [/coc_coc\w+\/([\w\.]+)/i], [f, [d, "Coc Coc"]], [/dolfin\/([\w\.]+)/i], [f, [d, "Dolphin"]], [/coast\/([\w\.]+)/i], [f, [d, M + " Coast"]], [/miuibrowser\/([\w\.]+)/i], [f, [d, "MIUI " + R]], [/fxios\/([-\w\.]+)/i], [f, [d, P]], [/\bqihu|(qi?ho?o?|360)browser/i], [[d, "360 " + R]], [/(oculus|samsung|sailfish|huawei)browser\/([\w\.]+)/i], [[d, /(.+)/, "$1 " + R], f], [/(comodo_dragon)\/([\w\.]+)/i], [[d, /_/g, " "], f], [/(electron)\/([\w\.]+) safari/i, /(tesla)(?: qtcarbrowser|\/(20\d\d\.[-\w\.]+))/i, /m?(qqbrowser|baiduboxapp|2345Explorer)[\/ ]?([\w\.]+)/i], [d, f], [/(metasr)[\/ ]?([\w\.]+)/i, /(lbbrowser)/i, /\[(linkedin)app\]/i], [d], [/((?:fban\/fbios|fb_iab\/fb4a)(?!.+fbav)|;fbav\/([\w\.]+);)/i], [[d, U], f], [/(kakao(?:talk|story))[\/ ]([\w\.]+)/i, /(naver)\(.*?(\d+\.[\w\.]+).*\)/i, /safari (line)\/([\w\.]+)/i, /\b(line)\/([\w\.]+)\/iab/i, /(chromium|instagram)[\/ ]([-\w\.]+)/i], [d, f], [/\bgsa\/([\w\.]+) .*safari\//i], [f, [d, "GSA"]], [/musical_ly(?:.+app_?version\/|_)([\w\.]+)/i], [f, [d, "TikTok"]], [/headlesschrome(?:\/([\w\.]+)| )/i], [f, [d, C + " Headless"]], [/ wv\).+(chrome)\/([\w\.]+)/i], [[d, C + " WebView"], f], [/droid.+ version\/([\w\.]+)\b.+(?:mobile safari|safari)/i], [f, [d, "Android " + R]], [/(chrome|omniweb|arora|[tizenoka]{5} ?browser)\/v?([\w\.]+)/i], [d, f], [/version\/([\w\.\,]+) .*mobile\/\w+ (safari)/i], [f, [d, "Mobile Safari"]], [/version\/([\w(\.|\,)]+) .*(mobile ?safari|safari)/i], [f, d], [/webkit.+?(mobile ?safari|safari)(\/[\w\.]+)/i], [d, [f, F, { "1.0": "/8", 1.2: "/1", 1.3: "/3", "2.0": "/412", "2.0.2": "/416", "2.0.3": "/417", "2.0.4": "/419", "?": "/" }]], [/(webkit|khtml)\/([\w\.]+)/i], [d, f], [/(navigator|netscape\d?)\/([-\w\.]+)/i], [[d, "Netscape"], f], [/mobile vr; rv:([\w\.]+)\).+firefox/i], [f, [d, P + " Reality"]], [/ekiohf.+(flow)\/([\w\.]+)/i, /(swiftfox)/i, /(icedragon|iceweasel|camino|chimera|fennec|maemo browser|minimo|conkeror|klar)[\/ ]?([\w\.\+]+)/i, /(seamonkey|k-meleon|icecat|iceape|firebird|phoenix|palemoon|basilisk|waterfox)\/([-\w\.]+)$/i, /(firefox)\/([\w\.]+)/i, /(mozilla)\/([\w\.]+) .+rv\:.+gecko\/\d+/i, /(polaris|lynx|dillo|icab|doris|amaya|w3m|netsurf|sleipnir|obigo|mosaic|(?:go|ice|up)[\. ]?browser)[-\/ ]?v?([\w\.]+)/i, /(links) \(([\w\.]+)/i, /panasonic;(viera)/i], [d, f], [/(cobalt)\/([\w\.]+)/i], [d, [f, /master.|lts./, ""]]], cpu: [[/(?:(amd|x(?:(?:86|64)[-_])?|wow|win)64)[;\)]/i], [[g, "amd64"]], [/(ia32(?=;))/i], [[g, W]], [/((?:i[346]|x)86)[;\)]/i], [[g, "ia32"]], [/\b(aarch64|arm(v?8e?l?|_?64))\b/i], [[g, "arm64"]], [/\b(arm(?:v[67])?ht?n?[fl]p?)\b/i], [[g, "armhf"]], [/windows (ce|mobile); ppc;/i], [[g, "arm"]], [/((?:ppc|powerpc)(?:64)?)(?: mac|;|\))/i], [[g, /ower/, "", W]], [/(sun4\w)[;\)]/i], [[g, "sparc"]], [/((?:avr32|ia64(?=;))|68k(?=\))|\barm(?=v(?:[1-7]|[5-7]1)l?|;|eabi)|(?=atmel )avr|(?:irix|mips|sparc)(?:64)?\b|pa-risc)/i], [[g, W]]], device: [[/\b(sch-i[89]0\d|shw-m380s|sm-[ptx]\w{2,4}|gt-[pn]\d{2,4}|sgh-t8[56]9|nexus 10)/i], [c, [h, A], [p, m]], [/\b((?:s[cgp]h|gt|sm)-\w+|sc[g-]?[\d]+a?|galaxy nexus)/i, /samsung[- ]([-\w]+)/i, /sec-(sgh\w+)/i], [c, [h, A], [p, v]], [/(?:\/|\()(ip(?:hone|od)[\w, ]*)(?:\/|;)/i], [c, [h, S], [p, v]], [/\((ipad);[-\w\),; ]+apple/i, /applecoremedia\/[\w\.]+ \((ipad)/i, /\b(ipad)\d\d?,\d\d?[;\]].+ios/i], [c, [h, S], [p, m]], [/(macintosh);/i], [c, [h, S]], [/\b(sh-?[altvz]?\d\d[a-ekm]?)/i], [c, [h, j], [p, v]], [/\b((?:ag[rs][23]?|bah2?|sht?|btv)-a?[lw]\d{2})\b(?!.+d\/s)/i], [c, [h, N], [p, m]], [/(?:huawei|honor)([-\w ]+)[;\)]/i, /\b(nexus 6p|\w{2,4}e?-[atu]?[ln][\dx][012359c][adn]?)\b(?!.+d\/s)/i], [c, [h, N], [p, v]], [/\b(poco[\w ]+)(?: bui|\))/i, /\b; (\w+) build\/hm\1/i, /\b(hm[-_ ]?note?[_ ]?(?:\d\w)?) bui/i, /\b(redmi[\-_ ]?(?:note|k)?[\w_ ]+)(?: bui|\))/i, /\b(mi[-_ ]?(?:a\d|one|one[_ ]plus|note lte|max|cc)?[_ ]?(?:\d?\w?)[_ ]?(?:plus|se|lite)?)(?: bui|\))/i], [[c, /_/g, " "], [h, D], [p, v]], [/\b(mi[-_ ]?(?:pad)(?:[\w_ ]+))(?: bui|\))/i], [[c, /_/g, " "], [h, D], [p, m]], [/; (\w+) bui.+ oppo/i, /\b(cph[12]\d{3}|p(?:af|c[al]|d\w|e[ar])[mt]\d0|x9007|a101op)\b/i], [c, [h, "OPPO"], [p, v]], [/vivo (\w+)(?: bui|\))/i, /\b(v[12]\d{3}\w?[at])(?: bui|;)/i], [c, [h, "Vivo"], [p, v]], [/\b(rmx[12]\d{3})(?: bui|;|\))/i], [c, [h, "Realme"], [p, v]], [/\b(milestone|droid(?:[2-4x]| (?:bionic|x2|pro|razr))?:?( 4g)?)\b[\w ]+build\//i, /\bmot(?:orola)?[- ](\w*)/i, /((?:moto[\w\(\) ]+|xt\d{3,4}|nexus 6)(?= bui|\)))/i], [c, [h, k], [p, v]], [/\b(mz60\d|xoom[2 ]{0,2}) build\//i], [c, [h, k], [p, m]], [/((?=lg)?[vl]k\-?\d{3}) bui| 3\.[-\w; ]{10}lg?-([06cv9]{3,4})/i], [c, [h, "LG"], [p, m]], [/(lm(?:-?f100[nv]?|-[\w\.]+)(?= bui|\))|nexus [45])/i, /\blg[-e;\/ ]+((?!browser|netcast|android tv)\w+)/i, /\blg-?([\d\w]+) bui/i], [c, [h, "LG"], [p, v]], [/(ideatab[-\w ]+)/i, /lenovo ?(s[56]000[-\w]+|tab(?:[\w ]+)|yt[-\d\w]{6}|tb[-\d\w]{6})/i], [c, [h, "Lenovo"], [p, m]], [/(?:maemo|nokia).*(n900|lumia \d+)/i, /nokia[-_ ]?([-\w\.]*)/i], [[c, /_/g, " "], [h, "Nokia"], [p, v]], [/(pixel c)\b/i], [c, [h, T], [p, m]], [/droid.+; (pixel[\daxl ]{0,6})(?: bui|\))/i], [c, [h, T], [p, v]], [/droid.+ (a?\d[0-2]{2}so|[c-g]\d{4}|so[-gl]\w+|xq-a\w[4-7][12])(?= bui|\).+chrome\/(?![1-6]{0,1}\d\.))/i], [c, [h, L], [p, v]], [/sony tablet [ps]/i, /\b(?:sony)?sgp\w+(?: bui|\))/i], [[c, "Xperia Tablet"], [h, L], [p, m]], [/ (kb2005|in20[12]5|be20[12][59])\b/i, /(?:one)?(?:plus)? (a\d0\d\d)(?: b|\))/i], [c, [h, "OnePlus"], [p, v]], [/(alexa)webm/i, /(kf[a-z]{2}wi|aeo[c-r]{2})( bui|\))/i, /(kf[a-z]+)( bui|\)).+silk\//i], [c, [h, x], [p, m]], [/((?:sd|kf)[0349hijorstuw]+)( bui|\)).+silk\//i], [[c, /(.+)/g, "Fire Phone $1"], [h, x], [p, v]], [/(playbook);[-\w\),; ]+(rim)/i], [c, h, [p, m]], [/\b((?:bb[a-f]|st[hv])100-\d)/i, /\(bb10; (\w+)/i], [c, [h, O], [p, v]], [/(?:\b|asus_)(transfo[prime ]{4,10} \w+|eeepc|slider \w+|nexus 7|padfone|p00[cj])/i], [c, [h, E], [p, m]], [/ (z[bes]6[027][012][km][ls]|zenfone \d\w?)\b/i], [c, [h, E], [p, v]], [/(nexus 9)/i], [c, [h, "HTC"], [p, m]], [/(htc)[-;_ ]{1,2}([\w ]+(?=\)| bui)|\w+)/i, /(zte)[- ]([\w ]+?)(?: bui|\/|\))/i, /(alcatel|geeksphone|nexian|panasonic(?!(?:;|\.))|sony(?!-bra))[-_ ]?([-\w]*)/i], [h, [c, /_/g, " "], [p, v]], [/droid.+; ([ab][1-7]-?[0178a]\d\d?)/i], [c, [h, "Acer"], [p, m]], [/droid.+; (m[1-5] note) bui/i, /\bmz-([-\w]{2,})/i], [c, [h, "Meizu"], [p, v]], [/(blackberry|benq|palm(?=\-)|sonyericsson|acer|asus|dell|meizu|motorola|polytron)[-_ ]?([-\w]*)/i, /(hp) ([\w ]+\w)/i, /(asus)-?(\w+)/i, /(microsoft); (lumia[\w ]+)/i, /(lenovo)[-_ ]?([-\w]+)/i, /(jolla)/i, /(oppo) ?([\w ]+) bui/i], [h, c, [p, v]], [/(kobo)\s(ereader|touch)/i, /(archos) (gamepad2?)/i, /(hp).+(touchpad(?!.+tablet)|tablet)/i, /(kindle)\/([\w\.]+)/i, /(nook)[\w ]+build\/(\w+)/i, /(dell) (strea[kpr\d ]*[\dko])/i, /(le[- ]+pan)[- ]+(\w{1,9}) bui/i, /(trinity)[- ]*(t\d{3}) bui/i, /(gigaset)[- ]+(q\w{1,9}) bui/i, /(vodafone) ([\w ]+)(?:\)| bui)/i], [h, c, [p, m]], [/(surface duo)/i], [c, [h, I], [p, m]], [/droid [\d\.]+; (fp\du?)(?: b|\))/i], [c, [h, "Fairphone"], [p, v]], [/(u304aa)/i], [c, [h, "AT&T"], [p, v]], [/\bsie-(\w*)/i], [c, [h, "Siemens"], [p, v]], [/\b(rct\w+) b/i], [c, [h, "RCA"], [p, m]], [/\b(venue[\d ]{2,7}) b/i], [c, [h, "Dell"], [p, m]], [/\b(q(?:mv|ta)\w+) b/i], [c, [h, "Verizon"], [p, m]], [/\b(?:barnes[& ]+noble |bn[rt])([\w\+ ]*) b/i], [c, [h, "Barnes & Noble"], [p, m]], [/\b(tm\d{3}\w+) b/i], [c, [h, "NuVision"], [p, m]], [/\b(k88) b/i], [c, [h, "ZTE"], [p, m]], [/\b(nx\d{3}j) b/i], [c, [h, "ZTE"], [p, v]], [/\b(gen\d{3}) b.+49h/i], [c, [h, "Swiss"], [p, v]], [/\b(zur\d{3}) b/i], [c, [h, "Swiss"], [p, m]], [/\b((zeki)?tb.*\b) b/i], [c, [h, "Zeki"], [p, m]], [/\b([yr]\d{2}) b/i, /\b(dragon[- ]+touch |dt)(\w{5}) b/i], [[h, "Dragon Touch"], c, [p, m]], [/\b(ns-?\w{0,9}) b/i], [c, [h, "Insignia"], [p, m]], [/\b((nxa|next)-?\w{0,9}) b/i], [c, [h, "NextBook"], [p, m]], [/\b(xtreme\_)?(v(1[045]|2[015]|[3469]0|7[05])) b/i], [[h, "Voice"], c, [p, v]], [/\b(lvtel\-)?(v1[12]) b/i], [[h, "LvTel"], c, [p, v]], [/\b(ph-1) /i], [c, [h, "Essential"], [p, v]], [/\b(v(100md|700na|7011|917g).*\b) b/i], [c, [h, "Envizen"], [p, m]], [/\b(trio[-\w\. ]+) b/i], [c, [h, "MachSpeed"], [p, m]], [/\btu_(1491) b/i], [c, [h, "Rotor"], [p, m]], [/(shield[\w ]+) b/i], [c, [h, "Nvidia"], [p, m]], [/(sprint) (\w+)/i], [h, c, [p, v]], [/(kin\.[onetw]{3})/i], [[c, /\./g, " "], [h, I], [p, v]], [/droid.+; (cc6666?|et5[16]|mc[239][23]x?|vc8[03]x?)\)/i], [c, [h, q], [p, m]], [/droid.+; (ec30|ps20|tc[2-8]\d[kx])\)/i], [c, [h, q], [p, v]], [/smart-tv.+(samsung)/i], [h, [p, _]], [/hbbtv.+maple;(\d+)/i], [[c, /^/, "SmartTV"], [h, A], [p, _]], [/(nux; netcast.+smarttv|lg (netcast\.tv-201\d|android tv))/i], [[h, "LG"], [p, _]], [/(apple) ?tv/i], [h, [c, S + " TV"], [p, _]], [/crkey/i], [[c, C + "cast"], [h, T], [p, _]], [/droid.+aft(\w)( bui|\))/i], [c, [h, x], [p, _]], [/\(dtv[\);].+(aquos)/i, /(aquos-tv[\w ]+)\)/i], [c, [h, j], [p, _]], [/(bravia[\w ]+)( bui|\))/i], [c, [h, L], [p, _]], [/(mitv-\w{5}) bui/i], [c, [h, D], [p, _]], [/Hbbtv.*(technisat) (.*);/i], [h, c, [p, _]], [/\b(roku)[\dx]*[\)\/]((?:dvp-)?[\d\.]*)/i, /hbbtv\/\d+\.\d+\.\d+ +\([\w\+ ]*; *([\w\d][^;]*);([^;]*)/i], [[h, X], [c, X], [p, _]], [/\b(android tv|smart[- ]?tv|opera tv|tv; rv:)\b/i], [[p, _]], [/(ouya)/i, /(nintendo) ([wids3utch]+)/i], [h, c, [p, b]], [/droid.+; (shield) bui/i], [c, [h, "Nvidia"], [p, b]], [/(playstation [345portablevi]+)/i], [c, [h, L], [p, b]], [/\b(xbox(?: one)?(?!; xbox))[\); ]/i], [c, [h, I], [p, b]], [/((pebble))app/i], [h, c, [p, w]], [/(watch)(?: ?os[,\/]|\d,\d\/)[\d\.]+/i], [c, [h, S], [p, w]], [/droid.+; (glass) \d/i], [c, [h, T], [p, w]], [/droid.+; (wt63?0{2,3})\)/i], [c, [h, q], [p, w]], [/(quest( 2| pro)?)/i], [c, [h, U], [p, w]], [/(tesla)(?: qtcarbrowser|\/[-\w\.]+)/i], [h, [p, y]], [/(aeobc)\b/i], [c, [h, x], [p, y]], [/droid .+?; ([^;]+?)(?: bui|\) applew).+? mobile safari/i], [c, [p, v]], [/droid .+?; ([^;]+?)(?: bui|\) applew).+?(?! mobile) safari/i], [c, [p, m]], [/\b((tablet|tab)[;\/]|focus\/\d(?!.+mobile))/i], [[p, m]], [/(phone|mobile(?:[;\/]| [ \w\/\.]*safari)|pda(?=.+windows ce))/i], [[p, v]], [/(android[-\w\. ]{0,9});.+buil/i], [c, [h, "Generic"]]], engine: [[/windows.+ edge\/([\w\.]+)/i], [f, [d, "EdgeHTML"]], [/webkit\/537\.36.+chrome\/(?!27)([\w\.]+)/i], [f, [d, "Blink"]], [/(presto)\/([\w\.]+)/i, /(webkit|trident|netfront|netsurf|amaya|lynx|w3m|goanna)\/([\w\.]+)/i, /ekioh(flow)\/([\w\.]+)/i, /(khtml|tasman|links)[\/ ]\(?([\w\.]+)/i, /(icab)[\/ ]([23]\.[\d\.]+)/i, /\b(libweb)/i], [d, f], [/rv\:([\w\.]{1,9})\b.+(gecko)/i], [f, d]], os: [[/microsoft (windows) (vista|xp)/i], [d, f], [/(windows) nt 6\.2; (arm)/i, /(windows (?:phone(?: os)?|mobile))[\/ ]?([\d\.\w ]*)/i, /(windows)[\/ ]?([ntce\d\. ]+\w)(?!.+xbox)/i], [d, [f, F, K]], [/(win(?=3|9|n)|win 9x )([nt\d\.]+)/i], [[d, "Windows"], [f, F, K]], [/ip[honead]{2,4}\b(?:.*os ([\w]+) like mac|; opera)/i, /ios;fbsv\/([\d\.]+)/i, /cfnetwork\/.+darwin/i], [[f, /_/g, "."], [d, "iOS"]], [/(mac os x) ?([\w\. ]*)/i, /(macintosh|mac_powerpc\b)(?!.+haiku)/i], [[d, B], [f, /_/g, "."]], [/droid ([\w\.]+)\b.+(android[- ]x86|harmonyos)/i], [f, d], [/(android|webos|qnx|bada|rim tablet os|maemo|meego|sailfish)[-\/ ]?([\w\.]*)/i, /(blackberry)\w*\/([\w\.]*)/i, /(tizen|kaios)[\/ ]([\w\.]+)/i, /\((series40);/i], [d, f], [/\(bb(10);/i], [f, [d, O]], [/(?:symbian ?os|symbos|s60(?=;)|series60)[-\/ ]?([\w\.]*)/i], [f, [d, "Symbian"]], [/mozilla\/[\d\.]+ \((?:mobile|tablet|tv|mobile; [\w ]+); rv:.+ gecko\/([\w\.]+)/i], [f, [d, P + " OS"]], [/web0s;.+rt(tv)/i, /\b(?:hp)?wos(?:browser)?\/([\w\.]+)/i], [f, [d, "webOS"]], [/watch(?: ?os[,\/]|\d,\d\/)([\d\.]+)/i], [f, [d, "watchOS"]], [/crkey\/([\d\.]+)/i], [f, [d, C + "cast"]], [/(cros) [\w]+(?:\)| ([\w\.]+)\b)/i], [[d, $], f], [/panasonic;(viera)/i, /(netrange)mmh/i, /(nettv)\/(\d+\.[\w\.]+)/i, /(nintendo|playstation) ([wids345portablevuch]+)/i, /(xbox); +xbox ([^\);]+)/i, /\b(joli|palm)\b ?(?:os)?\/?([\w\.]*)/i, /(mint)[\/\(\) ]?(\w*)/i, /(mageia|vectorlinux)[; ]/i, /([kxln]?ubuntu|debian|suse|opensuse|gentoo|arch(?= linux)|slackware|fedora|mandriva|centos|pclinuxos|red ?hat|zenwalk|linpus|raspbian|plan 9|minix|risc os|contiki|deepin|manjaro|elementary os|sabayon|linspire)(?: gnu\/linux)?(?: enterprise)?(?:[- ]linux)?(?:-gnu)?[-\/ ]?(?!chrom|package)([-\w\.]*)/i, /(hurd|linux) ?([\w\.]*)/i, /(gnu) ?([\w\.]*)/i, /\b([-frentopcghs]{0,5}bsd|dragonfly)[\/ ]?(?!amd|[ix346]{1,2}86)([\w\.]*)/i, /(haiku) (\w+)/i], [d, f], [/(sunos) ?([\w\.\d]*)/i], [[d, "Solaris"], f], [/((?:open)?solaris)[-\/ ]?([\w\.]*)/i, /(aix) ((\d)(?=\.|\)| )[\w\.])*/i, /\b(beos|os\/2|amigaos|morphos|openvms|fuchsia|hp-ux|serenityos)/i, /(unix) ?([\w\.]*)/i], [d, f]] }, J = function(e2, t3) {
+          }, K = { ME: "4.90", "NT 3.11": "NT3.51", "NT 4.0": "NT4.0", 2e3: "NT 5.0", XP: ["NT 5.1", "NT 5.2"], Vista: "NT 6.0", 7: "NT 6.1", 8: "NT 6.2", 8.1: "NT 6.3", 10: ["NT 6.4", "NT 10.0"], RT: "ARM" }, Q = { browser: [[/\b(?:crmo|crios)\/([\w\.]+)/i], [f, [d, "Chrome"]], [/edg(?:e|ios|a)?\/([\w\.]+)/i], [f, [d, "Edge"]], [/(opera mini)\/([-\w\.]+)/i, /(opera [mobiletab]{3,6})\b.+version\/([-\w\.]+)/i, /(opera)(?:.+version\/|[\/ ]+)([\w\.]+)/i], [d, f], [/opios[\/ ]+([\w\.]+)/i], [f, [d, A + " Mini"]], [/\bopr\/([\w\.]+)/i], [f, [d, A]], [/(kindle)\/([\w\.]+)/i, /(lunascape|maxthon|netfront|jasmine|blazer)[\/ ]?([\w\.]*)/i, /(avant |iemobile|slim)(?:browser)?[\/ ]?([\w\.]*)/i, /(ba?idubrowser)[\/ ]?([\w\.]+)/i, /(?:ms|\()(ie) ([\w\.]+)/i, /(flock|rockmelt|midori|epiphany|silk|skyfire|bolt|iron|vivaldi|iridium|phantomjs|bowser|quark|qupzilla|falkon|rekonq|puffin|brave|whale(?!.+naver)|qqbrowserlite|qq|duckduckgo)\/([-\w\.]+)/i, /(heytap|ovi)browser\/([\d\.]+)/i, /(weibo)__([\d\.]+)/i], [d, f], [/(?:\buc? ?browser|(?:juc.+)ucweb)[\/ ]?([\w\.]+)/i], [f, [d, "UC" + C]], [/microm.+\bqbcore\/([\w\.]+)/i, /\bqbcore\/([\w\.]+).+microm/i], [f, [d, "WeChat(Win) Desktop"]], [/micromessenger\/([\w\.]+)/i], [f, [d, "WeChat"]], [/konqueror\/([\w\.]+)/i], [f, [d, "Konqueror"]], [/trident.+rv[: ]([\w\.]{1,9})\b.+like gecko/i], [f, [d, "IE"]], [/ya(?:search)?browser\/([\w\.]+)/i], [f, [d, "Yandex"]], [/(avast|avg)\/([\w\.]+)/i], [[d, /(.+)/, "$1 Secure " + C], f], [/\bfocus\/([\w\.]+)/i], [f, [d, P + " Focus"]], [/\bopt\/([\w\.]+)/i], [f, [d, A + " Touch"]], [/coc_coc\w+\/([\w\.]+)/i], [f, [d, "Coc Coc"]], [/dolfin\/([\w\.]+)/i], [f, [d, "Dolphin"]], [/coast\/([\w\.]+)/i], [f, [d, A + " Coast"]], [/miuibrowser\/([\w\.]+)/i], [f, [d, "MIUI " + C]], [/fxios\/([-\w\.]+)/i], [f, [d, P]], [/\bqihu|(qi?ho?o?|360)browser/i], [[d, "360 " + C]], [/(oculus|samsung|sailfish|huawei)browser\/([\w\.]+)/i], [[d, /(.+)/, "$1 " + C], f], [/(comodo_dragon)\/([\w\.]+)/i], [[d, /_/g, " "], f], [/(electron)\/([\w\.]+) safari/i, /(tesla)(?: qtcarbrowser|\/(20\d\d\.[-\w\.]+))/i, /m?(qqbrowser|baiduboxapp|2345Explorer)[\/ ]?([\w\.]+)/i], [d, f], [/(metasr)[\/ ]?([\w\.]+)/i, /(lbbrowser)/i, /\[(linkedin)app\]/i], [d], [/((?:fban\/fbios|fb_iab\/fb4a)(?!.+fbav)|;fbav\/([\w\.]+);)/i], [[d, q], f], [/(kakao(?:talk|story))[\/ ]([\w\.]+)/i, /(naver)\(.*?(\d+\.[\w\.]+).*\)/i, /safari (line)\/([\w\.]+)/i, /\b(line)\/([\w\.]+)\/iab/i, /(chromium|instagram)[\/ ]([-\w\.]+)/i], [d, f], [/\bgsa\/([\w\.]+) .*safari\//i], [f, [d, "GSA"]], [/musical_ly(?:.+app_?version\/|_)([\w\.]+)/i], [f, [d, "TikTok"]], [/headlesschrome(?:\/([\w\.]+)| )/i], [f, [d, R + " Headless"]], [/ wv\).+(chrome)\/([\w\.]+)/i], [[d, R + " WebView"], f], [/droid.+ version\/([\w\.]+)\b.+(?:mobile safari|safari)/i], [f, [d, "Android " + C]], [/(chrome|omniweb|arora|[tizenoka]{5} ?browser)\/v?([\w\.]+)/i], [d, f], [/version\/([\w\.\,]+) .*mobile\/\w+ (safari)/i], [f, [d, "Mobile Safari"]], [/version\/([\w(\.|\,)]+) .*(mobile ?safari|safari)/i], [f, d], [/webkit.+?(mobile ?safari|safari)(\/[\w\.]+)/i], [d, [f, F, { "1.0": "/8", 1.2: "/1", 1.3: "/3", "2.0": "/412", "2.0.2": "/416", "2.0.3": "/417", "2.0.4": "/419", "?": "/" }]], [/(webkit|khtml)\/([\w\.]+)/i], [d, f], [/(navigator|netscape\d?)\/([-\w\.]+)/i], [[d, "Netscape"], f], [/mobile vr; rv:([\w\.]+)\).+firefox/i], [f, [d, P + " Reality"]], [/ekiohf.+(flow)\/([\w\.]+)/i, /(swiftfox)/i, /(icedragon|iceweasel|camino|chimera|fennec|maemo browser|minimo|conkeror|klar)[\/ ]?([\w\.\+]+)/i, /(seamonkey|k-meleon|icecat|iceape|firebird|phoenix|palemoon|basilisk|waterfox)\/([-\w\.]+)$/i, /(firefox)\/([\w\.]+)/i, /(mozilla)\/([\w\.]+) .+rv\:.+gecko\/\d+/i, /(polaris|lynx|dillo|icab|doris|amaya|w3m|netsurf|sleipnir|obigo|mosaic|(?:go|ice|up)[\. ]?browser)[-\/ ]?v?([\w\.]+)/i, /(links) \(([\w\.]+)/i, /panasonic;(viera)/i], [d, f], [/(cobalt)\/([\w\.]+)/i], [d, [f, /master.|lts./, ""]]], cpu: [[/(?:(amd|x(?:(?:86|64)[-_])?|wow|win)64)[;\)]/i], [[g, "amd64"]], [/(ia32(?=;))/i], [[g, W]], [/((?:i[346]|x)86)[;\)]/i], [[g, "ia32"]], [/\b(aarch64|arm(v?8e?l?|_?64))\b/i], [[g, "arm64"]], [/\b(arm(?:v[67])?ht?n?[fl]p?)\b/i], [[g, "armhf"]], [/windows (ce|mobile); ppc;/i], [[g, "arm"]], [/((?:ppc|powerpc)(?:64)?)(?: mac|;|\))/i], [[g, /ower/, "", W]], [/(sun4\w)[;\)]/i], [[g, "sparc"]], [/((?:avr32|ia64(?=;))|68k(?=\))|\barm(?=v(?:[1-7]|[5-7]1)l?|;|eabi)|(?=atmel )avr|(?:irix|mips|sparc)(?:64)?\b|pa-risc)/i], [[g, W]]], device: [[/\b(sch-i[89]0\d|shw-m380s|sm-[ptx]\w{2,4}|gt-[pn]\d{2,4}|sgh-t8[56]9|nexus 10)/i], [c, [h, M], [p, m]], [/\b((?:s[cgp]h|gt|sm)-\w+|sc[g-]?[\d]+a?|galaxy nexus)/i, /samsung[- ]([-\w]+)/i, /sec-(sgh\w+)/i], [c, [h, M], [p, v]], [/(?:\/|\()(ip(?:hone|od)[\w, ]*)(?:\/|;)/i], [c, [h, E], [p, v]], [/\((ipad);[-\w\),; ]+apple/i, /applecoremedia\/[\w\.]+ \((ipad)/i, /\b(ipad)\d\d?,\d\d?[;\]].+ios/i], [c, [h, E], [p, m]], [/(macintosh);/i], [c, [h, E]], [/\b(sh-?[altvz]?\d\d[a-ekm]?)/i], [c, [h, j], [p, v]], [/\b((?:ag[rs][23]?|bah2?|sht?|btv)-a?[lw]\d{2})\b(?!.+d\/s)/i], [c, [h, N], [p, m]], [/(?:huawei|honor)([-\w ]+)[;\)]/i, /\b(nexus 6p|\w{2,4}e?-[atu]?[ln][\dx][012359c][adn]?)\b(?!.+d\/s)/i], [c, [h, N], [p, v]], [/\b(poco[\w ]+)(?: bui|\))/i, /\b; (\w+) build\/hm\1/i, /\b(hm[-_ ]?note?[_ ]?(?:\d\w)?) bui/i, /\b(redmi[\-_ ]?(?:note|k)?[\w_ ]+)(?: bui|\))/i, /\b(mi[-_ ]?(?:a\d|one|one[_ ]plus|note lte|max|cc)?[_ ]?(?:\d?\w?)[_ ]?(?:plus|se|lite)?)(?: bui|\))/i], [[c, /_/g, " "], [h, D], [p, v]], [/\b(mi[-_ ]?(?:pad)(?:[\w_ ]+))(?: bui|\))/i], [[c, /_/g, " "], [h, D], [p, m]], [/; (\w+) bui.+ oppo/i, /\b(cph[12]\d{3}|p(?:af|c[al]|d\w|e[ar])[mt]\d0|x9007|a101op)\b/i], [c, [h, "OPPO"], [p, v]], [/vivo (\w+)(?: bui|\))/i, /\b(v[12]\d{3}\w?[at])(?: bui|;)/i], [c, [h, "Vivo"], [p, v]], [/\b(rmx[12]\d{3})(?: bui|;|\))/i], [c, [h, "Realme"], [p, v]], [/\b(milestone|droid(?:[2-4x]| (?:bionic|x2|pro|razr))?:?( 4g)?)\b[\w ]+build\//i, /\bmot(?:orola)?[- ](\w*)/i, /((?:moto[\w\(\) ]+|xt\d{3,4}|nexus 6)(?= bui|\)))/i], [c, [h, k], [p, v]], [/\b(mz60\d|xoom[2 ]{0,2}) build\//i], [c, [h, k], [p, m]], [/((?=lg)?[vl]k\-?\d{3}) bui| 3\.[-\w; ]{10}lg?-([06cv9]{3,4})/i], [c, [h, "LG"], [p, m]], [/(lm(?:-?f100[nv]?|-[\w\.]+)(?= bui|\))|nexus [45])/i, /\blg[-e;\/ ]+((?!browser|netcast|android tv)\w+)/i, /\blg-?([\d\w]+) bui/i], [c, [h, "LG"], [p, v]], [/(ideatab[-\w ]+)/i, /lenovo ?(s[56]000[-\w]+|tab(?:[\w ]+)|yt[-\d\w]{6}|tb[-\d\w]{6})/i], [c, [h, "Lenovo"], [p, m]], [/(?:maemo|nokia).*(n900|lumia \d+)/i, /nokia[-_ ]?([-\w\.]*)/i], [[c, /_/g, " "], [h, "Nokia"], [p, v]], [/(pixel c)\b/i], [c, [h, T], [p, m]], [/droid.+; (pixel[\daxl ]{0,6})(?: bui|\))/i], [c, [h, T], [p, v]], [/droid.+ (a?\d[0-2]{2}so|[c-g]\d{4}|so[-gl]\w+|xq-a\w[4-7][12])(?= bui|\).+chrome\/(?![1-6]{0,1}\d\.))/i], [c, [h, L], [p, v]], [/sony tablet [ps]/i, /\b(?:sony)?sgp\w+(?: bui|\))/i], [[c, "Xperia Tablet"], [h, L], [p, m]], [/ (kb2005|in20[12]5|be20[12][59])\b/i, /(?:one)?(?:plus)? (a\d0\d\d)(?: b|\))/i], [c, [h, "OnePlus"], [p, v]], [/(alexa)webm/i, /(kf[a-z]{2}wi|aeo[c-r]{2})( bui|\))/i, /(kf[a-z]+)( bui|\)).+silk\//i], [c, [h, x], [p, m]], [/((?:sd|kf)[0349hijorstuw]+)( bui|\)).+silk\//i], [[c, /(.+)/g, "Fire Phone $1"], [h, x], [p, v]], [/(playbook);[-\w\),; ]+(rim)/i], [c, h, [p, m]], [/\b((?:bb[a-f]|st[hv])100-\d)/i, /\(bb10; (\w+)/i], [c, [h, O], [p, v]], [/(?:\b|asus_)(transfo[prime ]{4,10} \w+|eeepc|slider \w+|nexus 7|padfone|p00[cj])/i], [c, [h, S], [p, m]], [/ (z[bes]6[027][012][km][ls]|zenfone \d\w?)\b/i], [c, [h, S], [p, v]], [/(nexus 9)/i], [c, [h, "HTC"], [p, m]], [/(htc)[-;_ ]{1,2}([\w ]+(?=\)| bui)|\w+)/i, /(zte)[- ]([\w ]+?)(?: bui|\/|\))/i, /(alcatel|geeksphone|nexian|panasonic(?!(?:;|\.))|sony(?!-bra))[-_ ]?([-\w]*)/i], [h, [c, /_/g, " "], [p, v]], [/droid.+; ([ab][1-7]-?[0178a]\d\d?)/i], [c, [h, "Acer"], [p, m]], [/droid.+; (m[1-5] note) bui/i, /\bmz-([-\w]{2,})/i], [c, [h, "Meizu"], [p, v]], [/(blackberry|benq|palm(?=\-)|sonyericsson|acer|asus|dell|meizu|motorola|polytron)[-_ ]?([-\w]*)/i, /(hp) ([\w ]+\w)/i, /(asus)-?(\w+)/i, /(microsoft); (lumia[\w ]+)/i, /(lenovo)[-_ ]?([-\w]+)/i, /(jolla)/i, /(oppo) ?([\w ]+) bui/i], [h, c, [p, v]], [/(kobo)\s(ereader|touch)/i, /(archos) (gamepad2?)/i, /(hp).+(touchpad(?!.+tablet)|tablet)/i, /(kindle)\/([\w\.]+)/i, /(nook)[\w ]+build\/(\w+)/i, /(dell) (strea[kpr\d ]*[\dko])/i, /(le[- ]+pan)[- ]+(\w{1,9}) bui/i, /(trinity)[- ]*(t\d{3}) bui/i, /(gigaset)[- ]+(q\w{1,9}) bui/i, /(vodafone) ([\w ]+)(?:\)| bui)/i], [h, c, [p, m]], [/(surface duo)/i], [c, [h, I], [p, m]], [/droid [\d\.]+; (fp\du?)(?: b|\))/i], [c, [h, "Fairphone"], [p, v]], [/(u304aa)/i], [c, [h, "AT&T"], [p, v]], [/\bsie-(\w*)/i], [c, [h, "Siemens"], [p, v]], [/\b(rct\w+) b/i], [c, [h, "RCA"], [p, m]], [/\b(venue[\d ]{2,7}) b/i], [c, [h, "Dell"], [p, m]], [/\b(q(?:mv|ta)\w+) b/i], [c, [h, "Verizon"], [p, m]], [/\b(?:barnes[& ]+noble |bn[rt])([\w\+ ]*) b/i], [c, [h, "Barnes & Noble"], [p, m]], [/\b(tm\d{3}\w+) b/i], [c, [h, "NuVision"], [p, m]], [/\b(k88) b/i], [c, [h, "ZTE"], [p, m]], [/\b(nx\d{3}j) b/i], [c, [h, "ZTE"], [p, v]], [/\b(gen\d{3}) b.+49h/i], [c, [h, "Swiss"], [p, v]], [/\b(zur\d{3}) b/i], [c, [h, "Swiss"], [p, m]], [/\b((zeki)?tb.*\b) b/i], [c, [h, "Zeki"], [p, m]], [/\b([yr]\d{2}) b/i, /\b(dragon[- ]+touch |dt)(\w{5}) b/i], [[h, "Dragon Touch"], c, [p, m]], [/\b(ns-?\w{0,9}) b/i], [c, [h, "Insignia"], [p, m]], [/\b((nxa|next)-?\w{0,9}) b/i], [c, [h, "NextBook"], [p, m]], [/\b(xtreme\_)?(v(1[045]|2[015]|[3469]0|7[05])) b/i], [[h, "Voice"], c, [p, v]], [/\b(lvtel\-)?(v1[12]) b/i], [[h, "LvTel"], c, [p, v]], [/\b(ph-1) /i], [c, [h, "Essential"], [p, v]], [/\b(v(100md|700na|7011|917g).*\b) b/i], [c, [h, "Envizen"], [p, m]], [/\b(trio[-\w\. ]+) b/i], [c, [h, "MachSpeed"], [p, m]], [/\btu_(1491) b/i], [c, [h, "Rotor"], [p, m]], [/(shield[\w ]+) b/i], [c, [h, "Nvidia"], [p, m]], [/(sprint) (\w+)/i], [h, c, [p, v]], [/(kin\.[onetw]{3})/i], [[c, /\./g, " "], [h, I], [p, v]], [/droid.+; (cc6666?|et5[16]|mc[239][23]x?|vc8[03]x?)\)/i], [c, [h, U], [p, m]], [/droid.+; (ec30|ps20|tc[2-8]\d[kx])\)/i], [c, [h, U], [p, v]], [/smart-tv.+(samsung)/i], [h, [p, _]], [/hbbtv.+maple;(\d+)/i], [[c, /^/, "SmartTV"], [h, M], [p, _]], [/(nux; netcast.+smarttv|lg (netcast\.tv-201\d|android tv))/i], [[h, "LG"], [p, _]], [/(apple) ?tv/i], [h, [c, E + " TV"], [p, _]], [/crkey/i], [[c, R + "cast"], [h, T], [p, _]], [/droid.+aft(\w)( bui|\))/i], [c, [h, x], [p, _]], [/\(dtv[\);].+(aquos)/i, /(aquos-tv[\w ]+)\)/i], [c, [h, j], [p, _]], [/(bravia[\w ]+)( bui|\))/i], [c, [h, L], [p, _]], [/(mitv-\w{5}) bui/i], [c, [h, D], [p, _]], [/Hbbtv.*(technisat) (.*);/i], [h, c, [p, _]], [/\b(roku)[\dx]*[\)\/]((?:dvp-)?[\d\.]*)/i, /hbbtv\/\d+\.\d+\.\d+ +\([\w\+ ]*; *([\w\d][^;]*);([^;]*)/i], [[h, X], [c, X], [p, _]], [/\b(android tv|smart[- ]?tv|opera tv|tv; rv:)\b/i], [[p, _]], [/(ouya)/i, /(nintendo) ([wids3utch]+)/i], [h, c, [p, b]], [/droid.+; (shield) bui/i], [c, [h, "Nvidia"], [p, b]], [/(playstation [345portablevi]+)/i], [c, [h, L], [p, b]], [/\b(xbox(?: one)?(?!; xbox))[\); ]/i], [c, [h, I], [p, b]], [/((pebble))app/i], [h, c, [p, w]], [/(watch)(?: ?os[,\/]|\d,\d\/)[\d\.]+/i], [c, [h, E], [p, w]], [/droid.+; (glass) \d/i], [c, [h, T], [p, w]], [/droid.+; (wt63?0{2,3})\)/i], [c, [h, U], [p, w]], [/(quest( 2| pro)?)/i], [c, [h, q], [p, w]], [/(tesla)(?: qtcarbrowser|\/[-\w\.]+)/i], [h, [p, y]], [/(aeobc)\b/i], [c, [h, x], [p, y]], [/droid .+?; ([^;]+?)(?: bui|\) applew).+? mobile safari/i], [c, [p, v]], [/droid .+?; ([^;]+?)(?: bui|\) applew).+?(?! mobile) safari/i], [c, [p, m]], [/\b((tablet|tab)[;\/]|focus\/\d(?!.+mobile))/i], [[p, m]], [/(phone|mobile(?:[;\/]| [ \w\/\.]*safari)|pda(?=.+windows ce))/i], [[p, v]], [/(android[-\w\. ]{0,9});.+buil/i], [c, [h, "Generic"]]], engine: [[/windows.+ edge\/([\w\.]+)/i], [f, [d, "EdgeHTML"]], [/webkit\/537\.36.+chrome\/(?!27)([\w\.]+)/i], [f, [d, "Blink"]], [/(presto)\/([\w\.]+)/i, /(webkit|trident|netfront|netsurf|amaya|lynx|w3m|goanna)\/([\w\.]+)/i, /ekioh(flow)\/([\w\.]+)/i, /(khtml|tasman|links)[\/ ]\(?([\w\.]+)/i, /(icab)[\/ ]([23]\.[\d\.]+)/i, /\b(libweb)/i], [d, f], [/rv\:([\w\.]{1,9})\b.+(gecko)/i], [f, d]], os: [[/microsoft (windows) (vista|xp)/i], [d, f], [/(windows) nt 6\.2; (arm)/i, /(windows (?:phone(?: os)?|mobile))[\/ ]?([\d\.\w ]*)/i, /(windows)[\/ ]?([ntce\d\. ]+\w)(?!.+xbox)/i], [d, [f, F, K]], [/(win(?=3|9|n)|win 9x )([nt\d\.]+)/i], [[d, "Windows"], [f, F, K]], [/ip[honead]{2,4}\b(?:.*os ([\w]+) like mac|; opera)/i, /ios;fbsv\/([\d\.]+)/i, /cfnetwork\/.+darwin/i], [[f, /_/g, "."], [d, "iOS"]], [/(mac os x) ?([\w\. ]*)/i, /(macintosh|mac_powerpc\b)(?!.+haiku)/i], [[d, $], [f, /_/g, "."]], [/droid ([\w\.]+)\b.+(android[- ]x86|harmonyos)/i], [f, d], [/(android|webos|qnx|bada|rim tablet os|maemo|meego|sailfish)[-\/ ]?([\w\.]*)/i, /(blackberry)\w*\/([\w\.]*)/i, /(tizen|kaios)[\/ ]([\w\.]+)/i, /\((series40);/i], [d, f], [/\(bb(10);/i], [f, [d, O]], [/(?:symbian ?os|symbos|s60(?=;)|series60)[-\/ ]?([\w\.]*)/i], [f, [d, "Symbian"]], [/mozilla\/[\d\.]+ \((?:mobile|tablet|tv|mobile; [\w ]+); rv:.+ gecko\/([\w\.]+)/i], [f, [d, P + " OS"]], [/web0s;.+rt(tv)/i, /\b(?:hp)?wos(?:browser)?\/([\w\.]+)/i], [f, [d, "webOS"]], [/watch(?: ?os[,\/]|\d,\d\/)([\d\.]+)/i], [f, [d, "watchOS"]], [/crkey\/([\d\.]+)/i], [f, [d, R + "cast"]], [/(cros) [\w]+(?:\)| ([\w\.]+)\b)/i], [[d, B], f], [/panasonic;(viera)/i, /(netrange)mmh/i, /(nettv)\/(\d+\.[\w\.]+)/i, /(nintendo|playstation) ([wids345portablevuch]+)/i, /(xbox); +xbox ([^\);]+)/i, /\b(joli|palm)\b ?(?:os)?\/?([\w\.]*)/i, /(mint)[\/\(\) ]?(\w*)/i, /(mageia|vectorlinux)[; ]/i, /([kxln]?ubuntu|debian|suse|opensuse|gentoo|arch(?= linux)|slackware|fedora|mandriva|centos|pclinuxos|red ?hat|zenwalk|linpus|raspbian|plan 9|minix|risc os|contiki|deepin|manjaro|elementary os|sabayon|linspire)(?: gnu\/linux)?(?: enterprise)?(?:[- ]linux)?(?:-gnu)?[-\/ ]?(?!chrom|package)([-\w\.]*)/i, /(hurd|linux) ?([\w\.]*)/i, /(gnu) ?([\w\.]*)/i, /\b([-frentopcghs]{0,5}bsd|dragonfly)[\/ ]?(?!amd|[ix346]{1,2}86)([\w\.]*)/i, /(haiku) (\w+)/i], [d, f], [/(sunos) ?([\w\.\d]*)/i], [[d, "Solaris"], f], [/((?:open)?solaris)[-\/ ]?([\w\.]*)/i, /(aix) ((\d)(?=\.|\)| )[\w\.])*/i, /\b(beos|os\/2|amigaos|morphos|openvms|fuchsia|hp-ux|serenityos)/i, /(unix) ?([\w\.]*)/i], [d, f]] }, J = function(e2, t3) {
             if (typeof e2 === s && (t3 = e2, e2 = void 0), !(this instanceof J)) return new J(e2, t3).getResult();
             var r3 = typeof n2 !== a && n2.navigator ? n2.navigator : void 0, i3 = e2 || (r3 && r3.userAgent ? r3.userAgent : ""), b2 = r3 && r3.userAgentData ? r3.userAgentData : void 0, _2 = t3 ? V(Q, t3) : Q, w2 = r3 && r3.userAgent == i3;
             return this.getBrowser = function() {
@@ -2143,7 +2143,7 @@ var require_root_of_the_server_12400766 = __commonJS({
               return e3[d] = void 0, e3[f] = void 0, z.call(e3, i3, _2.engine), e3;
             }, this.getOS = function() {
               var e3 = {};
-              return e3[d] = void 0, e3[f] = void 0, z.call(e3, i3, _2.os), w2 && !e3[d] && b2 && "Unknown" != b2.platform && (e3[d] = b2.platform.replace(/chrome os/i, $).replace(/macos/i, B)), e3;
+              return e3[d] = void 0, e3[f] = void 0, z.call(e3, i3, _2.os), w2 && !e3[d] && b2 && "Unknown" != b2.platform && (e3[d] = b2.platform.replace(/chrome os/i, B).replace(/macos/i, $)), e3;
             }, this.getResult = function() {
               return { ua: this.getUA(), browser: this.getBrowser(), engine: this.getEngine(), os: this.getOS(), device: this.getDevice(), cpu: this.getCPU() };
             }, this.getUA = function() {
@@ -2202,8 +2202,8 @@ var require_root_of_the_server_12400766 = __commonJS({
       function x(e2) {
         return "object" == typeof e2 && null !== e2 && e2.$$typeof === s;
       }
-      var S = /\/+/g;
-      function E(e2, t2) {
+      var E = /\/+/g;
+      function S(e2, t2) {
         var r2, n2;
         return "object" == typeof e2 && null !== e2 && null != e2.key ? (r2 = "" + e2.key, n2 = { "=": "=0", ":": "=2" }, "$" + r2.replace(/[=:]/g, function(e3) {
           return n2[e3];
@@ -2233,13 +2233,13 @@ var require_root_of_the_server_12400766 = __commonJS({
                   return e3((b2 = t3._init)(t3._payload), r3, n3, u3, c2);
               }
           }
-          if (b2) return c2 = c2(t3), b2 = "" === u3 ? "." + E(t3, 0) : u3, o(c2) ? (n3 = "", null != b2 && (n3 = b2.replace(S, "$&/") + "/"), e3(c2, r3, n3, "", function(e4) {
+          if (b2) return c2 = c2(t3), b2 = "" === u3 ? "." + S(t3, 0) : u3, o(c2) ? (n3 = "", null != b2 && (n3 = b2.replace(E, "$&/") + "/"), e3(c2, r3, n3, "", function(e4) {
             return e4;
-          })) : null != c2 && (x(c2) && (d2 = c2, p2 = n3 + (null == c2.key || t3 && t3.key === c2.key ? "" : ("" + c2.key).replace(S, "$&/") + "/") + b2, c2 = y(d2.type, p2, d2.props)), r3.push(c2)), 1;
+          })) : null != c2 && (x(c2) && (d2 = c2, p2 = n3 + (null == c2.key || t3 && t3.key === c2.key ? "" : ("" + c2.key).replace(E, "$&/") + "/") + b2, c2 = y(d2.type, p2, d2.props)), r3.push(c2)), 1;
           b2 = 0;
           var v2 = "" === u3 ? "." : u3 + ":";
-          if (o(t3)) for (var _2 = 0; _2 < t3.length; _2++) f2 = v2 + E(u3 = t3[_2], _2), b2 += e3(u3, r3, n3, f2, c2);
-          else if ("function" == typeof (_2 = null === (h2 = t3) || "object" != typeof h2 ? null : "function" == typeof (h2 = m && h2[m] || h2["@@iterator"]) ? h2 : null)) for (t3 = _2.call(t3), _2 = 0; !(u3 = t3.next()).done; ) f2 = v2 + E(u3 = u3.value, _2++), b2 += e3(u3, r3, n3, f2, c2);
+          if (o(t3)) for (var _2 = 0; _2 < t3.length; _2++) f2 = v2 + S(u3 = t3[_2], _2), b2 += e3(u3, r3, n3, f2, c2);
+          else if ("function" == typeof (_2 = null === (h2 = t3) || "object" != typeof h2 ? null : "function" == typeof (h2 = m && h2[m] || h2["@@iterator"]) ? h2 : null)) for (t3 = _2.call(t3), _2 = 0; !(u3 = t3.next()).done; ) f2 = v2 + S(u3 = u3.value, _2++), b2 += e3(u3, r3, n3, f2, c2);
           else if ("object" === f2) {
             if ("function" == typeof t3.then) return e3(function(e4) {
               switch (e4.status) {
@@ -2268,7 +2268,7 @@ var require_root_of_the_server_12400766 = __commonJS({
           return t2.call(r2, e3, u2++);
         }), n2;
       }
-      function R(e2) {
+      function C(e2) {
         if (-1 === e2._status) {
           var t2 = e2._result;
           (t2 = t2()).then(function(t3) {
@@ -2280,7 +2280,7 @@ var require_root_of_the_server_12400766 = __commonJS({
         if (1 === e2._status) return e2._result.default;
         throw e2._result;
       }
-      function C() {
+      function R() {
         return /* @__PURE__ */ new WeakMap();
       }
       function P() {
@@ -2306,7 +2306,7 @@ var require_root_of_the_server_12400766 = __commonJS({
         return function() {
           var t2 = n.A;
           if (!t2) return e2.apply(null, arguments);
-          var r2 = t2.getCacheForType(C);
+          var r2 = t2.getCacheForType(R);
           void 0 === (t2 = r2.get(e2)) && (t2 = P(), r2.set(e2, t2)), r2 = 0;
           for (var i2 = arguments.length; r2 < i2; r2++) {
             var o2 = arguments[r2];
@@ -2356,7 +2356,7 @@ var require_root_of_the_server_12400766 = __commonJS({
       }, r.forwardRef = function(e2) {
         return { $$typeof: p, render: e2 };
       }, r.isValidElement = x, r.lazy = function(e2) {
-        return { $$typeof: g, _payload: { _status: -1, _result: e2 }, _init: R };
+        return { $$typeof: g, _payload: { _status: -1, _result: e2 }, _init: C };
       }, r.memo = function(e2, t2) {
         return { $$typeof: f, type: e2, compare: void 0 === t2 ? null : t2 };
       }, r.use = function(e2) {
@@ -2507,26 +2507,26 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           throw Object.defineProperty(new c({ page: this.sourcePage }), "__NEXT_ERROR_CODE", { value: "E394", enumerable: false, configurable: true });
         }
       }
-      function S(e10) {
+      function E(e10) {
         return e10.replace(/\/$/, "") || "/";
       }
-      function E(e10) {
+      function S(e10) {
         let t2 = e10.indexOf("#"), r2 = e10.indexOf("?"), n2 = r2 > -1 && (t2 < 0 || r2 < t2);
         return n2 || t2 > -1 ? { pathname: e10.substring(0, n2 ? r2 : t2), query: n2 ? e10.substring(r2, t2 > -1 ? t2 : void 0) : "", hash: t2 > -1 ? e10.slice(t2) : "" } : { pathname: e10, query: "", hash: "" };
       }
       function O(e10, t2) {
         if (!e10.startsWith("/") || !t2) return e10;
-        let { pathname: r2, query: n2, hash: i2 } = E(e10);
+        let { pathname: r2, query: n2, hash: i2 } = S(e10);
         return `${t2}${r2}${n2}${i2}`;
       }
-      function R(e10, t2) {
+      function C(e10, t2) {
         if (!e10.startsWith("/") || !t2) return e10;
-        let { pathname: r2, query: n2, hash: i2 } = E(e10);
+        let { pathname: r2, query: n2, hash: i2 } = S(e10);
         return `${r2}${t2}${n2}${i2}`;
       }
-      function C(e10, t2) {
+      function R(e10, t2) {
         if ("string" != typeof e10) return false;
-        let { pathname: r2 } = E(e10);
+        let { pathname: r2 } = S(e10);
         return r2 === t2 || r2.startsWith(t2 + "/");
       }
       let P = /* @__PURE__ */ new WeakMap();
@@ -2545,7 +2545,7 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
         return new URL(String(e10).replace(N, "localhost"), t2 && String(t2).replace(N, "localhost"));
       }
       let k = Symbol("NextURLInternal");
-      class M {
+      class A {
         constructor(e10, t2, r2) {
           let n2, i2;
           "object" == typeof t2 && "pathname" in t2 || "string" == typeof t2 ? (n2 = t2, i2 = r2 || {}) : i2 = r2 || t2 || {}, this[k] = { url: I(e10, n2 ?? i2.base), options: i2, basePath: "" }, this.analyze();
@@ -2554,8 +2554,8 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           var e10, t2, r2, n2, i2;
           let o2 = function(e11, t3) {
             let { basePath: r3, i18n: n3, trailingSlash: i3 } = t3.nextConfig ?? {}, o3 = { pathname: e11, trailingSlash: "/" !== e11 ? e11.endsWith("/") : i3 };
-            r3 && C(o3.pathname, r3) && (o3.pathname = function(e12, t4) {
-              if (!C(e12, t4)) return e12;
+            r3 && R(o3.pathname, r3) && (o3.pathname = function(e12, t4) {
+              if (!R(e12, t4)) return e12;
               let r4 = e12.slice(t4.length);
               return r4.startsWith("/") ? r4 : `/${r4}`;
             }(o3.pathname, r3), o3.basePath = r3);
@@ -2592,8 +2592,8 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           return t2 = function(e11, t3, r2, n2) {
             if (!t3 || t3 === r2) return e11;
             let i2 = e11.toLowerCase();
-            return !n2 && (C(i2, "/api") || C(i2, `/${t3.toLowerCase()}`)) ? e11 : O(e11, `/${t3}`);
-          }((e10 = { basePath: this[k].basePath, buildId: this[k].buildId, defaultLocale: this[k].options.forceLocale ? void 0 : this[k].defaultLocale, locale: this[k].locale, pathname: this[k].url.pathname, trailingSlash: this[k].trailingSlash }).pathname, e10.locale, e10.buildId ? void 0 : e10.defaultLocale, e10.ignorePrefix), (e10.buildId || !e10.trailingSlash) && (t2 = S(t2)), e10.buildId && (t2 = R(O(t2, `/_next/data/${e10.buildId}`), "/" === e10.pathname ? "index.json" : ".json")), t2 = O(t2, e10.basePath), !e10.buildId && e10.trailingSlash ? t2.endsWith("/") ? t2 : R(t2, "/") : S(t2);
+            return !n2 && (R(i2, "/api") || R(i2, `/${t3.toLowerCase()}`)) ? e11 : O(e11, `/${t3}`);
+          }((e10 = { basePath: this[k].basePath, buildId: this[k].buildId, defaultLocale: this[k].options.forceLocale ? void 0 : this[k].defaultLocale, locale: this[k].locale, pathname: this[k].url.pathname, trailingSlash: this[k].trailingSlash }).pathname, e10.locale, e10.buildId ? void 0 : e10.defaultLocale, e10.ignorePrefix), (e10.buildId || !e10.trailingSlash) && (t2 = E(t2)), e10.buildId && (t2 = C(O(t2, `/_next/data/${e10.buildId}`), "/" === e10.pathname ? "index.json" : ".json")), t2 = O(t2, e10.basePath), !e10.buildId && e10.trailingSlash ? t2.endsWith("/") ? t2 : C(t2, "/") : E(t2);
         }
         formatSearch() {
           return this[k].url.search;
@@ -2701,16 +2701,16 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           return { href: this.href, origin: this.origin, protocol: this.protocol, username: this.username, password: this.password, host: this.host, hostname: this.hostname, port: this.port, pathname: this.pathname, search: this.search, searchParams: this.searchParams, hash: this.hash };
         }
         clone() {
-          return new M(String(this), this[k].options);
+          return new A(String(this), this[k].options);
         }
       }
-      var A, j, L, D, q, U, $, B, V, H, G, W, X = e.i(70829);
+      var M, j, L, D, U, q, B, $, V, H, G, W, X = e.i(70829);
       let z = Symbol("internal request");
       class F extends Request {
         constructor(e10, t2 = {}) {
           const r2 = "string" != typeof e10 && "url" in e10 ? e10.url : String(e10);
           v(r2), e10 instanceof Request ? super(e10, t2) : super(r2, t2);
-          const n2 = new M(r2, { headers: b(this.headers), nextConfig: t2.nextConfig });
+          const n2 = new A(r2, { headers: b(this.headers), nextConfig: t2.nextConfig });
           this[z] = { cookies: new X.RequestCookies(this.headers), nextUrl: n2, url: n2.toString() };
         }
         [Symbol.for("edge-runtime.inspect.custom")]() {
@@ -2772,7 +2772,7 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
                 return K.get(e11, n3, i2);
             }
           } });
-          this[Q] = { cookies: n2, url: t2.url ? new M(t2.url, { headers: b(r2), nextConfig: t2.nextConfig }) : void 0 };
+          this[Q] = { cookies: n2, url: t2.url ? new A(t2.url, { headers: b(r2), nextConfig: t2.nextConfig }) : void 0 };
         }
         [Symbol.for("edge-runtime.inspect.custom")]() {
           return { cookies: this.cookies, url: this.url, body: this.body, bodyUsed: this.bodyUsed, headers: Object.fromEntries(this.headers), ok: this.ok, redirected: this.redirected, status: this.status, statusText: this.statusText, type: this.type };
@@ -2986,39 +2986,39 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
       function eg(e10, t2) {
         if ("action" !== e10.phase) throw new ed();
       }
-      var eb = ((A = eb || {}).handleRequest = "BaseServer.handleRequest", A.run = "BaseServer.run", A.pipe = "BaseServer.pipe", A.getStaticHTML = "BaseServer.getStaticHTML", A.render = "BaseServer.render", A.renderToResponseWithComponents = "BaseServer.renderToResponseWithComponents", A.renderToResponse = "BaseServer.renderToResponse", A.renderToHTML = "BaseServer.renderToHTML", A.renderError = "BaseServer.renderError", A.renderErrorToResponse = "BaseServer.renderErrorToResponse", A.renderErrorToHTML = "BaseServer.renderErrorToHTML", A.render404 = "BaseServer.render404", A), ev = ((j = ev || {}).loadDefaultErrorComponents = "LoadComponents.loadDefaultErrorComponents", j.loadComponents = "LoadComponents.loadComponents", j), em = ((L = em || {}).getRequestHandler = "NextServer.getRequestHandler", L.getRequestHandlerWithMetadata = "NextServer.getRequestHandlerWithMetadata", L.getServer = "NextServer.getServer", L.getServerRequestHandler = "NextServer.getServerRequestHandler", L.createServer = "createServer.createServer", L), e_ = ((D = e_ || {}).compression = "NextNodeServer.compression", D.getBuildId = "NextNodeServer.getBuildId", D.createComponentTree = "NextNodeServer.createComponentTree", D.clientComponentLoading = "NextNodeServer.clientComponentLoading", D.getLayoutOrPageModule = "NextNodeServer.getLayoutOrPageModule", D.generateStaticRoutes = "NextNodeServer.generateStaticRoutes", D.generateFsStaticRoutes = "NextNodeServer.generateFsStaticRoutes", D.generatePublicRoutes = "NextNodeServer.generatePublicRoutes", D.generateImageRoutes = "NextNodeServer.generateImageRoutes.route", D.sendRenderResult = "NextNodeServer.sendRenderResult", D.proxyRequest = "NextNodeServer.proxyRequest", D.runApi = "NextNodeServer.runApi", D.render = "NextNodeServer.render", D.renderHTML = "NextNodeServer.renderHTML", D.imageOptimizer = "NextNodeServer.imageOptimizer", D.getPagePath = "NextNodeServer.getPagePath", D.getRoutesManifest = "NextNodeServer.getRoutesManifest", D.findPageComponents = "NextNodeServer.findPageComponents", D.getFontManifest = "NextNodeServer.getFontManifest", D.getServerComponentManifest = "NextNodeServer.getServerComponentManifest", D.getRequestHandler = "NextNodeServer.getRequestHandler", D.renderToHTML = "NextNodeServer.renderToHTML", D.renderError = "NextNodeServer.renderError", D.renderErrorToHTML = "NextNodeServer.renderErrorToHTML", D.render404 = "NextNodeServer.render404", D.startResponse = "NextNodeServer.startResponse", D.route = "route", D.onProxyReq = "onProxyReq", D.apiResolver = "apiResolver", D.internalFetch = "internalFetch", D), ew = ((q = ew || {}).startServer = "startServer.startServer", q), ey = ((U = ey || {}).getServerSideProps = "Render.getServerSideProps", U.getStaticProps = "Render.getStaticProps", U.renderToString = "Render.renderToString", U.renderDocument = "Render.renderDocument", U.createBodyResult = "Render.createBodyResult", U), ex = (($ = ex || {}).renderToString = "AppRender.renderToString", $.renderToReadableStream = "AppRender.renderToReadableStream", $.getBodyResult = "AppRender.getBodyResult", $.fetch = "AppRender.fetch", $), eS = ((B = eS || {}).executeRoute = "Router.executeRoute", B), eE = ((V = eE || {}).runHandler = "Node.runHandler", V), eO = ((H = eO || {}).runHandler = "AppRouteRouteHandlers.runHandler", H), eR = ((G = eR || {}).generateMetadata = "ResolveMetadata.generateMetadata", G.generateViewport = "ResolveMetadata.generateViewport", G), eC = ((W = eC || {}).execute = "Middleware.execute", W);
+      var eb = ((M = eb || {}).handleRequest = "BaseServer.handleRequest", M.run = "BaseServer.run", M.pipe = "BaseServer.pipe", M.getStaticHTML = "BaseServer.getStaticHTML", M.render = "BaseServer.render", M.renderToResponseWithComponents = "BaseServer.renderToResponseWithComponents", M.renderToResponse = "BaseServer.renderToResponse", M.renderToHTML = "BaseServer.renderToHTML", M.renderError = "BaseServer.renderError", M.renderErrorToResponse = "BaseServer.renderErrorToResponse", M.renderErrorToHTML = "BaseServer.renderErrorToHTML", M.render404 = "BaseServer.render404", M), ev = ((j = ev || {}).loadDefaultErrorComponents = "LoadComponents.loadDefaultErrorComponents", j.loadComponents = "LoadComponents.loadComponents", j), em = ((L = em || {}).getRequestHandler = "NextServer.getRequestHandler", L.getRequestHandlerWithMetadata = "NextServer.getRequestHandlerWithMetadata", L.getServer = "NextServer.getServer", L.getServerRequestHandler = "NextServer.getServerRequestHandler", L.createServer = "createServer.createServer", L), e_ = ((D = e_ || {}).compression = "NextNodeServer.compression", D.getBuildId = "NextNodeServer.getBuildId", D.createComponentTree = "NextNodeServer.createComponentTree", D.clientComponentLoading = "NextNodeServer.clientComponentLoading", D.getLayoutOrPageModule = "NextNodeServer.getLayoutOrPageModule", D.generateStaticRoutes = "NextNodeServer.generateStaticRoutes", D.generateFsStaticRoutes = "NextNodeServer.generateFsStaticRoutes", D.generatePublicRoutes = "NextNodeServer.generatePublicRoutes", D.generateImageRoutes = "NextNodeServer.generateImageRoutes.route", D.sendRenderResult = "NextNodeServer.sendRenderResult", D.proxyRequest = "NextNodeServer.proxyRequest", D.runApi = "NextNodeServer.runApi", D.render = "NextNodeServer.render", D.renderHTML = "NextNodeServer.renderHTML", D.imageOptimizer = "NextNodeServer.imageOptimizer", D.getPagePath = "NextNodeServer.getPagePath", D.getRoutesManifest = "NextNodeServer.getRoutesManifest", D.findPageComponents = "NextNodeServer.findPageComponents", D.getFontManifest = "NextNodeServer.getFontManifest", D.getServerComponentManifest = "NextNodeServer.getServerComponentManifest", D.getRequestHandler = "NextNodeServer.getRequestHandler", D.renderToHTML = "NextNodeServer.renderToHTML", D.renderError = "NextNodeServer.renderError", D.renderErrorToHTML = "NextNodeServer.renderErrorToHTML", D.render404 = "NextNodeServer.render404", D.startResponse = "NextNodeServer.startResponse", D.route = "route", D.onProxyReq = "onProxyReq", D.apiResolver = "apiResolver", D.internalFetch = "internalFetch", D), ew = ((U = ew || {}).startServer = "startServer.startServer", U), ey = ((q = ey || {}).getServerSideProps = "Render.getServerSideProps", q.getStaticProps = "Render.getStaticProps", q.renderToString = "Render.renderToString", q.renderDocument = "Render.renderDocument", q.createBodyResult = "Render.createBodyResult", q), ex = ((B = ex || {}).renderToString = "AppRender.renderToString", B.renderToReadableStream = "AppRender.renderToReadableStream", B.getBodyResult = "AppRender.getBodyResult", B.fetch = "AppRender.fetch", B), eE = (($ = eE || {}).executeRoute = "Router.executeRoute", $), eS = ((V = eS || {}).runHandler = "Node.runHandler", V), eO = ((H = eO || {}).runHandler = "AppRouteRouteHandlers.runHandler", H), eC = ((G = eC || {}).generateMetadata = "ResolveMetadata.generateMetadata", G.generateViewport = "ResolveMetadata.generateViewport", G), eR = ((W = eR || {}).execute = "Middleware.execute", W);
       let eP = /* @__PURE__ */ new Set(["Middleware.execute", "BaseServer.handleRequest", "Render.getServerSideProps", "Render.getStaticProps", "AppRender.fetch", "AppRender.getBodyResult", "Render.renderDocument", "Node.runHandler", "AppRouteRouteHandlers.runHandler", "ResolveMetadata.generateMetadata", "ResolveMetadata.generateViewport", "NextNodeServer.createComponentTree", "NextNodeServer.findPageComponents", "NextNodeServer.getLayoutOrPageModule", "NextNodeServer.startResponse", "NextNodeServer.clientComponentLoading"]), eT = /* @__PURE__ */ new Set(["NextNodeServer.findPageComponents", "NextNodeServer.createComponentTree", "NextNodeServer.clientComponentLoading"]);
       function eN(e10) {
         return null !== e10 && "object" == typeof e10 && "then" in e10 && "function" == typeof e10.then;
       }
-      let eI = process.env.NEXT_OTEL_PERFORMANCE_PREFIX, { context: ek, propagation: eM, trace: eA, SpanStatusCode: ej, SpanKind: eL, ROOT_CONTEXT: eD } = t = e.r(96475);
-      class eq extends Error {
+      let eI = process.env.NEXT_OTEL_PERFORMANCE_PREFIX, { context: ek, propagation: eA, trace: eM, SpanStatusCode: ej, SpanKind: eL, ROOT_CONTEXT: eD } = t = e.r(96475);
+      class eU extends Error {
         constructor(e10, t2) {
           super(), this.bubble = e10, this.result = t2;
         }
       }
-      let eU = (e10, t2) => {
-        "object" == typeof t2 && null !== t2 && t2 instanceof eq && t2.bubble ? e10.setAttribute("next.bubble", true) : (t2 && (e10.recordException(t2), e10.setAttribute("error.type", t2.name)), e10.setStatus({ code: ej.ERROR, message: null == t2 ? void 0 : t2.message })), e10.end();
-      }, e$ = /* @__PURE__ */ new Map(), eB = t.createContextKey("next.rootSpanId"), eV = 0, eH = { set(e10, t2, r2) {
+      let eq = (e10, t2) => {
+        "object" == typeof t2 && null !== t2 && t2 instanceof eU && t2.bubble ? e10.setAttribute("next.bubble", true) : (t2 && (e10.recordException(t2), e10.setAttribute("error.type", t2.name)), e10.setStatus({ code: ej.ERROR, message: null == t2 ? void 0 : t2.message })), e10.end();
+      }, eB = /* @__PURE__ */ new Map(), e$ = t.createContextKey("next.rootSpanId"), eV = 0, eH = { set(e10, t2, r2) {
         e10.push({ key: t2, value: r2 });
       } }, eG = (r = new class e {
         getTracerInstance() {
-          return eA.getTracer("next.js", "0.0.1");
+          return eM.getTracer("next.js", "0.0.1");
         }
         getContext() {
           return ek;
         }
         getTracePropagationData() {
           let e10 = ek.active(), t2 = [];
-          return eM.inject(e10, t2, eH), t2;
+          return eA.inject(e10, t2, eH), t2;
         }
         getActiveScopeSpan() {
-          return eA.getSpan(null == ek ? void 0 : ek.active());
+          return eM.getSpan(null == ek ? void 0 : ek.active());
         }
         withPropagatedContext(e10, t2, r2) {
           let n2 = ek.active();
-          if (eA.getSpanContext(n2)) return t2();
-          let i2 = eM.extract(n2, e10, r2);
+          if (eM.getSpanContext(n2)) return t2();
+          let i2 = eA.extract(n2, e10, r2);
           return ek.with(i2, t2);
         }
         trace(...e10) {
@@ -3026,28 +3026,28 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           if (!eP.has(t2) && "1" !== process.env.NEXT_OTEL_VERBOSE || o2.hideSpan) return i2();
           let s2 = this.getSpanContext((null == o2 ? void 0 : o2.parentSpan) ?? this.getActiveScopeSpan());
           s2 || (s2 = (null == ek ? void 0 : ek.active()) ?? eD);
-          let l2 = s2.getValue(eB), u2 = "number" != typeof l2 || !e$.has(l2), c2 = eV++;
-          return o2.attributes = { "next.span_name": a2, "next.span_type": t2, ...o2.attributes }, ek.with(s2.setValue(eB, c2), () => this.getTracerInstance().startActiveSpan(a2, o2, (e11) => {
+          let l2 = s2.getValue(e$), u2 = "number" != typeof l2 || !eB.has(l2), c2 = eV++;
+          return o2.attributes = { "next.span_name": a2, "next.span_type": t2, ...o2.attributes }, ek.with(s2.setValue(e$, c2), () => this.getTracerInstance().startActiveSpan(a2, o2, (e11) => {
             let r3;
             eI && t2 && eT.has(t2) && (r3 = "performance" in globalThis && "measure" in performance ? globalThis.performance.now() : void 0);
             let n3 = false, a3 = () => {
-              !n3 && (n3 = true, e$.delete(c2), r3 && performance.measure(`${eI}:next-${(t2.split(".").pop() || "").replace(/[A-Z]/g, (e12) => "-" + e12.toLowerCase())}`, { start: r3, end: performance.now() }));
+              !n3 && (n3 = true, eB.delete(c2), r3 && performance.measure(`${eI}:next-${(t2.split(".").pop() || "").replace(/[A-Z]/g, (e12) => "-" + e12.toLowerCase())}`, { start: r3, end: performance.now() }));
             };
-            if (u2 && e$.set(c2, new Map(Object.entries(o2.attributes ?? {}))), i2.length > 1) try {
-              return i2(e11, (t3) => eU(e11, t3));
+            if (u2 && eB.set(c2, new Map(Object.entries(o2.attributes ?? {}))), i2.length > 1) try {
+              return i2(e11, (t3) => eq(e11, t3));
             } catch (t3) {
-              throw eU(e11, t3), t3;
+              throw eq(e11, t3), t3;
             } finally {
               a3();
             }
             try {
               let t3 = i2(e11);
               if (eN(t3)) return t3.then((t4) => (e11.end(), t4)).catch((t4) => {
-                throw eU(e11, t4), t4;
+                throw eq(e11, t4), t4;
               }).finally(a3);
               return e11.end(), a3(), t3;
             } catch (t3) {
-              throw eU(e11, t3), a3(), t3;
+              throw eq(e11, t3), a3(), t3;
             }
           }));
         }
@@ -3071,14 +3071,14 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           return this.getTracerInstance().startSpan(t2, r2, n2);
         }
         getSpanContext(e10) {
-          return e10 ? eA.setSpan(ek.active(), e10) : void 0;
+          return e10 ? eM.setSpan(ek.active(), e10) : void 0;
         }
         getRootSpanAttributes() {
-          let e10 = ek.active().getValue(eB);
-          return e$.get(e10);
+          let e10 = ek.active().getValue(e$);
+          return eB.get(e10);
         }
         setRootSpanAttribute(e10, t2) {
-          let r2 = ek.active().getValue(eB), n2 = e$.get(r2);
+          let r2 = ek.active().getValue(e$), n2 = eB.get(r2);
           n2 && !n2.has(e10) && n2.set(e10, t2);
         }
       }(), () => r), eW = "__prerender_bypass";
@@ -3301,7 +3301,7 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
         }(), await l();
         let p2 = void 0 !== globalThis.__BUILD_MANIFEST;
         t2.request.url = t2.request.url.replace(/\.rsc($|\?)/, "$1");
-        let h2 = t2.bypassNextUrl ? new URL(t2.request.url) : new M(t2.request.url, { headers: t2.request.headers, nextConfig: t2.request.nextConfig });
+        let h2 = t2.bypassNextUrl ? new URL(t2.request.url) : new A(t2.request.url, { headers: t2.request.headers, nextConfig: t2.request.nextConfig });
         for (let e10 of [...h2.searchParams.keys()]) {
           let t3 = h2.searchParams.getAll(e10), r3 = function(e11) {
             for (let t4 of ["nxtP", "nxtI"]) if (e11 !== t4 && e11.startsWith(t4)) return e11.substring(t4.length);
@@ -3327,11 +3327,11 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
         }
         let _2 = h2.searchParams.get(en), y2 = new tn({ page: t2.page, input: ((c2 = (u2 = "string" == typeof h2) ? new URL(h2) : h2).searchParams.delete(en), u2 ? c2.toString() : c2).toString(), init: { body: t2.request.body, headers: g2, method: t2.request.method, nextConfig: t2.request.nextConfig, signal: t2.request.signal } });
         b2 && Object.defineProperty(y2, "__isData", { enumerable: false, value: true }), !globalThis.__incrementalCacheShared && t2.IncrementalCache && (globalThis.__incrementalCache = new t2.IncrementalCache({ CurCacheHandler: t2.incrementalCacheHandler, minimalMode: true, fetchCacheKeyPrefix: "", dev: false, requestHeaders: t2.request.headers, getPrerenderManifest: () => ({ version: -1, routes: {}, dynamicRoutes: {}, notFoundRoutes: [], preview: te() }) }));
-        let S2 = t2.request.waitUntil ?? (null == (r2 = null == (d2 = globalThis[tt]) ? void 0 : d2.get()) ? void 0 : r2.waitUntil), E2 = new x({ request: y2, page: t2.page, context: S2 ? { waitUntil: S2 } : void 0 });
+        let E2 = t2.request.waitUntil ?? (null == (r2 = null == (d2 = globalThis[tt]) ? void 0 : d2.get()) ? void 0 : r2.waitUntil), S2 = new x({ request: y2, page: t2.page, context: E2 ? { waitUntil: E2 } : void 0 });
         if ((a2 = await to(y2, () => {
           if ("/middleware" === t2.page || "/src/middleware" === t2.page || "/proxy" === t2.page || "/src/proxy" === t2.page) {
-            let e10 = E2.waitUntil.bind(E2), r3 = new e8();
-            return eG().trace(eC.execute, { spanName: `middleware ${y2.method}`, attributes: { "http.target": y2.nextUrl.pathname, "http.method": y2.method } }, async () => {
+            let e10 = S2.waitUntil.bind(S2), r3 = new e8();
+            return eG().trace(eR.execute, { spanName: `middleware ${y2.method}`, attributes: { "http.target": y2.nextUrl.pathname, "http.method": y2.method } }, async () => {
               try {
                 var n3, i3, o3, a3, l2, u3;
                 let c3 = te(), d3 = await tr("/", y2.nextUrl, null), p3 = (l2 = y2.nextUrl, u3 = (e11) => {
@@ -3399,7 +3399,7 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
                   }, shouldTrackFetchMetrics: u4 };
                   return t3.store = c4, c4;
                 }({ page: "/", renderOpts: { cacheLifeProfiles: null == (i3 = t2.request.nextConfig) || null == (n3 = i3.experimental) ? void 0 : n3.cacheLife, cacheComponents: false, experimental: { isRoutePPREnabled: false, authInterrupts: !!(null == (a3 = t2.request.nextConfig) || null == (o3 = a3.experimental) ? void 0 : o3.authInterrupts) }, supportsDynamicResponse: true, waitUntil: e10, onClose: r3.onClose.bind(r3), onAfterTaskError: void 0 }, isPrefetchRequest: "1" === y2.headers.get(et), buildId: f2 ?? "", previouslyRevalidatedTags: [] });
-                return await ec.run(h3, () => eF.run(p3, t2.handler, y2, E2));
+                return await ec.run(h3, () => eF.run(p3, t2.handler, y2, S2));
               } finally {
                 setTimeout(() => {
                   r3.dispatchClose();
@@ -3407,12 +3407,12 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
               }
             });
           }
-          return t2.handler(y2, E2);
+          return t2.handler(y2, S2);
         })) && !(a2 instanceof Response)) throw Object.defineProperty(TypeError("Expected an instance of Response to be returned"), "__NEXT_ERROR_CODE", { value: "E567", enumerable: false, configurable: true });
         a2 && s2 && a2.headers.set("set-cookie", s2);
         let O2 = null == a2 ? void 0 : a2.headers.get("x-middleware-rewrite");
         if (a2 && O2 && (v2 || !p2)) {
-          let e10 = new M(O2, { forceLocale: true, headers: t2.request.headers, nextConfig: t2.request.nextConfig });
+          let e10 = new A(O2, { forceLocale: true, headers: t2.request.headers, nextConfig: t2.request.nextConfig });
           p2 || e10.host !== y2.nextUrl.host || (e10.buildId = f2 || e10.buildId, a2.headers.set("x-middleware-rewrite", String(e10)));
           let { url: r3, isRelative: s3 } = ee(e10.toString(), h2.toString());
           !p2 && b2 && a2.headers.set("x-nextjs-rewrite", r3);
@@ -3423,46 +3423,89 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime`;
           let e10 = new URL(O2);
           e10.searchParams.has(en) || (e10.searchParams.set(en, _2), a2.headers.set("x-middleware-rewrite", e10.toString()));
         }
-        let R2 = null == a2 ? void 0 : a2.headers.get("Location");
-        if (a2 && R2 && !p2) {
-          let e10 = new M(R2, { forceLocale: false, headers: t2.request.headers, nextConfig: t2.request.nextConfig });
+        let C2 = null == a2 ? void 0 : a2.headers.get("Location");
+        if (a2 && C2 && !p2) {
+          let e10 = new A(C2, { forceLocale: false, headers: t2.request.headers, nextConfig: t2.request.nextConfig });
           a2 = new Response(a2.body, a2), e10.host === h2.host && (e10.buildId = f2 || e10.buildId, a2.headers.set("Location", e10.toString())), b2 && (a2.headers.delete("Location"), a2.headers.set("x-nextjs-redirect", ee(e10.toString(), h2.toString()).url));
         }
-        let C2 = a2 || Z.next(), P2 = C2.headers.get("x-middleware-override-headers"), T2 = [];
+        let R2 = a2 || Z.next(), P2 = R2.headers.get("x-middleware-override-headers"), T2 = [];
         if (P2) {
-          for (let [e10, t3] of m2) C2.headers.set(`x-middleware-request-${e10}`, t3), T2.push(e10);
-          T2.length > 0 && C2.headers.set("x-middleware-override-headers", P2 + "," + T2.join(","));
+          for (let [e10, t3] of m2) R2.headers.set(`x-middleware-request-${e10}`, t3), T2.push(e10);
+          T2.length > 0 && R2.headers.set("x-middleware-override-headers", P2 + "," + T2.join(","));
         }
-        return { response: C2, waitUntil: ("internal" === E2[w].kind ? Promise.all(E2[w].promises).then(() => {
+        return { response: R2, waitUntil: ("internal" === S2[w].kind ? Promise.all(S2[w].promises).then(() => {
         }) : void 0) ?? Promise.resolve(), fetchMetrics: y2.fetchMetrics };
       }
       e.i(63210), "undefined" == typeof URLPattern || URLPattern;
       var tl = e.i(26217);
       if (/* @__PURE__ */ new WeakMap(), tl.default.unstable_postpone, false === ("Route %%% needs to bail out of prerendering at this point because it used ^^^. React throws this special object to indicate where. It should not be caught by your own try/catch. Learn more: https://nextjs.org/docs/messages/ppr-caught-error".includes("needs to bail out of prerendering at this point because it used") && "Route %%% needs to bail out of prerendering at this point because it used ^^^. React throws this special object to indicate where. It should not be caught by your own try/catch. Learn more: https://nextjs.org/docs/messages/ppr-caught-error".includes("Learn more: https://nextjs.org/docs/messages/ppr-caught-error"))) throw Object.defineProperty(Error("Invariant: isDynamicPostpone misidentified a postpone reason. This is a bug in Next.js"), "__NEXT_ERROR_CODE", { value: "E296", enumerable: false, configurable: true });
-      function tu(e10) {
-        let t2 = process.env, r2 = e10.headers.get("cf-ipcountry") ?? "XX", n2 = e10.headers.get("cf-region") ?? "Unknown", i2 = e10.headers.get("cf-region-code") ?? "XX", o2 = e10.headers.get("cf-ipcity") ?? "Unknown", a2 = new URL(e10.url).pathname;
-        return t2.WAE && t2.WAE.writeDataPoint({ blobs: [r2, n2, i2, o2, a2], doubles: [1], indexes: [r2] }), Z.next();
+      RegExp(`\\n\\s+at Suspense \\(<anonymous>\\)(?:(?!\\n\\s+at (?:body|div|main|section|article|aside|header|footer|nav|form|p|span|h1|h2|h3|h4|h5|h6) \\(<anonymous>\\))[\\s\\S])*?\\n\\s+at __next_root_layout_boundary__ \\([^\\n]*\\)`), RegExp(`\\n\\s+at __next_metadata_boundary__[\\n\\s]`), RegExp(`\\n\\s+at __next_viewport_boundary__[\\n\\s]`), RegExp(`\\n\\s+at __next_outlet_boundary__[\\n\\s]`), e.s([], 91804), e.i(91804);
+      let tu = Symbol.for("__cloudflare-context__");
+      function tc() {
+        return globalThis[tu];
       }
-      RegExp(`\\n\\s+at Suspense \\(<anonymous>\\)(?:(?!\\n\\s+at (?:body|div|main|section|article|aside|header|footer|nav|form|p|span|h1|h2|h3|h4|h5|h6) \\(<anonymous>\\))[\\s\\S])*?\\n\\s+at __next_root_layout_boundary__ \\([^\\n]*\\)`), RegExp(`\\n\\s+at __next_metadata_boundary__[\\n\\s]`), RegExp(`\\n\\s+at __next_viewport_boundary__[\\n\\s]`), RegExp(`\\n\\s+at __next_outlet_boundary__[\\n\\s]`), e.s([], 91804), e.i(91804), e.s(["config", 0, { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] }, "middleware", () => tu], 13017);
-      var tc = e.i(13017);
+      function td() {
+        let e10 = globalThis;
+        return e10.__NEXT_DATA__?.nextExport === true;
+      }
+      async function tp() {
+        let e10 = tc();
+        if (e10) return e10;
+        if (td()) {
+          var t2;
+          let e11 = await th();
+          return t2 = e11, globalThis[tu] = t2, e11;
+        }
+        throw Error(tf);
+      }
+      async function th(e10) {
+        let { getPlatformProxy: t2 } = await import(`${"__wrangler".replaceAll("_", "")}`), r2 = e10?.environment ?? process.env.NEXT_DEV_WRANGLER_ENV, { env: n2, cf: i2, ctx: o2 } = await t2({ ...e10, envFiles: [], environment: r2 });
+        return { env: n2, cf: i2, ctx: o2 };
+      }
+      let tf = '\n\nERROR: `getCloudflareContext` has been called without having called `initOpenNextCloudflareForDev` from the Next.js config file.\nYou should update your Next.js config file as shown below:\n\n   ```\n   // next.config.mjs\n\n   import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";\n\n   initOpenNextCloudflareForDev();\n\n   const nextConfig = { ... };\n   export default nextConfig;\n   ```\n\n', tg = /bot|crawler|spider|crawling|facebookexternalhit|linkedinbot|twitterbot|whatsapp|slack|discord|preview|wget|curl|python|java|go-http|axios|node-fetch|okhttp|libwww|zgrab|nmap|nikto|nuclei|sqlmap|masscan|censys|shodan|GPTBot|ChatGPT-User|CCBot|anthropic-ai|ClaudeBot|cohere-ai|Google-Extended|Amazonbot|PerplexityBot|YouBot|Bytespider|PetalBot|SemrushBot|AhrefsBot|MJ12bot/i, tb = /^\/(robots\.txt|app-ads\.txt|sitemap.*\.xml|\.well-known|wp-admin|wp-login|wp-includes|xmlrpc\.php|admin\/controller|sites\/default|phpmyadmin|\.env|\.git)/i;
+      async function tv(e10) {
+        let t2 = Z.next();
+        try {
+          let r2 = new URL(e10.url).pathname, n2 = e10.headers.has("rsc") || e10.nextUrl.searchParams.has("_rsc"), i2 = r2.startsWith("/_next/"), o2 = r2.startsWith("/api/"), a2 = r2.match(/\.(ico|png|jpg|jpeg|svg|webp|avif)$/);
+          if (n2 || i2 || o2 || a2 || tb.test(r2)) return t2;
+          let s2 = e10.headers.get("user-agent") ?? "";
+          if (!s2 || tg.test(s2) || s2.length < 20 || /Headless|Phantom|Puppeteer|Playwright/i.test(s2)) return t2;
+          let { env: l2, cf: u2 } = function(e11 = { async: false }) {
+            return e11.async ? tp() : function() {
+              let e12 = tc();
+              if (e12) return e12;
+              if (td()) throw Error("\n\nERROR: `getCloudflareContext` has been called in sync mode in either a static route or at the top level of a non-static one, both cases are not allowed but can be solved by either:\n  - make sure that the call is not at the top level and that the route is not static\n  - call `getCloudflareContext({async: true})` to use the `async` mode\n  - avoid calling `getCloudflareContext` in the route\n");
+              throw Error(tf);
+            }();
+          }(), c2 = u2?.country ?? "XX", d2 = u2?.region ?? "Unknown", p2 = u2?.regionCode ?? "XX", h2 = u2?.city ?? "Unknown", f2 = /tablet|ipad|playbook|silk/i.test(s2) ? "tablet" : /mobile|iphone|ipod|android|blackberry|mini|windows\sce|palm/i.test(s2) ? "mobile" : "desktop", g2 = e10.cookies.get("vid")?.value ?? null, b2 = 0;
+          g2 || (g2 = crypto.randomUUID(), b2 = 1, t2.cookies.set("vid", g2, { maxAge: 31536e3, httpOnly: true, sameSite: "lax", path: "/" }));
+          let v2 = e10.cookies.get("sid")?.value ?? null, m2 = 0;
+          v2 || (v2 = crypto.randomUUID(), m2 = 1), t2.cookies.set("sid", v2, { maxAge: 1800, httpOnly: true, sameSite: "lax", path: "/" }), l2.WAE && l2.WAE.writeDataPoint({ blobs: [c2, d2, p2, h2, r2, f2, g2, v2], doubles: [1, b2, m2], indexes: [c2] });
+        } catch (e11) {
+          console.error("[WAE] error:", e11);
+        }
+        return t2;
+      }
+      e.s(["config", 0, { matcher: ["/((?!_next/static|_next/image|favicon.ico|robots\\.txt|app-ads\\.txt|sitemap.*\\.xml).*)"] }, "middleware", () => tv], 13017);
+      var tm = e.i(13017);
       Object.values({ NOT_FOUND: 404, FORBIDDEN: 403, UNAUTHORIZED: 401 });
-      let td = { ...tc }, tp = "/middleware", th = td.middleware || td.default;
-      if ("function" != typeof th) throw new class extends Error {
+      let t_ = { ...tm }, tw = "/middleware", ty = t_.middleware || t_.default;
+      if ("function" != typeof ty) throw new class extends Error {
         constructor(e10) {
           super(e10), this.stack = "";
         }
-      }(`The Middleware file "${tp}" must export a function named \`middleware\` or a default function.`);
-      function tf(e10) {
-        return ts({ ...e10, page: tp, handler: async (...e11) => {
+      }(`The Middleware file "${tw}" must export a function named \`middleware\` or a default function.`);
+      function tx(e10) {
+        return ts({ ...e10, page: tw, handler: async (...e11) => {
           try {
-            return await th(...e11);
+            return await ty(...e11);
           } catch (i2) {
             let t2 = e11[0], r2 = new URL(t2.url), n2 = r2.pathname + r2.search;
             throw await a(i2, { path: n2, method: t2.method, headers: Object.fromEntries(t2.headers.entries()) }, { routerKind: "Pages Router", routePath: "/proxy", routeType: "proxy", revalidateReason: void 0 }), i2;
           }
         } });
       }
-      e.s(["default", () => tf], 32762);
+      e.s(["default", () => tx], 32762);
     }]);
   }
 });
@@ -3855,7 +3898,7 @@ var init_edgeFunctionHandler = __esm({
   "../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/core/edgeFunctionHandler.js"() {
     globalThis._ENTRIES = {};
     globalThis.self = globalThis;
-    globalThis._ROUTES = [{ "name": "middleware", "page": "/", "regex": ["^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico).*))(\\\\.json)?[\\/#\\?]?$"] }];
+    globalThis._ROUTES = [{ "name": "middleware", "page": "/", "regex": ["^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|robots\\.txt|app-ads\\.txt|sitemap.*\\.xml).*))(\\\\.json)?[\\/#\\?]?$"] }];
     require_apps_web_edge_wrapper_892cef47();
     require_root_of_the_server_12400766();
     require_turbopack_apps_web_edge_wrapper_01050ccd();
@@ -3999,7 +4042,7 @@ async function createGenericHandler(handler3) {
 }
 
 // ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/core/routing/util.js
-import crypto from "node:crypto";
+import crypto2 from "node:crypto";
 import { parse as parseQs, stringify as stringifyQs } from "node:querystring";
 
 // ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/config/index.js
@@ -4010,11 +4053,11 @@ var NEXT_DIR = path.join(__dirname, ".next");
 var OPEN_NEXT_DIR = path.join(__dirname, ".open-next");
 debug({ NEXT_DIR, OPEN_NEXT_DIR });
 var NextConfig = { "env": {}, "webpack": null, "typescript": { "ignoreBuildErrors": true }, "typedRoutes": false, "distDir": ".next", "cleanDistDir": true, "assetPrefix": "", "cacheMaxMemorySize": 52428800, "configOrigin": "next.config.ts", "useFileSystemPublicRoutes": true, "generateEtags": true, "pageExtensions": ["tsx", "ts", "jsx", "js"], "poweredByHeader": true, "compress": true, "images": { "deviceSizes": [640, 750, 828, 1080, 1200, 1920, 2048, 3840], "imageSizes": [32, 48, 64, 96, 128, 256, 384], "path": "/_next/image", "loader": "default", "loaderFile": "", "domains": [], "disableStaticImages": false, "minimumCacheTTL": 14400, "formats": ["image/webp"], "maximumRedirects": 3, "dangerouslyAllowLocalIP": false, "dangerouslyAllowSVG": false, "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;", "contentDispositionType": "attachment", "localPatterns": [{ "pathname": "**", "search": "" }], "remotePatterns": [{ "protocol": "https", "hostname": "growman.blob.core.windows.net" }], "qualities": [75], "unoptimized": false }, "devIndicators": { "position": "bottom-left" }, "onDemandEntries": { "maxInactiveAge": 6e4, "pagesBufferLength": 5 }, "basePath": "", "sassOptions": {}, "trailingSlash": false, "i18n": null, "productionBrowserSourceMaps": false, "excludeDefaultMomentLocales": true, "reactProductionProfiling": false, "reactStrictMode": null, "reactMaxHeadersLength": 6e3, "httpAgentOptions": { "keepAlive": true }, "logging": {}, "compiler": {}, "expireTime": 31536e3, "staticPageGenerationTimeout": 60, "output": "standalone", "modularizeImports": { "@mui/icons-material": { "transform": "@mui/icons-material/{{member}}" }, "lodash": { "transform": "lodash/{{member}}" } }, "outputFileTracingRoot": "/home/venky/growman", "cacheComponents": false, "cacheLife": { "default": { "stale": 300, "revalidate": 900, "expire": 4294967294 }, "seconds": { "stale": 30, "revalidate": 1, "expire": 60 }, "minutes": { "stale": 300, "revalidate": 60, "expire": 3600 }, "hours": { "stale": 300, "revalidate": 3600, "expire": 86400 }, "days": { "stale": 300, "revalidate": 86400, "expire": 604800 }, "weeks": { "stale": 300, "revalidate": 604800, "expire": 2592e3 }, "max": { "stale": 300, "revalidate": 2592e3, "expire": 31536e3 } }, "cacheHandlers": {}, "experimental": { "useSkewCookie": false, "cssChunking": true, "multiZoneDraftMode": false, "appNavFailHandling": false, "prerenderEarlyExit": true, "serverMinification": true, "serverSourceMaps": false, "linkNoTouchStart": false, "caseSensitiveRoutes": false, "dynamicOnHover": false, "preloadEntriesOnStart": true, "clientRouterFilter": true, "clientRouterFilterRedirects": false, "fetchCacheKeyPrefix": "", "proxyPrefetch": "flexible", "optimisticClientCache": true, "manualClientBasePath": false, "cpus": 15, "memoryBasedWorkersCount": false, "imgOptConcurrency": null, "imgOptTimeoutInSeconds": 7, "imgOptMaxInputPixels": 268402689, "imgOptSequentialRead": null, "imgOptSkipMetadata": null, "isrFlushToDisk": true, "workerThreads": false, "optimizeCss": false, "nextScriptWorkers": false, "scrollRestoration": false, "externalDir": false, "disableOptimizedLoading": false, "gzipSize": true, "craCompat": false, "esmExternals": true, "fullySpecified": false, "swcTraceProfiling": false, "forceSwcTransforms": false, "largePageDataBytes": 128e3, "typedEnv": false, "parallelServerCompiles": false, "parallelServerBuildTraces": false, "ppr": false, "authInterrupts": false, "webpackMemoryOptimizations": false, "optimizeServerReact": true, "viewTransition": false, "removeUncaughtErrorAndRejectionListeners": false, "validateRSCRequestHeaders": false, "staleTimes": { "dynamic": 0, "static": 300 }, "reactDebugChannel": false, "serverComponentsHmrCache": true, "staticGenerationMaxConcurrency": 8, "staticGenerationMinPagesPerWorker": 25, "inlineCss": false, "useCache": false, "globalNotFound": false, "browserDebugInfoInTerminal": false, "lockDistDir": true, "isolatedDevBuild": true, "proxyClientMaxBodySize": 10485760, "hideLogsAfterAbort": false, "mcpServer": true, "optimizePackageImports": ["lucide-react", "date-fns", "lodash-es", "ramda", "antd", "react-bootstrap", "ahooks", "@ant-design/icons", "@headlessui/react", "@headlessui-float/react", "@heroicons/react/20/solid", "@heroicons/react/24/solid", "@heroicons/react/24/outline", "@visx/visx", "@tremor/react", "rxjs", "@mui/material", "@mui/icons-material", "recharts", "react-use", "effect", "@effect/schema", "@effect/platform", "@effect/platform-node", "@effect/platform-browser", "@effect/platform-bun", "@effect/sql", "@effect/sql-mssql", "@effect/sql-mysql2", "@effect/sql-pg", "@effect/sql-sqlite-node", "@effect/sql-sqlite-bun", "@effect/sql-sqlite-wasm", "@effect/sql-sqlite-react-native", "@effect/rpc", "@effect/rpc-http", "@effect/typeclass", "@effect/experimental", "@effect/opentelemetry", "@material-ui/core", "@material-ui/icons", "@tabler/icons-react", "mui-core", "react-icons/ai", "react-icons/bi", "react-icons/bs", "react-icons/cg", "react-icons/ci", "react-icons/di", "react-icons/fa", "react-icons/fa6", "react-icons/fc", "react-icons/fi", "react-icons/gi", "react-icons/go", "react-icons/gr", "react-icons/hi", "react-icons/hi2", "react-icons/im", "react-icons/io", "react-icons/io5", "react-icons/lia", "react-icons/lib", "react-icons/lu", "react-icons/md", "react-icons/pi", "react-icons/ri", "react-icons/rx", "react-icons/si", "react-icons/sl", "react-icons/tb", "react-icons/tfi", "react-icons/ti", "react-icons/vsc", "react-icons/wi"], "trustHostHeader": false, "isExperimentalCompile": false }, "htmlLimitedBots": "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight", "bundlePagesRouterDependencies": false, "configFileName": "next.config.ts", "turbopack": { "root": "/home/venky/growman" }, "distDirRoot": ".next" };
-var BuildId = "Hw_P7SYFXDQBF31z4XXWK";
+var BuildId = "8gvY_epHfKAEu7UNkGflD";
 var RoutesManifest = { "basePath": "", "rewrites": { "beforeFiles": [], "afterFiles": [], "fallback": [] }, "redirects": [{ "source": "/:path+/", "destination": "/:path+", "internal": true, "priority": true, "statusCode": 308, "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$" }], "routes": { "static": [{ "page": "/", "regex": "^/(?:/)?$", "routeKeys": {}, "namedRegex": "^/(?:/)?$" }, { "page": "/_global-error", "regex": "^/_global\\-error(?:/)?$", "routeKeys": {}, "namedRegex": "^/_global\\-error(?:/)?$" }, { "page": "/_not-found", "regex": "^/_not\\-found(?:/)?$", "routeKeys": {}, "namedRegex": "^/_not\\-found(?:/)?$" }, { "page": "/account", "regex": "^/account(?:/)?$", "routeKeys": {}, "namedRegex": "^/account(?:/)?$" }, { "page": "/cart", "regex": "^/cart(?:/)?$", "routeKeys": {}, "namedRegex": "^/cart(?:/)?$" }, { "page": "/categories", "regex": "^/categories(?:/)?$", "routeKeys": {}, "namedRegex": "^/categories(?:/)?$" }, { "page": "/checkout", "regex": "^/checkout(?:/)?$", "routeKeys": {}, "namedRegex": "^/checkout(?:/)?$" }, { "page": "/delete-account", "regex": "^/delete\\-account(?:/)?$", "routeKeys": {}, "namedRegex": "^/delete\\-account(?:/)?$" }, { "page": "/favicon.ico", "regex": "^/favicon\\.ico(?:/)?$", "routeKeys": {}, "namedRegex": "^/favicon\\.ico(?:/)?$" }, { "page": "/forgot-password", "regex": "^/forgot\\-password(?:/)?$", "routeKeys": {}, "namedRegex": "^/forgot\\-password(?:/)?$" }, { "page": "/login", "regex": "^/login(?:/)?$", "routeKeys": {}, "namedRegex": "^/login(?:/)?$" }, { "page": "/order-success", "regex": "^/order\\-success(?:/)?$", "routeKeys": {}, "namedRegex": "^/order\\-success(?:/)?$" }, { "page": "/orders", "regex": "^/orders(?:/)?$", "routeKeys": {}, "namedRegex": "^/orders(?:/)?$" }, { "page": "/product", "regex": "^/product(?:/)?$", "routeKeys": {}, "namedRegex": "^/product(?:/)?$" }, { "page": "/product/add", "regex": "^/product/add(?:/)?$", "routeKeys": {}, "namedRegex": "^/product/add(?:/)?$" }, { "page": "/shop", "regex": "^/shop(?:/)?$", "routeKeys": {}, "namedRegex": "^/shop(?:/)?$" }, { "page": "/signup", "regex": "^/signup(?:/)?$", "routeKeys": {}, "namedRegex": "^/signup(?:/)?$" }], "dynamic": [{ "page": "/categories/[categorySlug]", "regex": "^/categories/([^/]+?)(?:/)?$", "routeKeys": { "nxtPcategorySlug": "nxtPcategorySlug" }, "namedRegex": "^/categories/(?<nxtPcategorySlug>[^/]+?)(?:/)?$" }, { "page": "/categories/[categorySlug]/[subcategorySlug]", "regex": "^/categories/([^/]+?)/([^/]+?)(?:/)?$", "routeKeys": { "nxtPcategorySlug": "nxtPcategorySlug", "nxtPsubcategorySlug": "nxtPsubcategorySlug" }, "namedRegex": "^/categories/(?<nxtPcategorySlug>[^/]+?)/(?<nxtPsubcategorySlug>[^/]+?)(?:/)?$" }, { "page": "/product/[slug]", "regex": "^/product/([^/]+?)(?:/)?$", "routeKeys": { "nxtPslug": "nxtPslug" }, "namedRegex": "^/product/(?<nxtPslug>[^/]+?)(?:/)?$" }], "data": { "static": [], "dynamic": [] } }, "locales": [] };
 var ConfigHeaders = [{ "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }, { "key": "Service-Worker-Allowed", "value": "/" }], "regex": "^/sw\\.js(?:/)?$" }];
 var PrerenderManifest = { "version": 4, "routes": { "/_global-error": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/_global-error", "dataRoute": "/_global-error.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/_not-found": { "initialStatus": 404, "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/_not-found", "dataRoute": "/_not-found.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/account": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/account", "dataRoute": "/account.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/cart": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/cart", "dataRoute": "/cart.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/categories": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": 60, "initialExpireSeconds": 31536e3, "srcRoute": "/categories", "dataRoute": "/categories.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/checkout": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/checkout", "dataRoute": "/checkout.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/delete-account": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/delete-account", "dataRoute": "/delete-account.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/favicon.ico": { "initialHeaders": { "cache-control": "public, max-age=0, must-revalidate", "content-type": "image/x-icon", "x-next-cache-tags": "_N_T_/layout,_N_T_/favicon.ico/layout,_N_T_/favicon.ico/route,_N_T_/favicon.ico" }, "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/favicon.ico", "dataRoute": null, "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/forgot-password": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/forgot-password", "dataRoute": "/forgot-password.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/login": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/login", "dataRoute": "/login.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/order-success": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/order-success", "dataRoute": "/order-success.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/orders": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/orders", "dataRoute": "/orders.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/", "dataRoute": "/index.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/product/add": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/product/add", "dataRoute": "/product/add.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/shop": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": 60, "initialExpireSeconds": 31536e3, "srcRoute": "/shop", "dataRoute": "/shop.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] }, "/signup": { "experimentalBypassFor": [{ "type": "header", "key": "next-action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/signup", "dataRoute": "/signup.rsc", "prefetchDataRoute": null, "allowHeader": ["host", "x-matched-path", "x-prerender-revalidate", "x-prerender-revalidate-if-generated", "x-next-revalidated-tags", "x-next-revalidate-tag-token"] } }, "dynamicRoutes": {}, "notFoundRoutes": [], "preview": { "previewModeId": "6742b0c0d8dd4edc98c8639e6b810a9a", "previewModeSigningKey": "fd1a50f294d1b7e01851bcdc9a50f56efd8263c27fe73023c091ec1df5d3bc59", "previewModeEncryptionKey": "58d2cdccb76868c6f3cd69032ccb758e704488d783672df656922c635360926c" } };
-var MiddlewareManifest = { "version": 3, "middleware": { "/": { "files": ["server/edge/chunks/apps_web_edge-wrapper_892cef47.js", "server/edge/chunks/[root-of-the-server]__12400766._.js", "server/edge/chunks/turbopack-apps_web_edge-wrapper_01050ccd.js"], "name": "middleware", "page": "/", "matchers": [{ "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico).*))(\\\\.json)?[\\/#\\?]?$", "originalSource": "/((?!_next/static|_next/image|favicon.ico).*)" }], "wasm": [], "assets": [], "env": { "__NEXT_BUILD_ID": "Hw_P7SYFXDQBF31z4XXWK", "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "1KYmLdOBGywNxN9hLpX/MCTyMycurpZOWf31fQU/9yc=", "__NEXT_PREVIEW_MODE_ID": "6742b0c0d8dd4edc98c8639e6b810a9a", "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "58d2cdccb76868c6f3cd69032ccb758e704488d783672df656922c635360926c", "__NEXT_PREVIEW_MODE_SIGNING_KEY": "fd1a50f294d1b7e01851bcdc9a50f56efd8263c27fe73023c091ec1df5d3bc59" } } }, "sortedMiddleware": ["/"], "functions": {} };
+var MiddlewareManifest = { "version": 3, "middleware": { "/": { "files": ["server/edge/chunks/apps_web_edge-wrapper_892cef47.js", "server/edge/chunks/[root-of-the-server]__12400766._.js", "server/edge/chunks/turbopack-apps_web_edge-wrapper_01050ccd.js"], "name": "middleware", "page": "/", "matchers": [{ "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|robots\\.txt|app-ads\\.txt|sitemap.*\\.xml).*))(\\\\.json)?[\\/#\\?]?$", "originalSource": "/((?!_next/static|_next/image|favicon.ico|robots\\.txt|app-ads\\.txt|sitemap.*\\.xml).*)" }], "wasm": [], "assets": [], "env": { "__NEXT_BUILD_ID": "8gvY_epHfKAEu7UNkGflD", "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "1KYmLdOBGywNxN9hLpX/MCTyMycurpZOWf31fQU/9yc=", "__NEXT_PREVIEW_MODE_ID": "6742b0c0d8dd4edc98c8639e6b810a9a", "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "58d2cdccb76868c6f3cd69032ccb758e704488d783672df656922c635360926c", "__NEXT_PREVIEW_MODE_SIGNING_KEY": "fd1a50f294d1b7e01851bcdc9a50f56efd8263c27fe73023c091ec1df5d3bc59" } } }, "sortedMiddleware": ["/"], "functions": {} };
 var AppPathRoutesManifest = { "/_global-error/page": "/_global-error", "/_not-found/page": "/_not-found", "/account/page": "/account", "/cart/page": "/cart", "/categories/[categorySlug]/[subcategorySlug]/page": "/categories/[categorySlug]/[subcategorySlug]", "/categories/[categorySlug]/page": "/categories/[categorySlug]", "/categories/page": "/categories", "/checkout/page": "/checkout", "/delete-account/page": "/delete-account", "/favicon.ico/route": "/favicon.ico", "/forgot-password/page": "/forgot-password", "/login/page": "/login", "/order-success/page": "/order-success", "/orders/page": "/orders", "/page": "/", "/product/[slug]/page": "/product/[slug]", "/product/add/page": "/product/add", "/product/page": "/product", "/shop/page": "/shop", "/signup/page": "/signup" };
 var FunctionsConfigManifest = { "version": 1, "functions": {} };
 var PagesManifest = { "/404": "pages/404.html", "/500": "pages/500.html" };

@@ -3541,6 +3541,11 @@
       "imports": [],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
+      "bytes": 17701,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js": {
       "bytes": 21298,
       "imports": [],
@@ -3548,11 +3553,6 @@
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js": {
       "bytes": 23017,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
-      "bytes": 17701,
       "imports": [],
       "format": "cjs"
     },
@@ -3586,13 +3586,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js": {
-      "bytes": 17693,
+    ".open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js": {
+      "bytes": 17708,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js": {
-      "bytes": 17805,
+    ".open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js": {
+      "bytes": 17693,
       "imports": [],
       "format": "cjs"
     },
@@ -3627,7 +3627,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/load-manifest.external.js": {
-      "bytes": 41577,
+      "bytes": 41663,
       "imports": [
         {
           "path": "path",
@@ -3660,6 +3660,11 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js"
@@ -3668,11 +3673,6 @@
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js",
@@ -3705,14 +3705,14 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/categories/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/_not-found/page_client-reference-manifest.js",
@@ -4156,32 +4156,6 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js": {
-      "bytes": 7908,
-      "imports": [
-        {
-          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-page-turbo.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/work-async-storage.external.js",
-          "kind": "require-call",
-          "original": "next/dist/server/app-render/work-async-storage.external.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
-          "kind": "require-call",
-          "original": "next/dist/server/app-render/work-unit-async-storage.external.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/action-async-storage.external.js",
-          "kind": "require-call",
-          "original": "next/dist/server/app-render/action-async-storage.external.js"
-        }
-      ],
-      "format": "cjs"
-    },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js": {
       "bytes": 3094,
       "imports": [
@@ -4255,12 +4229,38 @@
       ],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js": {
+      "bytes": 7908,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page-turbo.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/work-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-unit-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/action-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/action-async-storage.external.js"
+        }
+      ],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_4036ddb2._.js": {
       "bytes": 88082,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js": {
       "bytes": 7454,
       "imports": [],
       "format": "cjs"
@@ -4356,11 +4356,6 @@
           "external": true
         }
       ],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js": {
-      "bytes": 6542,
-      "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js": {
@@ -4467,6 +4462,11 @@
       ],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js": {
+      "bytes": 19763,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js": {
       "bytes": 17655,
       "imports": [
@@ -4480,11 +4480,6 @@
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js": {
       "bytes": 142,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js": {
-      "bytes": 13259,
       "imports": [],
       "format": "cjs"
     },
@@ -4985,8 +4980,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js": {
-      "bytes": 6095,
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js": {
+      "bytes": 9441,
       "imports": [],
       "format": "cjs"
     },
@@ -5038,8 +5033,8 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js": {
-      "bytes": 1342,
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js": {
+      "bytes": 1361,
       "imports": [],
       "format": "cjs"
     },
@@ -5166,8 +5161,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js": {
-      "bytes": 13318,
+    ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js": {
+      "bytes": 13337,
       "imports": [],
       "format": "cjs"
     },
@@ -5209,7 +5204,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/[turbopack]_runtime.js": {
-      "bytes": 54413,
+      "bytes": 54110,
       "imports": [
         {
           "path": "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@vercel/og/index.edge.js",
@@ -5252,11 +5247,6 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__090fafcb._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js"
@@ -5277,6 +5267,11 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__8f717811._.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js"
@@ -5287,9 +5282,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_4036ddb2._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app__not-found_page_actions_3df07a96.js",
@@ -5367,11 +5362,6 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_a5a075a0._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js"
@@ -5392,6 +5382,11 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__e1bf5c6a._.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js"
@@ -5400,11 +5395,6 @@
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_client_components_builtin_global-error_36990920.js",
@@ -5652,9 +5642,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3af39bf9._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_ea3c8939._.js",
@@ -5687,9 +5677,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_page_actions_a0623280.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__7ff5923c._.js",
@@ -5767,9 +5757,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_0b3e094e._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_shop_page_actions_d23b8e45.js",
@@ -5805,7 +5795,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js": {
-      "bytes": 54423,
+      "bytes": 54120,
       "imports": [
         {
           "path": "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@vercel/og/index.edge.js",
@@ -5848,11 +5838,6 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__090fafcb._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js"
@@ -5873,6 +5858,11 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__8f717811._.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js"
@@ -5883,9 +5873,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_4036ddb2._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app__not-found_page_actions_3df07a96.js",
@@ -5963,11 +5953,6 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_a5a075a0._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js"
@@ -5988,6 +5973,11 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__e1bf5c6a._.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js"
@@ -5996,11 +5986,6 @@
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_client_components_builtin_global-error_36990920.js",
@@ -6248,9 +6233,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3af39bf9._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_ea3c8939._.js",
@@ -6283,9 +6268,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_page_actions_a0623280.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__7ff5923c._.js",
@@ -6363,9 +6348,9 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_0b3e094e._.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_shop_page_actions_d23b8e45.js",
@@ -7403,7 +7388,7 @@
       "format": "cjs"
     },
     "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/load-manifest.external.js": {
-      "bytes": 41577,
+      "bytes": 41663,
       "imports": [
         {
           "path": "path",
@@ -7441,24 +7426,24 @@
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js"
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/login/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/login/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/home/venky/growman/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/forgot-password/page_client-reference-manifest.js",
@@ -8425,17 +8410,17 @@
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/is.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js": {
       "bytes": 2930,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/detect-libc/lib/process.js": {
+    "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/process.js": {
       "bytes": 569,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/detect-libc/lib/filesystem.js": {
+    "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/filesystem.js": {
       "bytes": 1097,
       "imports": [
         {
@@ -8446,12 +8431,12 @@
       ],
       "format": "cjs"
     },
-    "../../node_modules/detect-libc/lib/elf.js": {
+    "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/elf.js": {
       "bytes": 982,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/detect-libc/lib/detect-libc.js": {
+    "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/detect-libc.js": {
       "bytes": 7503,
       "imports": [
         {
@@ -8460,333 +8445,333 @@
           "external": true
         },
         {
-          "path": "../../node_modules/detect-libc/lib/process.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/process.js",
           "kind": "require-call",
           "original": "./process"
         },
         {
-          "path": "../../node_modules/detect-libc/lib/filesystem.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/filesystem.js",
           "kind": "require-call",
           "original": "./filesystem"
         },
         {
-          "path": "../../node_modules/detect-libc/lib/elf.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/elf.js",
           "kind": "require-call",
           "original": "./elf"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/debug.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js": {
       "bytes": 240,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/constants.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/constants.js": {
       "bytes": 873,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/re.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js": {
       "bytes": 8141,
       "imports": [
         {
-          "path": "../../node_modules/semver/internal/constants.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/constants.js",
           "kind": "require-call",
           "original": "./constants"
         },
         {
-          "path": "../../node_modules/semver/internal/debug.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js",
           "kind": "require-call",
           "original": "./debug"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/parse-options.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/parse-options.js": {
       "bytes": 338,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/identifiers.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/identifiers.js": {
       "bytes": 525,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/semver/classes/semver.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js": {
       "bytes": 9480,
       "imports": [
         {
-          "path": "../../node_modules/semver/internal/debug.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js",
           "kind": "require-call",
           "original": "../internal/debug"
         },
         {
-          "path": "../../node_modules/semver/internal/constants.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/constants.js",
           "kind": "require-call",
           "original": "../internal/constants"
         },
         {
-          "path": "../../node_modules/semver/internal/re.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js",
           "kind": "require-call",
           "original": "../internal/re"
         },
         {
-          "path": "../../node_modules/semver/internal/parse-options.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/parse-options.js",
           "kind": "require-call",
           "original": "../internal/parse-options"
         },
         {
-          "path": "../../node_modules/semver/internal/identifiers.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/identifiers.js",
           "kind": "require-call",
           "original": "../internal/identifiers"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/parse.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/parse.js": {
       "bytes": 331,
       "imports": [
         {
-          "path": "../../node_modules/semver/classes/semver.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js",
           "kind": "require-call",
           "original": "../classes/semver"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/coerce.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/coerce.js": {
       "bytes": 2004,
       "imports": [
         {
-          "path": "../../node_modules/semver/classes/semver.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js",
           "kind": "require-call",
           "original": "../classes/semver"
         },
         {
-          "path": "../../node_modules/semver/functions/parse.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/parse.js",
           "kind": "require-call",
           "original": "./parse"
         },
         {
-          "path": "../../node_modules/semver/internal/re.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js",
           "kind": "require-call",
           "original": "../internal/re"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/compare.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js": {
       "bytes": 170,
       "imports": [
         {
-          "path": "../../node_modules/semver/classes/semver.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js",
           "kind": "require-call",
           "original": "../classes/semver"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/gte.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gte.js": {
       "bytes": 127,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/internal/lrucache.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/lrucache.js": {
       "bytes": 802,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/eq.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/eq.js": {
       "bytes": 126,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/neq.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/neq.js": {
       "bytes": 128,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/gt.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gt.js": {
       "bytes": 124,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/lt.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lt.js": {
       "bytes": 124,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/lte.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lte.js": {
       "bytes": 127,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/compare.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js",
           "kind": "require-call",
           "original": "./compare"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/cmp.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/cmp.js": {
       "bytes": 961,
       "imports": [
         {
-          "path": "../../node_modules/semver/functions/eq.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/eq.js",
           "kind": "require-call",
           "original": "./eq"
         },
         {
-          "path": "../../node_modules/semver/functions/neq.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/neq.js",
           "kind": "require-call",
           "original": "./neq"
         },
         {
-          "path": "../../node_modules/semver/functions/gt.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gt.js",
           "kind": "require-call",
           "original": "./gt"
         },
         {
-          "path": "../../node_modules/semver/functions/gte.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gte.js",
           "kind": "require-call",
           "original": "./gte"
         },
         {
-          "path": "../../node_modules/semver/functions/lt.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lt.js",
           "kind": "require-call",
           "original": "./lt"
         },
         {
-          "path": "../../node_modules/semver/functions/lte.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lte.js",
           "kind": "require-call",
           "original": "./lte"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/classes/comparator.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/comparator.js": {
       "bytes": 3631,
       "imports": [
         {
-          "path": "../../node_modules/semver/internal/parse-options.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/parse-options.js",
           "kind": "require-call",
           "original": "../internal/parse-options"
         },
         {
-          "path": "../../node_modules/semver/internal/re.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js",
           "kind": "require-call",
           "original": "../internal/re"
         },
         {
-          "path": "../../node_modules/semver/functions/cmp.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/cmp.js",
           "kind": "require-call",
           "original": "../functions/cmp"
         },
         {
-          "path": "../../node_modules/semver/internal/debug.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js",
           "kind": "require-call",
           "original": "../internal/debug"
         },
         {
-          "path": "../../node_modules/semver/classes/semver.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js",
           "kind": "require-call",
           "original": "./semver"
         },
         {
-          "path": "../../node_modules/semver/classes/range.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/range.js",
           "kind": "require-call",
           "original": "./range"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/classes/range.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/range.js": {
       "bytes": 14977,
       "imports": [
         {
-          "path": "../../node_modules/semver/internal/lrucache.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/lrucache.js",
           "kind": "require-call",
           "original": "../internal/lrucache"
         },
         {
-          "path": "../../node_modules/semver/internal/parse-options.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/parse-options.js",
           "kind": "require-call",
           "original": "../internal/parse-options"
         },
         {
-          "path": "../../node_modules/semver/classes/comparator.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/comparator.js",
           "kind": "require-call",
           "original": "./comparator"
         },
         {
-          "path": "../../node_modules/semver/internal/debug.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js",
           "kind": "require-call",
           "original": "../internal/debug"
         },
         {
-          "path": "../../node_modules/semver/classes/semver.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js",
           "kind": "require-call",
           "original": "./semver"
         },
         {
-          "path": "../../node_modules/semver/internal/re.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js",
           "kind": "require-call",
           "original": "../internal/re"
         },
         {
-          "path": "../../node_modules/semver/internal/constants.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/constants.js",
           "kind": "require-call",
           "original": "../internal/constants"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/semver/functions/satisfies.js": {
+    "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/satisfies.js": {
       "bytes": 247,
       "imports": [
         {
-          "path": "../../node_modules/semver/classes/range.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/range.js",
           "kind": "require-call",
           "original": "../classes/range"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/package.json": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/package.json": {
       "bytes": 7478,
       "imports": []
     },
-    "../../node_modules/sharp/lib/libvips.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/libvips.js": {
       "bytes": 5947,
       "imports": [
         {
@@ -8800,27 +8785,27 @@
           "external": true
         },
         {
-          "path": "../../node_modules/semver/functions/coerce.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/coerce.js",
           "kind": "require-call",
           "original": "semver/functions/coerce"
         },
         {
-          "path": "../../node_modules/semver/functions/gte.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gte.js",
           "kind": "require-call",
           "original": "semver/functions/gte"
         },
         {
-          "path": "../../node_modules/semver/functions/satisfies.js",
+          "path": "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/satisfies.js",
           "kind": "require-call",
           "original": "semver/functions/satisfies"
         },
         {
-          "path": "../../node_modules/detect-libc/lib/detect-libc.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/detect-libc.js",
           "kind": "require-call",
           "original": "detect-libc"
         },
         {
-          "path": "../../node_modules/sharp/package.json",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/package.json",
           "kind": "require-call",
           "original": "../package.json"
         },
@@ -8842,16 +8827,16 @@
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/sharp.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js": {
       "bytes": 4044,
       "imports": [
         {
-          "path": "../../node_modules/detect-libc/lib/detect-libc.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/detect-libc.js",
           "kind": "require-call",
           "original": "detect-libc"
         },
         {
-          "path": "../../node_modules/sharp/lib/libvips.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/libvips.js",
           "kind": "require-call",
           "original": "./libvips"
         },
@@ -8863,7 +8848,7 @@
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/constructor.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/constructor.js": {
       "bytes": 19959,
       "imports": [
         {
@@ -8877,111 +8862,111 @@
           "external": true
         },
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         },
         {
-          "path": "../../node_modules/sharp/lib/sharp.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js",
           "kind": "require-call",
           "original": "./sharp"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/input.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/input.js": {
       "bytes": 32973,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         },
         {
-          "path": "../../node_modules/sharp/lib/sharp.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js",
           "kind": "require-call",
           "original": "./sharp"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/resize.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/resize.js": {
       "bytes": 21080,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/composite.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/composite.js": {
       "bytes": 8960,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/operation.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/operation.js": {
       "bytes": 33282,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/@img/colour/color.cjs": {
+    "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/color.cjs": {
       "bytes": 44950,
       "imports": [],
       "format": "cjs"
     },
-    "../../node_modules/@img/colour/index.cjs": {
+    "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/index.cjs": {
       "bytes": 49,
       "imports": [
         {
-          "path": "../../node_modules/@img/colour/color.cjs",
+          "path": "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/color.cjs",
           "kind": "require-call",
           "original": "./color.cjs"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/colour.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/colour.js": {
       "bytes": 5310,
       "imports": [
         {
-          "path": "../../node_modules/@img/colour/index.cjs",
+          "path": "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/index.cjs",
           "kind": "require-call",
           "original": "@img/colour"
         },
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/channel.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/channel.js": {
       "bytes": 5379,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/output.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/output.js": {
       "bytes": 61198,
       "imports": [
         {
@@ -8990,19 +8975,19 @@
           "external": true
         },
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         },
         {
-          "path": "../../node_modules/sharp/lib/sharp.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js",
           "kind": "require-call",
           "original": "./sharp"
         }
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/utility.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/utility.js": {
       "bytes": 9437,
       "imports": [
         {
@@ -9011,22 +8996,22 @@
           "external": true
         },
         {
-          "path": "../../node_modules/detect-libc/lib/detect-libc.js",
+          "path": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/detect-libc.js",
           "kind": "require-call",
           "original": "detect-libc"
         },
         {
-          "path": "../../node_modules/sharp/lib/is.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js",
           "kind": "require-call",
           "original": "./is"
         },
         {
-          "path": "../../node_modules/sharp/lib/libvips.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/libvips.js",
           "kind": "require-call",
           "original": "./libvips"
         },
         {
-          "path": "../../node_modules/sharp/lib/sharp.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js",
           "kind": "require-call",
           "original": "./sharp"
         },
@@ -9036,7 +9021,7 @@
           "external": true
         },
         {
-          "path": "../../node_modules/sharp/package.json",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/package.json",
           "kind": "require-call",
           "original": "../package.json"
         },
@@ -9053,51 +9038,51 @@
       ],
       "format": "cjs"
     },
-    "../../node_modules/sharp/lib/index.js": {
+    "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/index.js": {
       "bytes": 385,
       "imports": [
         {
-          "path": "../../node_modules/sharp/lib/constructor.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/constructor.js",
           "kind": "require-call",
           "original": "./constructor"
         },
         {
-          "path": "../../node_modules/sharp/lib/input.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/input.js",
           "kind": "require-call",
           "original": "./input"
         },
         {
-          "path": "../../node_modules/sharp/lib/resize.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/resize.js",
           "kind": "require-call",
           "original": "./resize"
         },
         {
-          "path": "../../node_modules/sharp/lib/composite.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/composite.js",
           "kind": "require-call",
           "original": "./composite"
         },
         {
-          "path": "../../node_modules/sharp/lib/operation.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/operation.js",
           "kind": "require-call",
           "original": "./operation"
         },
         {
-          "path": "../../node_modules/sharp/lib/colour.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/colour.js",
           "kind": "require-call",
           "original": "./colour"
         },
         {
-          "path": "../../node_modules/sharp/lib/channel.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/channel.js",
           "kind": "require-call",
           "original": "./channel"
         },
         {
-          "path": "../../node_modules/sharp/lib/output.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/output.js",
           "kind": "require-call",
           "original": "./output"
         },
         {
-          "path": "../../node_modules/sharp/lib/utility.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/utility.js",
           "kind": "require-call",
           "original": "./utility"
         }
@@ -9228,7 +9213,7 @@
           "external": true
         },
         {
-          "path": "../../node_modules/sharp/lib/index.js",
+          "path": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/index.js",
           "kind": "require-call",
           "original": "sharp"
         }
@@ -9645,7 +9630,7 @@
       "format": "esm"
     },
     ".open-next/server-functions/default/apps/web/index.mjs": {
-      "bytes": 99612,
+      "bytes": 99698,
       "imports": [
         {
           "path": "node:module",
@@ -10589,16 +10574,16 @@
           "bytesInOutput": 609
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/staged-rendering.js": {
-          "bytesInOutput": 2523
+          "bytesInOutput": 2525
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/dynamic-rendering.js": {
-          "bytesInOutput": 18788
+          "bytesInOutput": 18790
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/node-environment-extensions/utils.js": {
           "bytesInOutput": 4399
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/node-environment-extensions/random.js": {
-          "bytesInOutput": 742
+          "bytesInOutput": 744
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/node-environment-extensions/date.js": {
           "bytesInOutput": 1301
@@ -10619,7 +10604,7 @@
           "bytesInOutput": 3371
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/path-to-regexp/index.js": {
-          "bytesInOutput": 7628
+          "bytesInOutput": 7634
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/lib/route-pattern-normalizer.js": {
           "bytesInOutput": 2079
@@ -10640,7 +10625,7 @@
           "bytesInOutput": 1025
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/constants.js": {
-          "bytesInOutput": 9461
+          "bytesInOutput": 9463
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/lib/find-pages-dir.js": {
           "bytesInOutput": 1570
@@ -10655,13 +10640,13 @@
           "bytesInOutput": 9739
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/trace/constants.js": {
-          "bytesInOutput": 6954
+          "bytesInOutput": 6978
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/is-thenable.js": {
           "bytesInOutput": 538
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@opentelemetry/api/index.js": {
-          "bytesInOutput": 28887
+          "bytesInOutput": 28893
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/trace/tracer.js": {
           "bytesInOutput": 5422
@@ -10673,7 +10658,7 @@
           "bytesInOutput": 3962
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/client/components/redirect-status-code.js": {
-          "bytesInOutput": 1053
+          "bytesInOutput": 1055
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/api-utils/get-cookie-parser.js": {
           "bytesInOutput": 642
@@ -10919,7 +10904,7 @@
           "bytesInOutput": 772
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/lib/page-types.js": {
-          "bytesInOutput": 533
+          "bytesInOutput": 535
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/page-path/remove-page-path-tail.js": {
           "bytesInOutput": 766
@@ -10952,7 +10937,7 @@
           "bytesInOutput": 1362
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/route-kind.js": {
-          "bytesInOutput": 606
+          "bytesInOutput": 608
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/route-matchers/app-page-route-matcher.js": {
           "bytesInOutput": 652
@@ -11066,7 +11051,7 @@
           "bytesInOutput": 1026
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/web/globals.js": {
-          "bytesInOutput": 2992
+          "bytesInOutput": 1921
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/web/spec-extension/adapters/request-cookies.js": {
           "bytesInOutput": 4688
@@ -11078,7 +11063,7 @@
           "bytesInOutput": 4157
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/p-queue/index.js": {
-          "bytesInOutput": 9951
+          "bytesInOutput": 9989
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/incremental-cache/tags-manifest.external.js": {
           "bytesInOutput": 1051
@@ -11129,7 +11114,7 @@
           "bytesInOutput": 10720
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/lib/fallback.js": {
-          "bytesInOutput": 1952
+          "bytesInOutput": 1954
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/normalizers/request/segment-prefix-rsc.js": {
           "bytesInOutput": 933
@@ -11147,10 +11132,10 @@
           "bytesInOutput": 1910
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/zod/index.cjs": {
-          "bytesInOutput": 76774
+          "bytesInOutput": 76902
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/zod-validation-error/index.js": {
-          "bytesInOutput": 5303
+          "bytesInOutput": 5315
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/zod.js": {
           "bytesInOutput": 2098
@@ -11191,14 +11176,14 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/signup/page_client-reference-manifest.js": {
           "bytesInOutput": 17114
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
+          "bytesInOutput": 17112
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/shop/page_client-reference-manifest.js": {
           "bytesInOutput": 20611
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/product/page_client-reference-manifest.js": {
           "bytesInOutput": 22285
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/orders/page_client-reference-manifest.js": {
-          "bytesInOutput": 17112
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/order-success/page_client-reference-manifest.js": {
           "bytesInOutput": 17190
@@ -11218,11 +11203,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/categories/page_client-reference-manifest.js": {
           "bytesInOutput": 22685
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js": {
+          "bytesInOutput": 17121
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/cart/page_client-reference-manifest.js": {
           "bytesInOutput": 17103
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/account/page_client-reference-manifest.js": {
-          "bytesInOutput": 17218
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/_not-found/page_client-reference-manifest.js": {
           "bytesInOutput": 15341
@@ -11243,16 +11228,16 @@
           "bytesInOutput": 17676
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/load-manifest.external.js": {
-          "bytesInOutput": 28616
+          "bytesInOutput": 28702
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@vercel/og/index.edge.js": {
-          "bytesInOutput": 535796
+          "bytesInOutput": 535842
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/034c8_react-icons_fa_index_mjs_f98980a5._.js": {
           "bytesInOutput": 8394
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/4cc6c_framer-motion_dist_es_render_components_motion_proxy_mjs_f4ccbc66._.js": {
-          "bytesInOutput": 125002
+          "bytesInOutput": 125123
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/dynamic-access-async-storage-instance.js": {
           "bytesInOutput": 650
@@ -11279,7 +11264,7 @@
           "bytesInOutput": 431
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/jsonwebtoken/index.js": {
-          "bytesInOutput": 126508
+          "bytesInOutput": 126792
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/app-render/cache-signal.js": {
           "bytesInOutput": 3001
@@ -11291,7 +11276,7 @@
           "bytesInOutput": 844
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/response-cache/types.js": {
-          "bytesInOutput": 1125
+          "bytesInOutput": 1129
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/incremental-cache/memory-cache.external.js": {
           "bytesInOutput": 1371
@@ -11303,19 +11288,16 @@
           "bytesInOutput": 11427
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js": {
-          "bytesInOutput": 555207
+          "bytesInOutput": 555424
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__090fafcb._.js": {
           "bytesInOutput": 3539
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3a92e105._.js": {
-          "bytesInOutput": 8253
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__647814c2._.js": {
           "bytesInOutput": 3070
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__729f1fbc._.js": {
-          "bytesInOutput": 147380
+          "bytesInOutput": 147458
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__78e37077._.js": {
           "bytesInOutput": 7686
@@ -11323,11 +11305,14 @@
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__8f717811._.js": {
           "bytesInOutput": 1008
         },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_4036ddb2._.js": {
-          "bytesInOutput": 92369
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__c091c815._.js": {
+          "bytesInOutput": 8263
         },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_88ea9ca9._.js": {
-          "bytesInOutput": 8053
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_4036ddb2._.js": {
+          "bytesInOutput": 92394
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_55486b1c._.js": {
+          "bytesInOutput": 8054
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app__not-found_page_actions_3df07a96.js": {
           "bytesInOutput": 316
@@ -11348,7 +11333,7 @@
           "bytesInOutput": 31514
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_54d5f46b._.js": {
-          "bytesInOutput": 82880
+          "bytesInOutput": 82928
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_client_components_7583062f._.js": {
           "bytesInOutput": 2692
@@ -11357,13 +11342,13 @@
           "bytesInOutput": 17943
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_esm_c968d236._.js": {
-          "bytesInOutput": 48146
+          "bytesInOutput": 48171
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_f9469b5c._.js": {
-          "bytesInOutput": 70341
+          "bytesInOutput": 70363
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/node_modules__pnpm_4cca339e._.js": {
-          "bytesInOutput": 14940
+          "bytesInOutput": 14944
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__477f40c1._.js": {
           "bytesInOutput": 2040
@@ -11373,9 +11358,6 @@
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_a5a075a0._.js": {
           "bytesInOutput": 17472
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_21dfc656._.js": {
-          "bytesInOutput": 6808
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3cbf1a91._.js": {
           "bytesInOutput": 1746
@@ -11389,14 +11371,14 @@
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__e1bf5c6a._.js": {
           "bytesInOutput": 2420
         },
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8bec15ef._.js": {
+          "bytesInOutput": 20171
+        },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_d11504c0._.js": {
           "bytesInOutput": 18091
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_account_page_actions_bf94b5e7.js": {
           "bytesInOutput": 310
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_app_account_page_tsx_7b1d5009._.js": {
-          "bytesInOutput": 13579
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/cce1c_next_dist_client_components_builtin_global-error_36990920.js": {
           "bytesInOutput": 869
@@ -11426,7 +11408,7 @@
           "bytesInOutput": 13478
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_eb725b40._.js": {
-          "bytesInOutput": 326186
+          "bytesInOutput": 326320
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_public_Girl_json_c8d99c78._.js": {
           "bytesInOutput": 133398
@@ -11450,7 +11432,7 @@
           "bytesInOutput": 3018
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_31b8a6cc._.js": {
-          "bytesInOutput": 13491
+          "bytesInOutput": 13495
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8a36046a._.js": {
           "bytesInOutput": 18105
@@ -11462,7 +11444,7 @@
           "bytesInOutput": 316
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web_cf086ccc._.js": {
-          "bytesInOutput": 7768
+          "bytesInOutput": 7772
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_f434c3d0._.js": {
           "bytesInOutput": 6487
@@ -11492,10 +11474,10 @@
           "bytesInOutput": 9653
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js": {
-          "bytesInOutput": 161758
+          "bytesInOutput": 161859
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/[root-of-the-server]__4c586128._.js": {
-          "bytesInOutput": 170820
+          "bytesInOutput": 170863
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/[root-of-the-server]__a6d89067._.js": {
           "bytesInOutput": 988
@@ -11528,7 +11510,7 @@
           "bytesInOutput": 28249
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/node_modules__pnpm_15aff49a._.js": {
-          "bytesInOutput": 2921
+          "bytesInOutput": 2925
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__89ea22bf._.js": {
           "bytesInOutput": 1464
@@ -11545,8 +11527,8 @@
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__3af39bf9._.js": {
           "bytesInOutput": 1436
         },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_a2a493df._.js": {
-          "bytesInOutput": 6286
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_df5c2f73._.js": {
+          "bytesInOutput": 9704
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_ea3c8939._.js": {
           "bytesInOutput": 18086
@@ -11566,11 +11548,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_page_actions_a0623280.js": {
           "bytesInOutput": 295
         },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_09167b68._.js": {
-          "bytesInOutput": 1496
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/6fb8c_lucide-react_dist_esm_icons_36b6e7df._.js": {
+          "bytesInOutput": 1511
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[root-of-the-server]__7ff5923c._.js": {
-          "bytesInOutput": 4735
+          "bytesInOutput": 4739
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_3005e67a._.js": {
           "bytesInOutput": 18149
@@ -11614,8 +11596,8 @@
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_0b3e094e._.js": {
           "bytesInOutput": 18074
         },
-        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_e8b8ba8e._.js": {
-          "bytesInOutput": 13715
+        ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_8ebd7b03._.js": {
+          "bytesInOutput": 13729
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_shop_page_actions_d23b8e45.js": {
           "bytesInOutput": 305
@@ -11627,16 +11609,16 @@
           "bytesInOutput": 18083
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/_447f4373._.js": {
-          "bytesInOutput": 15286
+          "bytesInOutput": 15290
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/apps_web__next-internal_server_app_signup_page_actions_dbf3a6c2.js": {
           "bytesInOutput": 309
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/[turbopack]_runtime.js": {
-          "bytesInOutput": 27600
+          "bytesInOutput": 27370
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/ssr/[turbopack]_runtime.js": {
-          "bytesInOutput": 27615
+          "bytesInOutput": 27420
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/_global-error/page.js": {
           "bytesInOutput": 761
@@ -11720,7 +11702,7 @@
           "bytesInOutput": 187
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/bytes/index.js": {
-          "bytesInOutput": 1701
+          "bytesInOutput": 1703
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/body-streams.js": {
           "bytesInOutput": 2312
@@ -11741,7 +11723,7 @@
           "bytesInOutput": 9869
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/incremental-cache/index.js": {
-          "bytesInOutput": 13326
+          "bytesInOutput": 13294
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/setup-http-agent-env.js": {
           "bytesInOutput": 965
@@ -11801,7 +11783,7 @@
           "bytesInOutput": 1366
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@opentelemetry/api/index.js": {
-          "bytesInOutput": 28858
+          "bytesInOutput": 28864
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/router-utils/instrumentation-node-extensions.js": {
           "bytesInOutput": 2570
@@ -11810,7 +11792,7 @@
           "bytesInOutput": 2660
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/trace/constants.js": {
-          "bytesInOutput": 6924
+          "bytesInOutput": 6948
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/is-thenable.js": {
           "bytesInOutput": 509
@@ -11822,7 +11804,7 @@
           "bytesInOutput": 673
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/load-manifest.external.js": {
-          "bytesInOutput": 28588
+          "bytesInOutput": 28674
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/runtime-reacts.external.js": {
           "bytesInOutput": 899
@@ -11831,7 +11813,7 @@
           "bytesInOutput": 402
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/jsonwebtoken/index.js": {
-          "bytesInOutput": 126480
+          "bytesInOutput": 126764
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/incremental-cache/tags-manifest.external.js": {
           "bytesInOutput": 1022
@@ -11858,7 +11840,7 @@
           "bytesInOutput": 816
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/response-cache/types.js": {
-          "bytesInOutput": 1096
+          "bytesInOutput": 1100
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/lib/lru-cache.js": {
           "bytesInOutput": 2190
@@ -11870,7 +11852,7 @@
           "bytesInOutput": 1356
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js": {
-          "bytesInOutput": 555165
+          "bytesInOutput": 555382
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/route-modules/app-page/module.compiled.js": {
           "bytesInOutput": 341
@@ -11918,13 +11900,13 @@
           "bytesInOutput": 121
         },
         "../../node_modules/.pnpm/styled-jsx@5.1.6_react@19.2.0/node_modules/styled-jsx/dist/index/index.js": {
-          "bytesInOutput": 11549
+          "bytesInOutput": 11553
         },
         "../../node_modules/.pnpm/styled-jsx@5.1.6_react@19.2.0/node_modules/styled-jsx/index.js": {
           "bytesInOutput": 178
         },
         "../../node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js": {
-          "bytesInOutput": 126614
+          "bytesInOutput": 126683
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/route-modules/pages/module.compiled.js": {
           "bytesInOutput": 336
@@ -11960,16 +11942,16 @@
           "bytesInOutput": 841
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@hapi/accept/index.js": {
-          "bytesInOutput": 27787
+          "bytesInOutput": 27815
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/content-disposition/index.js": {
           "bytesInOutput": 4920
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/image-size/index.js": {
-          "bytesInOutput": 22338
+          "bytesInOutput": 22356
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/image-detector/detector.js": {
-          "bytesInOutput": 16950
+          "bytesInOutput": 16954
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/is-animated/index.js": {
           "bytesInOutput": 2170
@@ -11978,7 +11960,7 @@
           "bytesInOutput": 1336
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/picomatch/index.js": {
-          "bytesInOutput": 23519
+          "bytesInOutput": 23493
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/shared/lib/match-local-pattern.js": {
           "bytesInOutput": 967
@@ -11987,139 +11969,139 @@
           "bytesInOutput": 1373
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/debug/index.js": {
-          "bytesInOutput": 11476
+          "bytesInOutput": 11492
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/send/index.js": {
-          "bytesInOutput": 66100
+          "bytesInOutput": 66129
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/serve-static.js": {
           "bytesInOutput": 1512
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/ipaddr.js/ipaddr.js": {
-          "bytesInOutput": 13911
+          "bytesInOutput": 13923
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/is-private-ip.js": {
           "bytesInOutput": 840
         },
-        "../../node_modules/sharp/lib/is.js": {
-          "bytesInOutput": 1234
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/is.js": {
+          "bytesInOutput": 1266
         },
-        "../../node_modules/detect-libc/lib/process.js": {
-          "bytesInOutput": 432
+        "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/process.js": {
+          "bytesInOutput": 469
         },
-        "../../node_modules/detect-libc/lib/filesystem.js": {
-          "bytesInOutput": 724
+        "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/filesystem.js": {
+          "bytesInOutput": 761
         },
-        "../../node_modules/detect-libc/lib/elf.js": {
-          "bytesInOutput": 646
+        "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/elf.js": {
+          "bytesInOutput": 683
         },
-        "../../node_modules/detect-libc/lib/detect-libc.js": {
-          "bytesInOutput": 4764
+        "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc/lib/detect-libc.js": {
+          "bytesInOutput": 4801
         },
-        "../../node_modules/semver/internal/debug.js": {
-          "bytesInOutput": 301
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/debug.js": {
+          "bytesInOutput": 333
         },
-        "../../node_modules/semver/internal/constants.js": {
-          "bytesInOutput": 522
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/constants.js": {
+          "bytesInOutput": 554
         },
-        "../../node_modules/semver/internal/re.js": {
-          "bytesInOutput": 4548
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/re.js": {
+          "bytesInOutput": 4580
         },
-        "../../node_modules/semver/internal/parse-options.js": {
-          "bytesInOutput": 310
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/parse-options.js": {
+          "bytesInOutput": 342
         },
-        "../../node_modules/semver/internal/identifiers.js": {
-          "bytesInOutput": 470
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/identifiers.js": {
+          "bytesInOutput": 502
         },
-        "../../node_modules/semver/classes/semver.js": {
-          "bytesInOutput": 5275
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/semver.js": {
+          "bytesInOutput": 5307
         },
-        "../../node_modules/semver/functions/parse.js": {
-          "bytesInOutput": 337
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/parse.js": {
+          "bytesInOutput": 369
         },
-        "../../node_modules/semver/functions/coerce.js": {
-          "bytesInOutput": 1160
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/coerce.js": {
+          "bytesInOutput": 1192
         },
-        "../../node_modules/semver/functions/compare.js": {
-          "bytesInOutput": 237
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/compare.js": {
+          "bytesInOutput": 269
         },
-        "../../node_modules/semver/functions/gte.js": {
-          "bytesInOutput": 196
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gte.js": {
+          "bytesInOutput": 228
         },
-        "../../node_modules/semver/internal/lrucache.js": {
-          "bytesInOutput": 556
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/internal/lrucache.js": {
+          "bytesInOutput": 588
         },
-        "../../node_modules/semver/functions/eq.js": {
-          "bytesInOutput": 193
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/eq.js": {
+          "bytesInOutput": 225
         },
-        "../../node_modules/semver/functions/neq.js": {
-          "bytesInOutput": 197
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/neq.js": {
+          "bytesInOutput": 229
         },
-        "../../node_modules/semver/functions/gt.js": {
-          "bytesInOutput": 193
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/gt.js": {
+          "bytesInOutput": 225
         },
-        "../../node_modules/semver/functions/lt.js": {
-          "bytesInOutput": 191
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lt.js": {
+          "bytesInOutput": 223
         },
-        "../../node_modules/semver/functions/lte.js": {
-          "bytesInOutput": 196
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/lte.js": {
+          "bytesInOutput": 228
         },
-        "../../node_modules/semver/functions/cmp.js": {
-          "bytesInOutput": 702
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/cmp.js": {
+          "bytesInOutput": 734
         },
-        "../../node_modules/semver/classes/comparator.js": {
-          "bytesInOutput": 2324
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/comparator.js": {
+          "bytesInOutput": 2356
         },
-        "../../node_modules/semver/classes/range.js": {
-          "bytesInOutput": 7670
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/classes/range.js": {
+          "bytesInOutput": 7702
         },
-        "../../node_modules/semver/functions/satisfies.js": {
-          "bytesInOutput": 285
+        "../../node_modules/.pnpm/semver@7.7.3/node_modules/semver/functions/satisfies.js": {
+          "bytesInOutput": 317
         },
-        "../../node_modules/sharp/package.json": {
-          "bytesInOutput": 6515
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/package.json": {
+          "bytesInOutput": 6547
         },
-        "../../node_modules/sharp/lib/libvips.js": {
-          "bytesInOutput": 4156
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/libvips.js": {
+          "bytesInOutput": 4188
         },
-        "../../node_modules/sharp/lib/sharp.js": {
-          "bytesInOutput": 3190
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/sharp.js": {
+          "bytesInOutput": 3222
         },
-        "../../node_modules/sharp/lib/constructor.js": {
-          "bytesInOutput": 4182
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/constructor.js": {
+          "bytesInOutput": 4214
         },
-        "../../node_modules/sharp/lib/input.js": {
-          "bytesInOutput": 18741
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/input.js": {
+          "bytesInOutput": 18773
         },
-        "../../node_modules/sharp/lib/resize.js": {
-          "bytesInOutput": 6268
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/resize.js": {
+          "bytesInOutput": 6300
         },
-        "../../node_modules/sharp/lib/composite.js": {
-          "bytesInOutput": 2558
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/composite.js": {
+          "bytesInOutput": 2590
         },
-        "../../node_modules/sharp/lib/operation.js": {
-          "bytesInOutput": 12241
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/operation.js": {
+          "bytesInOutput": 12273
         },
-        "../../node_modules/@img/colour/color.cjs": {
-          "bytesInOutput": 32043
+        "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/color.cjs": {
+          "bytesInOutput": 32080
         },
-        "../../node_modules/@img/colour/index.cjs": {
-          "bytesInOutput": 135
+        "../../node_modules/.pnpm/@img+colour@1.0.0/node_modules/@img/colour/index.cjs": {
+          "bytesInOutput": 172
         },
-        "../../node_modules/sharp/lib/colour.js": {
-          "bytesInOutput": 1700
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/colour.js": {
+          "bytesInOutput": 1732
         },
-        "../../node_modules/sharp/lib/channel.js": {
-          "bytesInOutput": 1416
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/channel.js": {
+          "bytesInOutput": 1448
         },
-        "../../node_modules/sharp/lib/output.js": {
-          "bytesInOutput": 24965
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/output.js": {
+          "bytesInOutput": 24997
         },
-        "../../node_modules/sharp/lib/utility.js": {
-          "bytesInOutput": 2648
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/utility.js": {
+          "bytesInOutput": 2680
         },
-        "../../node_modules/sharp/lib/index.js": {
-          "bytesInOutput": 344
+        "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp/lib/index.js": {
+          "bytesInOutput": 376
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/server/image-optimizer.js": {
           "bytesInOutput": 21591
@@ -12128,7 +12110,7 @@
           "bytesInOutput": 2256
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/compiled/@mswjs/interceptors/ClientRequest/index.js": {
-          "bytesInOutput": 36896
+          "bytesInOutput": 36996
         },
         ".open-next/server-functions/default/node_modules/.pnpm/next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/dist/experimental/testmode/httpget.js": {
           "bytesInOutput": 839
@@ -12143,10 +12125,10 @@
           "bytesInOutput": 4998
         },
         ".open-next/server-functions/default/apps/web/index.mjs": {
-          "bytesInOutput": 67141
+          "bytesInOutput": 67225
         }
       },
-      "bytes": 6621879
+      "bytes": 6627255
     }
   }
 }

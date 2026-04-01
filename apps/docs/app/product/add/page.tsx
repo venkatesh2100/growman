@@ -54,7 +54,7 @@ export default function ImageUpload() {
       setImageUrl(imageUrl);
 
       // 👉 This imageKey is what you store in DB with the product
-      console.log("Uploaded imageKey:", imageKey);
+      // console.log("Uploaded imageKey:", imageKey);
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {

@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "prefabPath": "/home/venky/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
+  "packages": [
+    "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab",
+    "/home/venky/growman/node_modules/.pnpm/react-native-reanimated@4.2.1_react-native-worklets@0.7.4_@babel+core@7.29.0_react-nati_cc2687fbb6f670fb5b98dc3700eefc26/node_modules/react-native-reanimated/android/build/intermediates/prefab_package/debug/prefab",
+    "/home/venky/growman/node_modules/.pnpm/react-native-worklets@0.7.4_@babel+core@7.29.0_react-native@0.83.2_@babel+core@7.29.0_@_d2c41d0c3b438a7b10c133da099130ad/node_modules/react-native-worklets/android/build/intermediates/prefab_package/debug/prefab",
+    "/home/venky/.gradle/caches/9.0.0/transforms/44cb238ccc9b1b7a5bf87029c8b55c61/transformed/hermes-android-0.14.1-debug/prefab",
+    "/home/venky/.gradle/caches/9.0.0/transforms/83198c47a1c402754cadaa99718025d1/transformed/fbjni-0.7.0/prefab"
+  ]
+}

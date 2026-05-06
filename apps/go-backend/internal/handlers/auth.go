@@ -72,6 +72,51 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, AuthResponse{Token: token})
 }
 
+// AdminLogin allows only admin/superadmin users to sign in.
+func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
+	var payload AuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+		return
+	}
+
+	if payload.Password == "" {
+		httpjson.Error(w, http.StatusUnauthorized, "password required")
+		return
+	}
+
+	var user models.User
+	if strings.Contains(payload.Email, "@") {
+		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
+			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			return
+		}
+	} else {
+		if err := h.DB.Where("phone = ?", payload.Email).First(&user).Error; err != nil {
+			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			return
+		}
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(payload.Password)); err != nil {
+		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	if user.Role != "admin" && user.Role != "superadmin" {
+		httpjson.Error(w, http.StatusForbidden, "admin access required")
+		return
+	}
+
+	token, err := appauth.GenerateToken(h.Cfg.JWTSecret, user.ID, user.Role, 24*time.Hour)
+	if err != nil {
+		httpjson.Error(w, http.StatusInternalServerError, "token issue failed")
+		return
+	}
+
+	httpjson.JSON(w, http.StatusOK, AuthResponse{Token: token})
+}
+
 // SignupRequest represents signup input
 type SignupRequest struct {
 	Name     string `json:"name"`

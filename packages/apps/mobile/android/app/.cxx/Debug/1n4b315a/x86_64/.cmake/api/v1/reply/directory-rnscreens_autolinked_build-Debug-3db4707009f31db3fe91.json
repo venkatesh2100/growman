@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "rnscreens_autolinked_build",
+		"source" : "/home/venky/growman/node_modules/.pnpm/react-native-screens@4.23.0_react-native@0.83.2_@babel+core@7.29.0_@react-native-commun_a50686f79b6c9d085e27d84e9fb526ef/node_modules/react-native-screens/android/src/main/jni"
+	}
+}

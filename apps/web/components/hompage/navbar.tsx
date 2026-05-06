@@ -9,7 +9,7 @@ import { FaLeaf } from "react-icons/fa";
 import { searchProducts } from "../../lib/api";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
-import { LogOut, Package, Settings, ShoppingBag, LogIn } from "lucide-react";
+import { LogOut, Package, Settings, ShoppingBag, LogIn, Heart, Mic, ScanSearch } from "lucide-react";
 
 interface Product {
   id: number;
@@ -20,6 +20,17 @@ interface Product {
   imageUrl?: string;
   category?: { name: string };
 }
+
+type BrowserSpeechRecognition = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -182,6 +193,8 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [listening, setListening] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -190,6 +203,8 @@ export default function Navbar() {
   const navbarRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const voiceResultRef = useRef<string | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
   // Cart store
   const totalQuantity = useCartStore((state) => state.getTotalQuantity());
@@ -293,19 +308,79 @@ export default function Navbar() {
   }, [searchQuery, performSearch]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value);
+  const handleCatalogSearch = useCallback(() => {
+    const query = searchQuery.trim();
+    if (!query) return;
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+    setShowSearchResults(false);
+    setSearchQuery("");
+    setIsSearchOpen(false);
+  }, [router, searchQuery]);
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim().length >= 2) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setShowSearchResults(false);
-      setSearchQuery("");
-    }
+    handleCatalogSearch();
   };
   const handleProductClick = (slug: string) => {
-    router.push(`/products/${slug}`);
+    router.push(`/product/${slug}`);
     setShowSearchResults(false);
     setSearchQuery("");
   };
+
+  const handleScanPress = () => {
+    setScanning(true);
+    window.dispatchEvent(new Event("growman:open-chatbot"));
+    setTimeout(() => setScanning(false), 350);
+  };
+
+  const handleVoicePress = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    const RecognitionCtor = (
+      window as typeof window & {
+        SpeechRecognition?: new () => BrowserSpeechRecognition;
+        webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+      }
+    ).SpeechRecognition || (
+      window as typeof window & {
+        SpeechRecognition?: new () => BrowserSpeechRecognition;
+        webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+      }
+    ).webkitSpeechRecognition;
+
+    if (!RecognitionCtor) return;
+
+    const recognition = new RecognitionCtor();
+    recognitionRef.current = recognition;
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        voiceResultRef.current = transcript;
+        setSearchQuery(transcript);
+        setShowSearchResults(transcript.length >= 2);
+      }
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+      voiceResultRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    setListening(true);
+    recognition.start();
+  }, [listening]);
 
   if (!isMounted) {
     return (
@@ -422,6 +497,32 @@ export default function Navbar() {
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
                   className="bg-transparent outline-none w-48 sm:w-58 text-sm sm:text-base text-green-800 placeholder-emerald-600/70"
                 />
+                <button
+                  type="button"
+                  onClick={handleVoicePress}
+                  className={`p-1.5 sm:p-2 rounded-full transition-colors touch-manipulation ${listening ? "text-rose-600 bg-rose-50" : "text-emerald-700 hover:text-emerald-900"}`}
+                  aria-label={listening ? "Stop voice search" : "Start voice search"}
+                >
+                  <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleScanPress}
+                  className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation"
+                  aria-label="Open AI plant scan"
+                >
+                  <ScanSearch className={`h-4 w-4 sm:h-5 sm:w-5 ${scanning ? "animate-pulse" : ""}`} />
+                </button>
+                {searchQuery.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="p-1.5 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95"
+                    aria-label="Clear search"
+                  >
+                    {/* <CloseIcon /> */}
+                  </button>
+                )}
                 <button type="submit" className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation">
                   {isSearching ? (
                     <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -502,6 +603,14 @@ export default function Navbar() {
                           My Cart
                         </Link>
                         <Link
+                          href="/wishlist"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Heart className="w-4 h-4 mr-3 text-emerald-600" />
+                          Wishlist
+                        </Link>
+                        <Link
                           href="/account"
                           prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
@@ -539,6 +648,15 @@ export default function Navbar() {
                           My Cart
                         </Link>
                         <Link
+                          href="/login?redirect=/wishlist"
+                          prefetch={false}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          <Heart className="w-4 h-4 mr-3 text-emerald-600" />
+                          Wishlist
+                        </Link>
+                        <Link
                           href="/login"
                           prefetch={false}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
@@ -573,20 +691,61 @@ export default function Navbar() {
         {isSearchOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden container mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <div ref={searchContainerRef} className="relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full px-3 sm:px-4 py-2 shadow-inner">
+              <form onSubmit={handleSearchSubmit} className="flex items-center rounded-2xl px-2.5 py-2 border border-emerald-100 bg-white shadow-inner">
+                <span className="p-1 text-emerald-700">
+                  <SearchIcon />
+                </span>
                 <input
                   ref={searchRef}
                   type="text"
-                  placeholder="Search plants, seeds, tools..."
+                  placeholder="Search catalog or ask Dootha..."
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                  className="bg-transparent outline-none w-full text-sm sm:text-base text-green-800 placeholder-emerald-600/70"
+                  className="bg-transparent outline-none w-full text-sm sm:text-base text-green-800 placeholder-gray-400 px-1.5"
                 />
+                <button
+                  type="button"
+                  onClick={handleVoicePress}
+                  className={`mr-1 p-1 rounded-full transition-colors touch-manipulation ${listening ? "text-rose-600 bg-rose-50" : "text-emerald-700 hover:text-emerald-900"}`}
+                  aria-label={listening ? "Stop voice search" : "Start voice search"}
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleScanPress}
+                  className="mr-1 p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation"
+                  aria-label="Open AI plant scan"
+                >
+                  <ScanSearch className={`h-4 w-4 ${scanning ? "animate-pulse" : ""}`} />
+                </button>
+                {searchQuery.length > 0 && (
+                  <button
+                    type="button"
+                    className="p-1.5 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                  >
+                    <CloseIcon />
+                  </button>
+                )}
                 <button type="button" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
                   <CloseIcon />
                 </button>
               </form>
+              <button
+                type="button"
+                onClick={handleCatalogSearch}
+                disabled={!searchQuery.trim()}
+                className={`mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                  searchQuery.trim() ? "bg-emerald-700 text-white" : "bg-gray-200 text-gray-400"
+                }`}
+                aria-label="Search shop"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Search shop
+              </button>
               {showSearchResults && <SearchResults results={searchResults} onProductClick={handleProductClick} onClose={() => setIsSearchOpen(false)} />}
             </div>
           </motion.div>

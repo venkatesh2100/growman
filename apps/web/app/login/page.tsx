@@ -9,6 +9,10 @@ import Link from "next/link";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import GoogleLoginButton from "./GoogleLoginButton";
 import { toast } from "../../lib/toast";
+import {
+  TurnstileGate,
+  isTurnstileSiteConfigured,
+} from "../../components/TurnstileGate";
 
 function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
@@ -19,6 +23,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [humanOk, setHumanOk] = useState(() => !isTurnstileSiteConfigured());
 
   useEffect(() => {
     // Pre-fill email from query params
@@ -31,6 +36,12 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isTurnstileSiteConfigured() && !humanOk) {
+      toast("Please complete the security check (bottom-right).", "error");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -94,6 +105,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 lg:px-8">
+      <TurnstileGate onHumanVerified={setHumanOk} />
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div>
           <div className="flex justify-center">
@@ -178,7 +190,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
           <div className="space-y-3">
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={loading || success || (isTurnstileSiteConfigured() && !humanOk)}
               className="group relative w-full flex justify-center py-2.5 sm:py-3 px-4 border border-transparent text-sm sm:text-base font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed touch-manipulation"
             >
               {loading ? (

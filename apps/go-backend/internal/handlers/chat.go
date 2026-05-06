@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
@@ -19,12 +20,12 @@ type ChatMessage struct {
 }
 
 type ChatRequest struct {
-	Message            string        `json:"message"`
+	Message             string        `json:"message"`
 	ConversationHistory []ChatMessage `json:"conversationHistory"`
 }
 
 type ChatResponse struct {
-	Response          string                 `json:"response"`
+	Response            string                  `json:"response"`
 	RecommendedProducts []ProductRecommendation `json:"recommendedProducts,omitempty"`
 }
 
@@ -37,10 +38,10 @@ type ProductRecommendation struct {
 }
 
 type OpenAIRequest struct {
-	Model    string        `json:"model"`
-	Messages []ChatMessage `json:"messages"`
-	MaxTokens int          `json:"max_tokens,omitempty"`
-	Temperature float64    `json:"temperature,omitempty"`
+	Model       string        `json:"model"`
+	Messages    []ChatMessage `json:"messages"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
+	Temperature float64       `json:"temperature,omitempty"`
 }
 
 type OpenAIResponse struct {
@@ -56,7 +57,7 @@ type OpenAIResponse struct {
 }
 
 type GeminiRequest struct {
-	Contents []GeminiContent `json:"contents"`
+	Contents         []GeminiContent `json:"contents"`
 	GenerationConfig struct {
 		Temperature     float64 `json:"temperature,omitempty"`
 		MaxOutputTokens int     `json:"maxOutputTokens,omitempty"`
@@ -138,6 +139,7 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 
 	// Extract product recommendations from the conversation
 	recommendedProducts := h.extractProductRecommendations(req.Message, aiResponse)
+	h.maybeAutoCreateRequestedProduct(req.Message, aiResponse, recommendedProducts)
 
 	// Resolve image URLs for recommended products
 	for i := range recommendedProducts {
@@ -179,6 +181,9 @@ Your role is to:
 4. Be friendly, knowledgeable, and helpful
 
 Keep responses brief, actionable, and to the point. Focus on the most essential information.
+For support requests (delivery issues, delays, refunds, escalations), always share Growman support details:
+- Email: growman.live@gmail.com
+- Website: https://growman.live/
 
 When recommending products, mention specific product names naturally in your response.
 The store sells plants, seeds, planters, gardening tools, and accessories.
@@ -514,4 +519,98 @@ func (h *Handler) extractProductRecommendations(userMessage, aiResponse string) 
 	}
 
 	return recommendations
+}
+
+func (h *Handler) maybeAutoCreateRequestedProduct(userMessage, aiResponse string, recommendations []ProductRecommendation) {
+	lower := strings.ToLower(strings.TrimSpace(userMessage + " " + aiResponse))
+	if lower == "" {
+		return
+	}
+
+	requestSignals := []string{
+		"exact product",
+		"request to add",
+		"add it to",
+		"add this product",
+		"cannot find",
+		"not available",
+		"out of stock",
+	}
+
+	hasSignal := false
+	for _, signal := range requestSignals {
+		if strings.Contains(lower, signal) {
+			hasSignal = true
+			break
+		}
+	}
+
+	// Only auto-create when user intent is explicit and no strong recommendation exists.
+	if !hasSignal || len(recommendations) > 0 {
+		return
+	}
+
+	name := extractRequestedProductName(userMessage)
+	if name == "" {
+		name = strings.TrimSpace(userMessage)
+		if len(name) > 120 {
+			name = name[:120]
+		}
+	}
+
+	details := strings.TrimSpace(userMessage)
+	if details == "" {
+		details = "Requested from chatbot conversation"
+	}
+
+	record := models.RequestedProduct{
+		ProductName: name,
+		Details:     details,
+		Status:      "pending",
+		Source:      "chatbot_auto",
+	}
+
+	if err := h.DB.Create(&record).Error; err != nil {
+		log.Printf("[CHAT] Failed to auto-create requested product: %v", err)
+	}
+}
+
+func extractRequestedProductName(message string) string {
+	trimmed := strings.TrimSpace(message)
+	if trimmed == "" {
+		return ""
+	}
+
+	quoted := regexp.MustCompile(`"([^"]+)"`)
+	matches := quoted.FindStringSubmatch(trimmed)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	patterns := []string{
+		"looking for",
+		"need",
+		"want",
+		"find",
+	}
+
+	lower := strings.ToLower(trimmed)
+	for _, p := range patterns {
+		idx := strings.Index(lower, p)
+		if idx >= 0 {
+			candidate := strings.TrimSpace(trimmed[idx+len(p):])
+			candidate = strings.Trim(candidate, " .,:;!?")
+			if candidate != "" {
+				if len(candidate) > 120 {
+					return candidate[:120]
+				}
+				return candidate
+			}
+		}
+	}
+
+	if len(trimmed) > 120 {
+		return trimmed[:120]
+	}
+	return trimmed
 }

@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "rnreanimated_autolinked_build",
+		"source" : "/home/venky/growman/node_modules/.pnpm/react-native-reanimated@4.2.1_react-native-worklets@0.7.4_@babel+core@7.29.0_react-nati_cc2687fbb6f670fb5b98dc3700eefc26/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni"
+	}
+}

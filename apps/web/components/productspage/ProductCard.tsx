@@ -111,6 +111,8 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
       <div className="md:hidden">
         <Link
           href={`/product/${product?.slug ?? ""}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="relative block bg-gray-50 touch-manipulation"
         >
           <div className="relative w-full aspect-square">
@@ -145,6 +147,8 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           {/* Product Name - 2 line clamp */}
           <Link
             href={`/product/${product?.slug ?? ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="touch-manipulation mb-1.5"
           >
             {product.category?.name && (
@@ -274,6 +278,8 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
       <div className="hidden md:block">
         <Link
           href={`/product/${product?.slug ?? ""}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="relative block overflow-hidden aspect-square bg-gray-50 touch-manipulation"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -329,6 +335,8 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           {/* Product Name */}
           <Link
             href={`/product/${product?.slug ?? ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="touch-manipulation"
           >
             <h2 className="font-semibold text-gray-900 text-xs sm:text-sm line-clamp-2 mb-2 min-h-10 sm:min-h-12 hover:text-emerald-600 active:text-emerald-700 transition-colors">

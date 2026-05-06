@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "safeareacontext_autolinked_build",
+		"source" : "/home/venky/growman/node_modules/.pnpm/react-native-safe-area-context@5.6.2_react-native@0.83.2_@babel+core@7.29.0_@react-nati_70df48837614cf57fdb33476f0d0e8c4/node_modules/react-native-safe-area-context/android/src/main/jni"
+	}
+}

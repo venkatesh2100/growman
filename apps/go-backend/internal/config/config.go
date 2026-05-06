@@ -40,6 +40,10 @@ type Config struct {
 	PlantNetAPIKey    string // Pl@ntNet API key from https://my.plantnet.org
 	// Google OAuth - Web Client ID for verifying id_token from mobile/web
 	GoogleClientID string // Web client ID (same as EXPO_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+	// Cloudflare analytics configuration (dashboard map)
+	CloudflareAPIToken string
+	CloudflareZoneID   string
+	CloudflareAccountID string
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -76,6 +80,9 @@ func Load() (Config, error) {
 		PlantNetAPIKey:     os.Getenv("PLANTNET_API_KEY"),
 		// Google OAuth - Web Client ID for id_token verification (same as mobile/web apps)
 		GoogleClientID:     firstNonEmpty(os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("NEXT_PUBLIC_GOOGLE_CLIENT_ID")),
+		CloudflareAPIToken: os.Getenv("CLOUDFLARE_API_TOKEN"),
+		CloudflareZoneID:   os.Getenv("CLOUDFLARE_ZONE_ID"),
+		CloudflareAccountID: strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")

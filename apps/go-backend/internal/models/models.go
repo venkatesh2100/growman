@@ -124,22 +124,22 @@ type Base struct {
 
 type User struct {
 	Base
-	Name          string   `json:"name"`
-	Email         string   `gorm:"uniqueIndex" json:"email"`
-	Phone         string   `gorm:"uniqueIndex" json:"phone"`
-	PasswordHash  string   `json:"-"`
-	EmailVerified bool     `gorm:"default:false" json:"emailVerified"`
-	Provider      string   `gorm:"default:'local'" json:"provider"` // 'local' or 'google'
-	Role          string   `json:"role"`
+	Name          string `json:"name"`
+	Email         string `gorm:"uniqueIndex" json:"email"`
+	Phone         string `gorm:"uniqueIndex" json:"phone"`
+	PasswordHash  string `json:"-"`
+	EmailVerified bool   `gorm:"default:false" json:"emailVerified"`
+	Provider      string `gorm:"default:'local'" json:"provider"` // 'local' or 'google'
+	Role          string `json:"role"`
 	// Address fields
-	AddressLine   string   `json:"addressLine,omitempty"`
-	City          string   `json:"city,omitempty"`
-	State         string   `json:"state,omitempty"`
-	Pincode       string   `json:"pincode,omitempty"`
-	Country       string   `json:"country,omitempty"`
-	Latitude      *float64 `json:"latitude,omitempty"`
-	Longitude     *float64 `json:"longitude,omitempty"`
-	Reviews       []Review `json:"reviews"`
+	AddressLine string   `json:"addressLine,omitempty"`
+	City        string   `json:"city,omitempty"`
+	State       string   `json:"state,omitempty"`
+	Pincode     string   `json:"pincode,omitempty"`
+	Country     string   `json:"country,omitempty"`
+	Latitude    *float64 `json:"latitude,omitempty"`
+	Longitude   *float64 `json:"longitude,omitempty"`
+	Reviews     []Review `json:"reviews"`
 }
 
 type Category struct {
@@ -170,41 +170,41 @@ type Brand struct {
 
 type Product struct {
 	Base
-	Name           string         `json:"name"`
-	Slug           string         `gorm:"uniqueIndex" json:"slug"`
-	Description    string         `json:"description"`
-	ShortDesc      string         `json:"shortDescription"`
-	FullDesc       string         `json:"fullDescription"`
-	Specifications string         `json:"specifications"`
-	TaxInfo        string         `json:"taxInfo"`
-	Price          float64        `json:"price"` // price in currency units
-	MRP            float64        `json:"mrp"`
-	Currency       string         `json:"currency"`
-	ImageKey       string         `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
-	ImageURL       string         `gorm:"-" json:"imageUrl"` // Resolved URL (not stored in DB, computed from ImageKey)
-	Status         string         `json:"status"`
-	Featured       bool           `json:"featured"`
-	Tags           StringArray    `gorm:"type:text[]" json:"tags"`
-	Stock          int            `json:"stock"`
-	CategoryID     uint           `json:"categoryId"`
-	Category       Category       `json:"category"`
-	SubcategoryID  *uint          `json:"subcategoryId"`
-	Subcategory    *Subcategory   `json:"subcategory"`
-	BrandID        *uint          `json:"brandId"`
-	Brand          *Brand         `json:"brand"`
-	Sizes          []ProductSize  `json:"sizes"`
-	Attributes     []Attribute    `json:"attributes"`
-	Reviews        []Review       `json:"reviews"`
+	Name           string        `json:"name"`
+	Slug           string        `gorm:"uniqueIndex" json:"slug"`
+	Description    string        `json:"description"`
+	ShortDesc      string        `json:"shortDescription"`
+	FullDesc       string        `json:"fullDescription"`
+	Specifications string        `json:"specifications"`
+	TaxInfo        string        `json:"taxInfo"`
+	Price          float64       `json:"price"` // price in currency units
+	MRP            float64       `json:"mrp"`
+	Currency       string        `json:"currency"`
+	ImageKey       string        `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
+	ImageURL       string        `gorm:"-" json:"imageUrl"`                // Resolved URL (not stored in DB, computed from ImageKey)
+	Status         string        `json:"status"`
+	Featured       bool          `json:"featured"`
+	Tags           StringArray   `gorm:"type:text[]" json:"tags"`
+	Stock          int           `json:"stock"`
+	CategoryID     uint          `json:"categoryId"`
+	Category       Category      `json:"category"`
+	SubcategoryID  *uint         `json:"subcategoryId"`
+	Subcategory    *Subcategory  `json:"subcategory"`
+	BrandID        *uint         `json:"brandId"`
+	Brand          *Brand        `json:"brand"`
+	Sizes          []ProductSize `json:"sizes"`
+	Attributes     []Attribute   `json:"attributes"`
+	Reviews        []Review      `json:"reviews"`
 }
 
 type ProductSize struct {
 	Base
-	Label      string         `json:"label"`
-	Price      float64        `json:"price"`
-	Stock      int            `json:"stock"`
-	ProductID  uint           `json:"productId"`
-	ImageKeys  StringArray    `gorm:"type:text[];column:image_keys" json:"imageKeys"` // Storage-agnostic image keys
-	Images     StringArray    `gorm:"-" json:"images"` // Resolved URLs (not stored in DB, computed from ImageKeys)
+	Label     string      `json:"label"`
+	Price     float64     `json:"price"`
+	Stock     int         `json:"stock"`
+	ProductID uint        `json:"productId"`
+	ImageKeys StringArray `gorm:"type:text[];column:image_keys" json:"imageKeys"` // Storage-agnostic image keys
+	Images    StringArray `gorm:"-" json:"images"`                                // Resolved URLs (not stored in DB, computed from ImageKeys)
 }
 
 type Attribute struct {
@@ -234,47 +234,48 @@ type OrderItem struct {
 	Price       float64 `json:"price"`
 	Name        string  `json:"name"`
 	ImageKey    string  `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key
-	ImageURL    string  `gorm:"-" json:"imageUrl"` // Resolved URL (not stored in DB, computed from ImageKey)
+	ImageURL    string  `gorm:"-" json:"imageUrl"`                // Resolved URL (not stored in DB, computed from ImageKey)
 }
 
 // Order represents a customer order
 type Order struct {
 	Base
-	UserID          *uint       `json:"userId,omitempty"`
-	User            *User       `json:"user,omitempty"`
-	RazorpayOrderID string      `gorm:"uniqueIndex" json:"razorpayOrderId"`
-	RazorpayPaymentID string    `json:"razorpayPaymentId,omitempty"`
-	PaymentStatus   string      `gorm:"default:'created'" json:"paymentStatus"` // created, paid, failed
-	Status          string      `json:"status"` // pending, paid, failed, cancelled (legacy)
-	Amount          float64     `json:"amount"`
-	Currency        string      `json:"currency"`
-	Items           []OrderItem `json:"items"`
+	UserID               *uint       `json:"userId,omitempty"`
+	User                 *User       `json:"user,omitempty"`
+	RazorpayOrderID      string      `gorm:"uniqueIndex" json:"razorpayOrderId"`
+	RazorpayPaymentID    string      `json:"razorpayPaymentId,omitempty"`
+	PaymentStatus        string      `gorm:"default:'created'" json:"paymentStatus"` // created, paid, failed
+	Status               string      `json:"status"`                                 // pending, paid, failed, cancelled (legacy)
+	Amount               float64     `json:"amount"`
+	Currency             string      `json:"currency"`
+	ExpectedDeliveryDate *time.Time  `json:"expectedDeliveryDate,omitempty"`
+	Items                []OrderItem `json:"items"`
 	// Customer info
-	CustomerName    string      `json:"customerName,omitempty"`
-	CustomerEmail   string      `json:"customerEmail,omitempty"`
-	CustomerPhone   string      `json:"customerPhone,omitempty"`
+	CustomerName  string `json:"customerName,omitempty"`
+	CustomerEmail string `json:"customerEmail,omitempty"`
+	CustomerPhone string `json:"customerPhone,omitempty"`
 	// Address fields
-	AddressLine     string      `json:"addressLine,omitempty"`
-	City            string      `json:"city,omitempty"`
-	State           string      `json:"state,omitempty"`
-	Pincode         string      `json:"pincode,omitempty"`
+	AddressLine string `json:"addressLine,omitempty"`
+	City        string `json:"city,omitempty"`
+	State       string `json:"state,omitempty"`
+	Pincode     string `json:"pincode,omitempty"`
 	// Legacy fields (for backward compatibility)
-	ShippingAddress string      `json:"shippingAddress,omitempty"`
-	BillingAddress  string      `json:"billingAddress,omitempty"`
+	ShippingAddress string `json:"shippingAddress,omitempty"`
+	BillingAddress  string `json:"billingAddress,omitempty"`
 }
 
 // Payment represents a payment transaction
 type Payment struct {
 	Base
-	OrderID         uint    `json:"orderId"`
-	Order           Order   `json:"order"`
-	RazorpayOrderID string  `json:"razorpayOrderId"`
-	RazorpayPaymentID string `gorm:"uniqueIndex" json:"razorpayPaymentId"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	Status          string  `json:"status"` // created, authorized, captured, failed, refunded
-	Method          string  `json:"method,omitempty"`
-	Description     string  `json:"description,omitempty"`
+	OrderID           uint    `json:"orderId"`
+	Order             Order   `json:"order"`
+	RazorpayOrderID   string  `json:"razorpayOrderId"`
+	RazorpayPaymentID string  `gorm:"uniqueIndex" json:"razorpayPaymentId"`
+	Amount            float64 `json:"amount"`
+	Currency          string  `json:"currency"`
+	Status            string  `json:"status"` // created, authorized, captured, failed, refunded
+	Method            string  `json:"method,omitempty"`
+	Description       string  `json:"description,omitempty"`
 }
 
 // Wishlist represents a user's wishlist item
@@ -283,4 +284,18 @@ type Wishlist struct {
 	UserID    uint    `gorm:"uniqueIndex:idx_user_product" json:"userId"`
 	ProductID uint    `gorm:"uniqueIndex:idx_user_product" json:"productId"`
 	Product   Product `json:"product"`
+}
+
+// RequestedProduct stores user demand for missing/unavailable products.
+type RequestedProduct struct {
+	Base
+	ProductName    string `gorm:"index;not null" json:"productName"`
+	Details        string `gorm:"type:text" json:"details"`
+	Status         string `gorm:"default:'pending';index" json:"status"` // pending, reviewed, added, rejected
+	Source         string `gorm:"default:'manual';index" json:"source"`  // chatbot_auto, search_page, manual
+	RequestedByID  *uint  `json:"requestedById,omitempty"`
+	RequesterName  string `json:"requesterName,omitempty"`
+	RequesterEmail string `json:"requesterEmail,omitempty"`
+	RequesterPhone string `json:"requesterPhone,omitempty"`
+	AdminNotes     string `gorm:"type:text" json:"adminNotes,omitempty"`
 }

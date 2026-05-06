@@ -1,0 +1,4 @@
+/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

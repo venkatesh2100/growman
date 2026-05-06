@@ -35,26 +35,27 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	}))
 
 	r.Get("/healthz", h.Health)
-	
+
 	// Webhook routes (outside /api/v1, no auth required)
 	r.Post("/webhooks/razorpay", h.RazorpayWebhook)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// General rate limit: 100 req/min per IP (production standard, cost-effective)
+		// General rate limit: 300 req/min per IP.
+		// Checkout flow also has its own tighter limiter below.
 		if h.Redis != nil {
-			r.Use(middlewares.IPRateLimiter(h.Redis, 100, time.Minute))
+			r.Use(middlewares.IPRateLimiter(h.Redis, 250, time.Minute))
 		}
 		r.Get("/debug/version", h.Version)
 
-     	r.Get("/healthz", h.Health)
+		r.Get("/healthz", h.Health)
 
-
-		// Auth: 15 req/min (user-friendly retries, prevents brute force)
+		// Auth: 40 req/min (allows retries without impacting normal users)
 		r.Group(func(r chi.Router) {
 			if h.Redis != nil {
-				r.Use(middlewares.IPRateLimiter(h.Redis, 15, time.Minute))
+				r.Use(middlewares.IPRateLimiter(h.Redis, 20, time.Minute))
 			}
 			r.Post("/auth/login", h.Login)
+			r.Post("/auth/admin/login", h.AdminLogin)
 			r.Post("/auth/signup", h.Signup)
 			r.Post("/auth/google", h.Google)
 			r.Post("/auth/google-signup", h.GoogleSignup)
@@ -63,10 +64,10 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			r.Post("/auth/forgot-password/reset", h.ResetPassword)
 		})
 
-		// Checkout/OTP: 10 req/min (prevents OTP abuse, allows normal flow)
+		// Checkout/OTP: 60 req/min (prevents abuse but avoids blocking first-time payments)
 		r.Group(func(r chi.Router) {
 			if h.Redis != nil {
-				r.Use(middlewares.IPRateLimiter(h.Redis, 10, time.Minute))
+				r.Use(middlewares.IPRateLimiter(h.Redis, 20, time.Minute))
 			}
 			r.Post("/checkout/send-email-otp", h.SendEmailOTP)
 			r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
@@ -102,6 +103,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 
 		// AI Chat route
 		r.Post("/chat", h.Chat)
+		r.Post("/requested-products", h.CreateRequestedProduct)
 
 		// Payment routes (legacy)
 		r.Post("/razorpay/order", h.CreateRazorpayOrder)
@@ -114,10 +116,14 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Group(func(pr chi.Router) {
 			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
 			pr.Get("/auth/me", h.Me)
+			pr.Get("/dashboard/map", h.DashboardMap)
+			pr.Get("/requested-products", h.ListRequestedProducts)
 			pr.Put("/auth/profile", h.UpdateProfile)
 			pr.Post("/auth/save-location", h.SaveLocation)
 			// Orders endpoint for authenticated users
 			pr.Get("/orders", h.ListOrders)
+			pr.Patch("/orders/{id}/status", h.UpdateOrderStatus)
+			pr.Patch("/orders/{id}/expected-delivery", h.UpdateOrderExpectedDeliveryDate)
 			// Wishlist endpoints
 			pr.Get("/wishlist", h.ListWishlist)
 			pr.Post("/wishlist", h.AddToWishlist)

@@ -33,6 +33,7 @@ interface Order {
   status: string;
   paymentStatus: string;
   createdAt: string;
+  expectedDeliveryDate?: string;
   customerName?: string;
   addressLine?: string;
   city?: string;
@@ -40,6 +41,13 @@ interface Order {
   pincode?: string;
   items: OrderItem[];
 }
+
+const ORDER_PROGRESS_STEPS = [
+  { key: "confirmed", label: "Order confirmed" },
+  { key: "shipped", label: "Shipped" },
+  { key: "out_for_delivery", label: "Out for delivery" },
+  { key: "delivered", label: "Delivered" },
+];
 
 const STATUS_CONFIG: Record<
   string,
@@ -128,6 +136,35 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function computeDeliveryDate(createdAt: string, expectedDeliveryDate?: string): Date {
+  if (expectedDeliveryDate) {
+    const parsed = new Date(expectedDeliveryDate);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const d = new Date(createdAt);
+  d.setDate(d.getDate() + 7);
+  return d;
+}
+
+function progressIndex(order: Order): number {
+  const s = (order.status || "").toLowerCase();
+  const p = (order.paymentStatus || "").toLowerCase();
+  if (s === "delivered") return 3;
+  if (s === "out_for_delivery") return 2;
+  if (s === "shipped") return 1;
+  if (s === "confirmed" || s === "paid" || p === "paid") return 0;
+  if (s === "cancelled" || s === "failed" || p === "failed") return -1;
+  return 0;
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,11 +176,10 @@ export default function OrdersPage() {
 
   const loadOrders = async () => {
     try {
-      const response = await apiFetch("/orders?page=1&pageSize=20");
-      if (response.ok) {
-        const data = await response.json();
-        const list = Array.isArray(data) ? data : data.data || [];
-        setOrders(list);
+      const ordersRes = await apiFetch("/orders?page=1&pageSize=20&status=paid&scope=self");
+      if (ordersRes.ok) {
+        const data = await ordersRes.json();
+        setOrders(Array.isArray(data) ? data : data.data || []);
       }
     } catch (error) {
       console.error("Error loading orders", error);
@@ -250,12 +286,28 @@ export default function OrdersPage() {
                 order.status,
                 order.paymentStatus
               );
-              const config =
-                STATUS_CONFIG[statusKey] || STATUS_CONFIG["pending"];
+              const config = STATUS_CONFIG[statusKey] ?? {
+                bg: "bg-gray-100",
+                text: "text-gray-700",
+                border: "border-gray-200",
+                icon: <Clock className="w-3.5 h-3.5" />,
+                dot: "bg-gray-400",
+              };
               const isExpanded = expandedItems.has(order.id);
               const visibleItems =
                 isExpanded ? order.items : order.items?.slice(0, 3);
               const hasMore = (order.items?.length || 0) > 3;
+              const eta = computeDeliveryDate(order.createdAt, order.expectedDeliveryDate);
+              const progress = progressIndex(order);
+              const isCancelled = progress < 0;
+              const etaExpired = !isCancelled && progress < 3 && eta.getTime() < Date.now();
+              const etaText = isCancelled
+                ? `Order ${order.status || order.paymentStatus}`
+                : etaExpired
+                ? "Delivery delayed. Please contact growman.live@gmail.com"
+                : progress >= 3
+                ? `Delivered on ${formatShortDate(eta)}`
+                : `Arriving by ${formatShortDate(eta)}`;
 
               return (
                 <div
@@ -332,6 +384,47 @@ export default function OrdersPage() {
                       )}
                     </div>
                   )}
+
+                  <div className="mx-5 mb-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-emerald-900">{etaText}</p>
+                      {etaExpired ? (
+                        <button
+                          onClick={() =>
+                            window.dispatchEvent(
+                              new CustomEvent("growman:chatbot-prefill", {
+                                detail: {
+                                  message: `I need delivery support for order #${order.id}. Please share support contact details and help me escalate this delay.`,
+                                },
+                              }),
+                            )
+                          }
+                          className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline whitespace-nowrap"
+                        >
+                          Ask Dootha
+                        </button>
+                      ) : null}
+                    </div>
+                    {!isCancelled && (
+                      <div className="mt-2 space-y-1.5">
+                        {ORDER_PROGRESS_STEPS.map((step, idx) => {
+                          const done = idx <= progress;
+                          return (
+                            <div key={step.key} className="flex items-center gap-2">
+                              <span
+                                className={`w-2 h-2 rounded-full ${done ? "bg-emerald-600" : "bg-gray-300"}`}
+                              />
+                              <span
+                                className={`text-xs ${done ? "text-emerald-900 font-semibold" : "text-gray-500"}`}
+                              >
+                                {step.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Delivery Address */}
                   {(order.addressLine || order.city) && (

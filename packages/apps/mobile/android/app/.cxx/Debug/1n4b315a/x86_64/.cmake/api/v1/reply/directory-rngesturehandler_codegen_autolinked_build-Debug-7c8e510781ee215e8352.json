@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "rngesturehandler_codegen_autolinked_build",
+		"source" : "/home/venky/growman/node_modules/.pnpm/react-native-gesture-handler@2.30.0_react-native@0.83.2_@babel+core@7.29.0_@react-nativ_3c73ecbe8e410dbf9f8724fbffce3621/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni"
+	}
+}

@@ -1,0 +1,85 @@
+{
+  "buildFiles": [
+    "/home/venky/growman/node_modules/.pnpm/@react-native-async-storage+async-storage@2.2.0_react-native@0.83.2_@babel+core@7.29.0__d8cab3d693c7b712219f82cf47f463e2/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-gesture-handler@2.30.0_react-native@0.83.2_@babel+core@7.29.0_@react-nativ_3c73ecbe8e410dbf9f8724fbffce3621/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-reanimated@4.2.1_react-native-worklets@0.7.4_@babel+core@7.29.0_react-nati_cc2687fbb6f670fb5b98dc3700eefc26/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-safe-area-context@5.6.2_react-native@0.83.2_@babel+core@7.29.0_@react-nati_70df48837614cf57fdb33476f0d0e8c4/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-screens@4.23.0_react-native@0.83.2_@babel+core@7.29.0_@react-native-commun_a50686f79b6c9d085e27d84e9fb526ef/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-vector-icons@10.3.0/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native-worklets@0.7.4_@babel+core@7.29.0_react-native@0.83.2_@babel+core@7.29.0_@_d2c41d0c3b438a7b10c133da099130ad/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/venky/growman/node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@react-native-community+cli@15.1.3_typescript@5._40732c1d4439226c3246a57b6d469987/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/venky/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/venky/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/venky/growman/apps/mobile/android/app/.cxx/Debug/1n4b315a/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "react_codegen_RNVectorIconsSpec::@479809fae146501fd34d": {
+      "artifactName": "react_codegen_RNVectorIconsSpec",
+      "abi": "arm64-v8a",
+      "runtimeFiles": []
+    },
+    "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a": {
+      "artifactName": "react_codegen_rnreanimated",
+      "abi": "arm64-v8a",
+      "runtimeFiles": []
+    },
+    "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
+      "artifactName": "react_codegen_safeareacontext",
+      "abi": "arm64-v8a",
+      "output": "/home/venky/growman/apps/mobile/android/app/build/intermediates/cxx/Debug/1n4b315a/obj/arm64-v8a/libreact_codegen_safeareacontext.so",
+      "runtimeFiles": [
+        "/home/venky/.gradle/caches/9.0.0/transforms/83198c47a1c402754cadaa99718025d1/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so"
+      ]
+    },
+    "react_codegen_rngesturehandler_codegen::@39f233abcd2c728bc6ec": {
+      "artifactName": "react_codegen_rngesturehandler_codegen",
+      "abi": "arm64-v8a",
+      "runtimeFiles": []
+    },
+    "react_codegen_rnscreens::@25bcbd507e98d3a854ad": {
+      "artifactName": "react_codegen_rnscreens",
+      "abi": "arm64-v8a",
+      "output": "/home/venky/growman/apps/mobile/android/app/build/intermediates/cxx/Debug/1n4b315a/obj/arm64-v8a/libreact_codegen_rnscreens.so",
+      "runtimeFiles": [
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/83198c47a1c402754cadaa99718025d1/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so"
+      ]
+    },
+    "appmodules::@6890427a1f51a3e7e1df": {
+      "artifactName": "appmodules",
+      "abi": "arm64-v8a",
+      "output": "/home/venky/growman/apps/mobile/android/app/build/intermediates/cxx/Debug/1n4b315a/obj/arm64-v8a/libappmodules.so",
+      "runtimeFiles": [
+        "/home/venky/growman/apps/mobile/android/app/build/intermediates/cxx/Debug/1n4b315a/obj/arm64-v8a/libreact_codegen_safeareacontext.so",
+        "/home/venky/growman/apps/mobile/android/app/build/intermediates/cxx/Debug/1n4b315a/obj/arm64-v8a/libreact_codegen_rnscreens.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/83198c47a1c402754cadaa99718025d1/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/venky/.gradle/caches/9.0.0/transforms/eab9d5619ad36371990c02d771353060/transformed/react-android-0.83.2-debug/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so"
+      ]
+    },
+    "react_codegen_rnworklets::@68f58d84d4754f193387": {
+      "artifactName": "react_codegen_rnworklets",
+      "abi": "arm64-v8a",
+      "runtimeFiles": []
+    },
+    "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe": {
+      "artifactName": "react_codegen_rnasyncstorage",
+      "abi": "arm64-v8a",
+      "runtimeFiles": []
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "rnasyncstorage_autolinked_build",
+		"source" : "/home/venky/growman/node_modules/.pnpm/@react-native-async-storage+async-storage@2.2.0_react-native@0.83.2_@babel+core@7.29.0__d8cab3d693c7b712219f82cf47f463e2/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni"
+	}
+}

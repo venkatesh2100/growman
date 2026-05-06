@@ -2,11 +2,13 @@ import "@repo/ui/styles.css";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
 import Navbar from "../components/hompage/navbar";
 import { ToastContainer } from "../lib/toast";
 import ServiceWorkerRegistration from "../components/pwa/ServiceWorkerRegistration";
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import PlantChatbot from "../components/chatbot/PlantChatbot";
+
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -45,6 +47,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head />
+      <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-49FZDEFB2Y"
+          strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-49FZDEFB2Y');
+        `}
+      </Script>
+
       <body
         className={`${geist.className} bg-linear-to-r from-green-50 to-emerald-50`}
       >

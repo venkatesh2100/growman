@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { MessageCircle, X, Send, Loader2, Camera, Trash2 } from "lucide-react";
+import { apiFetch, getApiUrl } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { toast } from "../../lib/toast";
+import { useAuthStore } from "../../lib/store/authStore";
 
 interface Message {
   id: string;
@@ -26,7 +28,8 @@ const STORAGE_KEY_IS_OPEN = "plant-chatbot-is-open";
 const DEFAULT_MESSAGE: Message = {
   id: "1",
   role: "dootha",
-  content: "Hello! I'm your plant care dootha. I can help you with plant care tips, growing advice, and recommend products from our store. What would you like to know?",
+  content:
+    "Hi! I'm **Dootha**, your Growman plant assistant. Ask about care, pests, light, or watering — I can suggest products from our store too.",
 };
 
 export default function PlantChatbot() {
@@ -35,9 +38,11 @@ export default function PlantChatbot() {
   const [messages, setMessages] = useState<Message[]>([DEFAULT_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,6 +96,28 @@ export default function PlantChatbot() {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOpenFromNavbar = () => setIsOpen(true);
+    const handlePrefillFromSearch = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      const message = customEvent.detail?.message?.trim();
+      setIsOpen(true);
+      if (message) {
+        setInput(message);
+      }
+    };
+
+    window.addEventListener("growman:open-chatbot", handleOpenFromNavbar);
+    window.addEventListener("growman:chatbot-prefill", handlePrefillFromSearch as EventListener);
+
+    return () => {
+      window.removeEventListener("growman:open-chatbot", handleOpenFromNavbar);
+      window.removeEventListener("growman:chatbot-prefill", handlePrefillFromSearch as EventListener);
+    };
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -100,6 +127,7 @@ export default function PlantChatbot() {
       content: input.trim(),
     };
 
+    const priorMessages = messages;
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -110,7 +138,7 @@ export default function PlantChatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
-          conversationHistory: messages.map((m) => ({
+          conversationHistory: priorMessages.map((m) => ({
             role: m.role,
             content: m.content,
           })),
@@ -154,6 +182,7 @@ export default function PlantChatbot() {
       setMessages((prev) => [...prev, doothaMessage]);
     } catch (error) {
       console.error("Chat error:", error);
+      toast("Failed to get response. Please try again.", "error");
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "dootha",
@@ -165,6 +194,57 @@ export default function PlantChatbot() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClearChat = () => {
+    setMessages([DEFAULT_MESSAGE]);
+    toast("Chat cleared", "info");
+  };
+
+  const identifyPlantFromFile = async (file: File) => {
+    setIsScanning(true);
+    try {
+      const apiUrl = getApiUrl();
+      const url = `${apiUrl}/images/identify-plant`;
+      const token = useAuthStore.getState().token || localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Plant identification failed");
+      }
+
+      const data = await response.json();
+      const name =
+        data?.bestMatch ||
+        data?.results?.[0]?.species?.scientificName ||
+        data?.results?.[0]?.species?.commonNames?.[0];
+
+      if (name) {
+        setInput(`What is ${name} and how do I care for it?`);
+        toast("Plant identified! Edit and send.", "success");
+      } else {
+        toast("Could not identify plant. Try clearer photo.", "error");
+      }
+    } catch (error) {
+      console.error("Plant identification error:", error);
+      toast("Identification failed. Please try again.", "error");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const onPickPlantImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await identifyPlantFromFile(file);
+    event.target.value = "";
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -198,13 +278,23 @@ export default function PlantChatbot() {
               <Image src="/dootha.svg" alt="Dootha AI" width={24} height={24} className="sm:w-[30px] sm:h-[30px]" />
               <h3 className="font-semibold text-sm sm:text-base">Dootha AI</h3>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="hover:bg-white/20 rounded-full p-1 transition-colors"
-              aria-label="Close chat"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleClearChat}
+                className="hover:bg-white/20 rounded-full p-1 transition-colors"
+                aria-label="Clear chat"
+                title="Clear chat"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-white/20 rounded-full p-1 transition-colors"
+                aria-label="Close chat"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -238,6 +328,8 @@ export default function PlantChatbot() {
                           <Link
                             key={product.id}
                             href={`/product/${product.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="block p-2 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors"
                             onClick={() => setIsOpen(false)}
                           >
@@ -279,6 +371,27 @@ export default function PlantChatbot() {
           {/* Input */}
           <div className="p-3 sm:p-4 border-t border-emerald-100 bg-white sm:rounded-b-lg">
             <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={onPickPlantImage}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isScanning || isLoading}
+                className="bg-emerald-50 hover:bg-emerald-100 disabled:bg-gray-100 disabled:text-gray-400 text-emerald-700 rounded-lg px-3 py-2 sm:px-4 transition-colors flex-shrink-0"
+                aria-label="Scan plant"
+                title="Scan plant"
+              >
+                {isScanning ? (
+                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+                )}
+              </button>
               <input
                 ref={inputRef}
                 type="text"

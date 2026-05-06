@@ -17,6 +17,10 @@ import {
 import Link from "next/link";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { toast } from "../../lib/toast";
+import {
+  TurnstileGate,
+  isTurnstileSiteConfigured,
+} from "../../components/TurnstileGate";
 // import GoogleSignupButton from "./GoogleSignupButton";
 
 // Helper function to safely parse error responses and return user-friendly messages
@@ -119,7 +123,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
+    // confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +133,8 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [humanOk, setHumanOk] = useState(() => !isTurnstileSiteConfigured());
+
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -177,15 +183,20 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       setError("Password must be at least 6 characters");
       return false;
     }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return false;
-    }
+    // if (formData.password !== formData.confirmPassword) {
+    //   setError("Passwords do not match");
+    //   return false;
+    // }
     return true;
   };
 
   const handleSendOTP = async () => {
     if (!validateForm()) {
+      return;
+    }
+
+    if (isTurnstileSiteConfigured() && !humanOk) {
+      toast("Please complete the security check (bottom-right).", "error");
       return;
     }
 
@@ -213,7 +224,6 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
     } catch (err: any) {
       const errorMsg =
         err.message || "Failed to send verification email. Please try again.";
-      setCooldown(err.response.data.retry_after);
       setError(errorMsg);
       // Only show toast if not already shown
       if (!err.message || !err.message.includes("Too many requests")) {
@@ -227,6 +237,11 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
   const handleVerifyOTP = async () => {
     if (!otp.trim() || otp.length !== 6) {
       setError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    if (isTurnstileSiteConfigured() && !humanOk) {
+      toast("Please complete the security check (bottom-right).", "error");
       return;
     }
 
@@ -312,6 +327,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <TurnstileGate onHumanVerified={setHumanOk} />
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">
@@ -375,7 +391,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   value={formData.name}
                   onChange={handleChange}
                   className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                  placeholder="John Doe"
+                  placeholder="Growman"
                 />
               </div>
             </div>
@@ -399,7 +415,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   value={formData.email}
                   onChange={handleChange}
                   className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                  placeholder="john@example.com"
+                  placeholder="growman@example.com"
                 />
               </div>
             </div>
@@ -456,7 +472,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <label
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
@@ -478,7 +494,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                   placeholder="Confirm your password"
                 />
               </div>
-            </div>
+            </div> */}
           </div>
 
           {!otpSent ? (
@@ -486,7 +502,11 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
               <button
                 type="button"
                 onClick={handleSendOTP}
-                disabled={loading || success}
+                disabled={
+                  loading ||
+                  success ||
+                  (isTurnstileSiteConfigured() && !humanOk)
+                }
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -543,7 +563,11 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
               <button
                 type="button"
                 onClick={handleVerifyOTP}
-                disabled={verifyingOtp || otp.length !== 6}
+                disabled={
+                  verifyingOtp ||
+                  otp.length !== 6 ||
+                  (isTurnstileSiteConfigured() && !humanOk)
+                }
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {verifyingOtp ? (
@@ -556,7 +580,10 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                 )}
               </button>
               <button
-                disabled={cooldown > 0}
+                disabled={
+                  cooldown > 0 ||
+                  (isTurnstileSiteConfigured() && !humanOk)
+                }
                 type="button"
                 onClick={handleSendOTP}
                 // onClick={() => {

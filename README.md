@@ -71,7 +71,7 @@ Growman is a complete e-commerce solution featuring:
    - Rate limiting (per IP)
    - OTP storage (temporary)
    - Caching (optional)
-
+   - Orders & wishlist
 ## Tech Stack
 
 ### Frontend (`apps/web`)

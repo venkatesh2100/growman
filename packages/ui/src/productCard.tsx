@@ -17,7 +17,7 @@ export default function ProductCard({ product }: { product: any }) {
         price: product.price ?? product.mrp ?? 0,
         stock: product.stock ?? 0,
         label: product.sizeLabel ?? "Default",
-        images: product.images ?? [],
+        images: product.images ?? (product.imageUrl ? [product.imageUrl] : []),
       };
       return [fallback];
     }
@@ -29,13 +29,16 @@ export default function ProductCard({ product }: { product: any }) {
     product?.featuredImage ||
     product?.image ||
     product?.thumbnail ||
+    product?.imageUrl ||
     [];
 
   const allImages = (() => {
-    const fromSizes = normalizedSizes.flatMap((size: any) => size?.images || []);
+    const fromSizes = normalizedSizes
+      .flatMap((size: any) => size?.images || [])
+      .filter(Boolean);
     if (fromSizes.length > 0) return fromSizes;
-    if (Array.isArray(fallbackImages)) return fallbackImages;
-    if (typeof fallbackImages === "string") return [fallbackImages];
+    if (Array.isArray(fallbackImages)) return fallbackImages.filter(Boolean);
+    if (typeof fallbackImages === "string" && fallbackImages) return [fallbackImages];
     return [];
   })();
   const hasMultipleSizes = normalizedSizes.length > 1;

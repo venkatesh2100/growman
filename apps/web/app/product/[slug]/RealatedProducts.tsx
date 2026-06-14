@@ -1,6 +1,6 @@
 'use client';
 
-import ProductCard from "@repo/ui/productCard";
+import ProductCard from "../../../components/productspage/ProductCard";
 
 export default function RelatedProducts({ products }: { products: any[] }) {
   // Accept products even if sizes are missing; ProductCard will handle fallbacks

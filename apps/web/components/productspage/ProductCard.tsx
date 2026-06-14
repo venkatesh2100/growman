@@ -99,12 +99,21 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
     product?.stock ??
     0;
 
-  const firstPrice = numericPrices.length > 0 ? numericPrices[0] : null;
-  const discountPercent =
-    firstPrice && product.mrp && firstPrice > 0 && product.mrp > firstPrice
-      ? Math.round((1 - firstPrice / product.mrp) * 100)
-      : 0;
+  const firstPrice = numericPrices[0] ?? null;
 
+  const numericMrp = Number(product.mrp);
+  const effectiveMrp =
+    Number.isFinite(numericMrp) && numericMrp > 0 ? numericMrp : null;
+
+  const hasDiscount =
+    effectiveMrp !== null &&
+    firstPrice !== null &&
+    firstPrice > 0 &&
+    effectiveMrp > firstPrice;
+
+  const discountPercent = hasDiscount
+    ? Math.round((1 - firstPrice / effectiveMrp) * 100)
+    : 0;
   return (
     <div className="w-full bg-white md:rounded-xl md:overflow-hidden md:shadow-sm md:hover:shadow-xl md:active:shadow-lg md:transition-shadow md:duration-200 md:border md:border-gray-100 flex flex-col group h-full touch-manipulation md:flex-col">
       {/* Mobile: Amazon-like minimal design */}
@@ -169,12 +178,9 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
                 <span className="text-base font-semibold text-gray-900">
                   ₹{firstPrice ? firstPrice.toFixed(0) : "0"}
                 </span>
-                {product.mrp &&
-                  firstPrice &&
-                  firstPrice > 0 &&
-                  product.mrp > firstPrice && (
+                {hasDiscount && effectiveMrp !== null && (
                     <span className="text-xs text-gray-500 line-through">
-                      ₹{product.mrp.toFixed(0)}
+                      ₹{effectiveMrp.toFixed(0)}
                     </span>
                   )}
               </div>
@@ -349,15 +355,15 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             <div className="mb-2 sm:mb-3">
               <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-base sm:text-lg font-bold text-gray-900">
-                  ₹{firstPrice ? firstPrice.toFixed(2) : "0.00"}
+                  ₹{firstPrice ? firstPrice.toFixed(0) : "0"}
                 </span>
-                {product.mrp &&
-                  firstPrice &&
-                  firstPrice > 0 &&
-                  product.mrp > firstPrice && (
+                {hasDiscount && effectiveMrp !== null && (
                     <>
                       <span className="text-xs sm:text-sm text-gray-500 line-through">
-                        ₹{product.mrp.toFixed(2)}
+                        ₹{effectiveMrp.toFixed(0)}
+                      </span>
+                      <span className="text-xs sm:text-sm text-green-600 font-medium">
+                        {discountPercent}% off
                       </span>
                     </>
                   )}

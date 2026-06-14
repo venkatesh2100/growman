@@ -7,7 +7,7 @@ import ProductTabs from "./ProductTabs";
 import AddToCart from "./AddCart";
 import SizeSelector from "./sizeSelector";
 import RelatedProducts from "./RealatedProducts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
 
@@ -30,6 +30,13 @@ export default function ProductPageClient({
     product.sizes.find((size) => size.id === selectedSizeId) ||
     product.sizes[0] ||
     null;
+
+  const galleryImages = useMemo(() => {
+    const sizeImages = selectedSize?.images?.filter(Boolean) ?? [];
+    if (sizeImages.length > 0) return sizeImages;
+    if (product.imageUrl) return [product.imageUrl];
+    return [];
+  }, [selectedSize?.images, product.imageUrl]);
 
   const avgRating =
     product.reviews.length > 0
@@ -112,7 +119,7 @@ export default function ProductPageClient({
         {/* Image Gallery - Mobile optimized */}
         <div className="md:p-4 md:rounded-xl md:border md:border-gray-100">
           <div className="md:p-4 md:rounded-xl md:shadow md:border md:border-green-100 product-image-gallery">
-            <ImageGallery images={selectedSize?.images} />
+            <ImageGallery images={galleryImages} />
           </div>
         </div>
 

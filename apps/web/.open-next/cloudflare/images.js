@@ -16,7 +16,7 @@ var define_IMAGES_QUALITIES_default = [75];
 // <define:__IMAGES_REMOTE_PATTERNS__>
 var define_IMAGES_REMOTE_PATTERNS_default = [{ protocol: "https", hostname: "^(?:^(?:growman\\.blob\\.core\\.windows\\.net)$)$", pathname: "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$" }];
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/utils/error.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/error.js
 function isOpenNextError(e) {
   try {
     return "__openNextInternal" in e;
@@ -25,7 +25,7 @@ function isOpenNextError(e) {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/logger.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/adapters/logger.js
 function debug(...args) {
   if (globalThis.openNextDebug) {
     console.log(...args);
@@ -75,7 +75,7 @@ function getOpenNextErrorLogLevel() {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/cli/templates/images.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/cli/templates/images.js
 async function handleImageRequest(requestURL, requestHeaders, env) {
   const parseResult = parseImageRequest(requestURL, requestHeaders);
   if (!parseResult.ok) {
@@ -129,19 +129,11 @@ async function handleImageRequest(requestURL, requestHeaders, env) {
       immutable = cacheControlHeader.includes("immutable");
     }
   }
-  const [contentTypeImageStream, imageStream] = imageResponse.body.tee();
-  const imageHeaderBytes = new Uint8Array(32);
-  const contentTypeImageReader = contentTypeImageStream.getReader({
-    mode: "byob"
-  });
-  const readImageHeaderBytesResult = await contentTypeImageReader.readAtLeast(32, imageHeaderBytes);
-  if (readImageHeaderBytesResult.value === void 0) {
-    await imageResponse.body.cancel();
-    return new Response('"url" parameter is valid but upstream response is invalid', {
-      status: 400
-    });
+  const readHeaderResult = await readImageHeader(imageResponse);
+  if (readHeaderResult instanceof Response) {
+    return readHeaderResult;
   }
-  const contentType = detectImageContentType(readImageHeaderBytesResult.value);
+  const { contentType, imageStream } = readHeaderResult;
   if (contentType === null) {
     warn(`Failed to detect content type of "${parseResult.url}"`);
     return new Response('"url" parameter is valid but image type is not allowed', {
@@ -209,6 +201,85 @@ async function handleImageRequest(requestURL, requestHeaders, env) {
     immutable
   });
   return response;
+}
+async function handleCdnCgiImageRequest(requestURL, env) {
+  const parseResult = parseCdnCgiImageRequest(requestURL.pathname);
+  if (!parseResult.ok) {
+    return new Response(parseResult.message, {
+      status: 400
+    });
+  }
+  let imageResponse;
+  if (parseResult.url.startsWith("/")) {
+    if (env.ASSETS === void 0) {
+      return new Response("env.ASSETS binding is not defined", {
+        status: 404
+      });
+    }
+    const absoluteURL = new URL(parseResult.url, requestURL);
+    imageResponse = await env.ASSETS.fetch(absoluteURL);
+  } else {
+    imageResponse = await fetch(parseResult.url);
+  }
+  if (!imageResponse.ok || imageResponse.body === null) {
+    return new Response('"url" parameter is valid but upstream response is invalid', {
+      status: imageResponse.status
+    });
+  }
+  const readHeaderResult = await readImageHeader(imageResponse);
+  if (readHeaderResult instanceof Response) {
+    return readHeaderResult;
+  }
+  const { contentType, imageStream } = readHeaderResult;
+  if (contentType === null || !SUPPORTED_CDN_CGI_INPUT_TYPES.has(contentType)) {
+    return new Response('"url" parameter is valid but image type is not allowed', {
+      status: 400
+    });
+  }
+  if (contentType === SVG && true) {
+    return new Response('"url" parameter is valid but image type is not allowed', {
+      status: 400
+    });
+  }
+  return new Response(imageStream, {
+    headers: { "Content-Type": contentType }
+  });
+}
+function parseCdnCgiImageRequest(pathname) {
+  const match = pathname.match(/^\/cdn-cgi\/image\/(?<options>[^/]+)\/(?<url>.+)$/);
+  if (match === null || // Valid URLs have at least one option
+  !match.groups?.options || !match.groups?.url) {
+    return { ok: false, message: "Invalid /cdn-cgi/image/ URL format" };
+  }
+  const imageUrl = match.groups.url;
+  if (imageUrl.startsWith("/")) {
+    return { ok: false, message: '"url" parameter cannot be a protocol-relative URL (//)' };
+  }
+  let resolvedUrl;
+  if (imageUrl.match(/^https?:\/\//)) {
+    resolvedUrl = imageUrl;
+  } else {
+    resolvedUrl = `/${imageUrl}`;
+  }
+  return {
+    ok: true,
+    url: resolvedUrl,
+    static: false
+  };
+}
+async function readImageHeader(imageResponse) {
+  const [contentTypeStream, imageStream] = imageResponse.body.tee();
+  const headerBytes = new Uint8Array(32);
+  const reader = contentTypeStream.getReader({ mode: "byob" });
+  const readResult = await reader.readAtLeast(32, headerBytes);
+  if (readResult.value === void 0) {
+    await imageResponse.body.cancel();
+    return new Response('"url" parameter is valid but upstream response is invalid', {
+      status: 400
+    });
+  }
+  const contentType = detectImageContentType(readResult.value);
+  return { contentType, imageStream };
 }
 async function fetchWithRedirects(url, timeoutMS, maxRedirectCount) {
   let response;
@@ -529,6 +600,7 @@ var ICO = "image/x-icon";
 var ICNS = "image/x-icns";
 var TIFF = "image/tiff";
 var BMP = "image/bmp";
+var SUPPORTED_CDN_CGI_INPUT_TYPES = /* @__PURE__ */ new Set([JPEG, PNG, GIF, WEBP, SVG, HEIC]);
 function detectImageContentType(buffer) {
   if ([255, 216, 255].every((b, i) => buffer[i] === b)) {
     return JPEG;
@@ -579,7 +651,9 @@ function detectImageContentType(buffer) {
 }
 export {
   detectImageContentType,
+  handleCdnCgiImageRequest,
   handleImageRequest,
   matchLocalPattern,
-  matchRemotePattern
+  matchRemotePattern,
+  parseCdnCgiImageRequest
 };

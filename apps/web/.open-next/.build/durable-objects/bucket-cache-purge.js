@@ -1,9 +1,9 @@
-globalThis.openNextDebug = false;globalThis.openNextVersion = "3.9.6";
+globalThis.openNextDebug = false;globalThis.openNextVersion = "4.0.1";globalThis.nextVersion = "16.2.6";
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/durable-objects/bucket-cache-purge.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/durable-objects/bucket-cache-purge.js
 import { DurableObject } from "cloudflare:workers";
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/utils/error.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/error.js
 function isOpenNextError(e) {
   try {
     return "__openNextInternal" in e;
@@ -12,7 +12,7 @@ function isOpenNextError(e) {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/logger.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/adapters/logger.js
 function debug(...args) {
   if (globalThis.openNextDebug) {
     console.log(...args);
@@ -62,10 +62,10 @@ function getOpenNextErrorLogLevel() {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/cloudflare-context.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/cloudflare-context.js
 var cloudflareContextSymbol = Symbol.for("__cloudflare-context__");
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/overrides/internal.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/overrides/internal.js
 var debugCache = (name, ...args) => {
   if (process.env.NEXT_PRIVATE_DEBUG_CACHE) {
     console.log(`[${name}] `, ...args);
@@ -110,7 +110,7 @@ async function internalPurgeCacheByTags(env, tags) {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/durable-objects/bucket-cache-purge.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/durable-objects/bucket-cache-purge.js
 var DEFAULT_BUFFER_TIME_IN_SECONDS = 5;
 var MAX_NUMBER_OF_TAGS_PER_PURGE = 100;
 var BucketCachePurge = class extends DurableObject {

@@ -34,7 +34,7 @@ export default function ProductsDisplay({
           <p className="text-lg">{emptyMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-6">
+        <div className="grid grid-cols-2 gap-2 overflow-visible py-1 md:grid-cols-3 md:gap-6 md:py-2 lg:grid-cols-4">
           {products.map(product => (
             <ProductCard
               key={`${product.id}-${product.sizes[0]?.id || 'default'}`}

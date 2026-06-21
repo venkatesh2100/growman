@@ -3,7 +3,7 @@ import process from "node:process";
 import stream from "node:stream";
 import * as nextEnvVars from "./next-env.mjs";
 const cloudflareContextALS = new AsyncLocalStorage();
-Object.defineProperty(globalThis, Symbol.for("__cloudflare-context__"), {
+Object.defineProperty(globalThis, /* @__PURE__ */ Symbol.for("__cloudflare-context__"), {
   get() {
     return cloudflareContextALS.getStore();
   }
@@ -23,8 +23,6 @@ function init(request, env) {
   populateProcessEnv(url, env);
 }
 function initRuntime() {
-  Object.assign(process, { version: process.version || "v22.14.0" });
-  Object.assign(process.versions, { node: "22.14.0", ...process.versions });
   globalThis.__dirname ??= "";
   globalThis.__filename ??= "";
   import.meta.url ??= "file:///worker.js";
@@ -49,7 +47,7 @@ function initRuntime() {
   };
   Object.assign(globalThis, {
     Request: CustomRequest,
-    __BUILD_TIMESTAMP_MS__: 1775839380909,
+    __BUILD_TIMESTAMP_MS__: 1781466576374,
     __NEXT_BASE_PATH__: "",
     __ASSETS_RUN_WORKER_FIRST__: false,
     __TRAILING_SLASH__: false,

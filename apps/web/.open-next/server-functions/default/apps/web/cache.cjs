@@ -1,4 +1,4 @@
-globalThis.disableIncrementalCache = false;globalThis.disableDynamoDBCache = false;globalThis.isNextAfter15 = true;globalThis.openNextDebug = false;globalThis.openNextVersion = "3.9.6";
+globalThis.disableIncrementalCache = false;globalThis.disableDynamoDBCache = false;globalThis.openNextDebug = false;globalThis.openNextVersion = "4.0.1";globalThis.nextVersion = "16.2.6";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/cache.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/adapters/cache.js
 var cache_exports = {};
 __export(cache_exports, {
   SOFT_TAG_PREFIX: () => SOFT_TAG_PREFIX,
@@ -25,7 +25,7 @@ __export(cache_exports, {
 });
 module.exports = __toCommonJS(cache_exports);
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/utils/error.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/error.js
 function isOpenNextError(e) {
   try {
     return "__openNextInternal" in e;
@@ -34,7 +34,7 @@ function isOpenNextError(e) {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/logger.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/adapters/logger.js
 function debug(...args) {
   if (globalThis.openNextDebug) {
     console.log(...args);
@@ -84,7 +84,60 @@ function getOpenNextErrorLogLevel() {
   }
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/utils/cache.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/semver.js
+function compareSemver(v1, operator, v2) {
+  let versionDiff = 0;
+  if (v1 === "latest") {
+    versionDiff = 1;
+  } else {
+    if (/^[^\d]/.test(v1)) {
+      v1 = v1.substring(1);
+    }
+    if (/^[^\d]/.test(v2)) {
+      v2 = v2.substring(1);
+    }
+    const [major1, minor1 = 0, patch1 = 0] = v1.split(".").map(Number);
+    const [major2, minor2 = 0, patch2 = 0] = v2.split(".").map(Number);
+    if (Number.isNaN(major1) || Number.isNaN(major2)) {
+      throw new Error("The major version is required.");
+    }
+    if (major1 !== major2) {
+      versionDiff = major1 - major2;
+    } else if (minor1 !== minor2) {
+      versionDiff = minor1 - minor2;
+    } else if (patch1 !== patch2) {
+      versionDiff = patch1 - patch2;
+    }
+  }
+  switch (operator) {
+    case "=":
+      return versionDiff === 0;
+    case ">=":
+      return versionDiff >= 0;
+    case "<=":
+      return versionDiff <= 0;
+    case ">":
+      return versionDiff > 0;
+    case "<":
+      return versionDiff < 0;
+    default:
+      throw new Error(`Unsupported operator: ${operator}`);
+  }
+}
+
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/cache.js
+async function isStale(key, tags, lastModified) {
+  if (!compareSemver(globalThis.nextVersion, ">=", "16.0.0")) {
+    return false;
+  }
+  if (globalThis.openNextConfig.dangerous?.disableTagCache) {
+    return false;
+  }
+  if (globalThis.tagCache.mode === "nextMode") {
+    return tags.length === 0 ? false : await globalThis.tagCache.isStale?.(tags, lastModified) ?? false;
+  }
+  return await globalThis.tagCache.isStale?.(key, lastModified) ?? false;
+}
 async function hasBeenRevalidated(key, tags, cacheEntry) {
   if (globalThis.openNextConfig.dangerous?.disableTagCache) {
     return false;
@@ -119,10 +172,13 @@ function getTagKey(tag) {
   if (typeof tag === "string") {
     return tag;
   }
-  return JSON.stringify({
-    tag: tag.tag,
-    path: tag.path
-  });
+  if ("path" in tag) {
+    return JSON.stringify({
+      tag: tag.tag,
+      path: tag.path
+    });
+  }
+  return tag.tag;
 }
 async function writeTags(tags) {
   const store = globalThis.__openNextAls.getStore();
@@ -144,7 +200,7 @@ async function writeTags(tags) {
   await globalThis.tagCache.writeTags(tagsToWrite);
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/utils/binary.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/binary.js
 var commonBinaryMimeTypes = /* @__PURE__ */ new Set([
   "application/octet-stream",
   // Docs
@@ -212,7 +268,7 @@ function isBinaryContentType(contentType) {
   return commonBinaryMimeTypes.has(value);
 }
 
-// ../../node_modules/.pnpm/@opennextjs+aws@3.9.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@19.2.0_react@19.2.0__react@19.2.0_/node_modules/@opennextjs/aws/dist/adapters/cache.js
+// ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/adapters/cache.js
 var SOFT_TAG_PREFIX = "_N_T_/";
 function isFetchCache(options) {
   if (typeof options === "boolean") {
@@ -252,8 +308,9 @@ var Cache = class {
           }
         }
       }
+      const _isStale = cachedEntry.shouldBypassTagCache ? false : await isStale(key, _tags, _lastModified);
       return {
-        lastModified: _lastModified,
+        lastModified: _isStale ? 1 : _lastModified,
         value: cachedEntry.value
       };
     } catch (e) {
@@ -270,19 +327,21 @@ var Cache = class {
       const cacheData = cachedEntry.value;
       const meta = cacheData.meta;
       const tags = getTagsFromValue(cacheData);
-      const _lastModified = cachedEntry.lastModified ?? Date.now();
+      let _lastModified = cachedEntry.lastModified ?? Date.now();
       const _hasBeenRevalidated = cachedEntry.shouldBypassTagCache ? false : await hasBeenRevalidated(key, tags, cachedEntry);
       if (_hasBeenRevalidated)
         return null;
+      const _isStale = cachedEntry.shouldBypassTagCache ? false : await isStale(key, tags, _lastModified);
       const store = globalThis.__openNextAls.getStore();
       if (store) {
-        store.lastModified = _lastModified;
+        store.lastModified = _isStale ? 1 : _lastModified;
+        _lastModified = store.lastModified;
       }
       if (cacheData?.type === "route") {
         return {
           lastModified: _lastModified,
           value: {
-            kind: globalThis.isNextAfter15 ? "APP_ROUTE" : "ROUTE",
+            kind: compareSemver(globalThis.nextVersion, ">=", "15.0.0") ? "APP_ROUTE" : "ROUTE",
             body: Buffer.from(cacheData.body ?? Buffer.alloc(0), isBinaryContentType(String(meta?.headers?.["content-type"])) ? "base64" : "utf8"),
             status: meta?.status,
             headers: meta?.headers
@@ -290,7 +349,7 @@ var Cache = class {
         };
       }
       if (cacheData?.type === "page" || cacheData?.type === "app") {
-        if (globalThis.isNextAfter15 && cacheData?.type === "app") {
+        if (compareSemver(globalThis.nextVersion, ">=", "15.0.0") && cacheData?.type === "app") {
           const segmentData = /* @__PURE__ */ new Map();
           if (cacheData.segmentData) {
             for (const [segmentPath, segmentContent] of Object.entries(cacheData.segmentData ?? {})) {
@@ -313,7 +372,7 @@ var Cache = class {
         return {
           lastModified: _lastModified,
           value: {
-            kind: globalThis.isNextAfter15 ? "PAGES" : "PAGE",
+            kind: compareSemver(globalThis.nextVersion, ">=", "15.0.0") ? "PAGES" : "PAGE",
             html: cacheData.html,
             pageData: cacheData.type === "page" ? cacheData.json : cacheData.rsc,
             status: meta?.status,
@@ -388,16 +447,24 @@ var Cache = class {
             break;
           }
           case "APP_PAGE": {
-            const { html, rscData, headers, status } = data;
+            const { html, rscData, headers, status, segmentData, postponed } = data;
+            const segmentToWrite = {};
+            if (segmentData) {
+              for (const [segmentPath, segmentContent] of segmentData.entries()) {
+                segmentToWrite[segmentPath] = segmentContent.toString("utf8");
+              }
+            }
             await globalThis.incrementalCache.set(key, {
               type: "app",
               html,
               rsc: rscData.toString("utf8"),
               meta: {
                 status,
-                headers
+                headers,
+                postponed
               },
-              revalidate
+              revalidate,
+              segmentData: segmentData ? segmentToWrite : void 0
             }, "cache");
             break;
           }
@@ -423,7 +490,7 @@ var Cache = class {
       detachedPromise?.resolve();
     }
   }
-  async revalidateTag(tags) {
+  async revalidateTag(tags, durations) {
     const config = globalThis.openNextConfig.dangerous;
     if (config?.disableTagCache || config?.disableIncrementalCache) {
       return;
@@ -435,7 +502,21 @@ var Cache = class {
     try {
       if (globalThis.tagCache.mode === "nextMode") {
         const paths = await globalThis.tagCache.getPathsByTags?.(_tags) ?? [];
-        await writeTags(_tags);
+        const now = Date.now();
+        const tagsToWrite = _tags.map((tag) => {
+          if (durations) {
+            return {
+              tag,
+              stale: now,
+              expire: durations.expire !== void 0 ? now + durations.expire * 1e3 : void 0
+            };
+          }
+          return {
+            tag,
+            expire: now
+          };
+        });
+        await writeTags(tagsToWrite);
         if (paths.length > 0) {
           await globalThis.cdnInvalidationHandler.invalidatePaths(paths.map((path) => ({
             initialPath: path,
@@ -455,10 +536,21 @@ var Cache = class {
         debug("revalidateTag", tag);
         const paths = await globalThis.tagCache.getByTag(tag);
         debug("Items", paths);
-        const toInsert = paths.map((path) => ({
-          path,
-          tag
-        }));
+        const now = Date.now();
+        const toInsert = paths.map((path) => {
+          const baseEntry = { path, tag };
+          if (durations) {
+            return {
+              ...baseEntry,
+              stale: now,
+              expire: durations.expire !== void 0 ? now + durations.expire * 1e3 : void 0
+            };
+          }
+          return {
+            ...baseEntry,
+            expire: now
+          };
+        });
         if (tag.startsWith(SOFT_TAG_PREFIX)) {
           for (const path of paths) {
             const _tags2 = await globalThis.tagCache.getByPath(path);
@@ -466,10 +558,20 @@ var Cache = class {
             for (const hardTag of hardTags) {
               const _paths = await globalThis.tagCache.getByTag(hardTag);
               debug({ hardTag, _paths });
-              toInsert.push(..._paths.map((path2) => ({
-                path: path2,
-                tag: hardTag
-              })));
+              toInsert.push(..._paths.map((path2) => {
+                const baseEntry = { path: path2, tag: hardTag };
+                if (durations) {
+                  return {
+                    ...baseEntry,
+                    stale: now,
+                    expire: durations.expire !== void 0 ? now + durations.expire * 1e3 : void 0
+                  };
+                }
+                return {
+                  ...baseEntry,
+                  expire: now
+                };
+              }));
             }
           }
         }

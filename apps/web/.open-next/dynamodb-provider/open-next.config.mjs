@@ -1,6 +1,6 @@
 import { createRequire as topLevelCreateRequire } from 'module';const require = topLevelCreateRequire(import.meta.url);import bannerUrl from 'url';const __dirname = bannerUrl.fileURLToPath(new URL('.', import.meta.url));
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/cloudflare-context.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/cloudflare-context.js
 var cloudflareContextSymbol = Symbol.for("__cloudflare-context__");
 function getCloudflareContext(options = { async: false }) {
   return options.async ? getCloudflareContextAsync() : getCloudflareContextSync();
@@ -84,7 +84,7 @@ You should update your Next.js config file as shown below:
 
 `;
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/overrides/asset-resolver/index.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/overrides/asset-resolver/index.js
 var resolver = {
   name: "cloudflare-asset-resolver",
   async maybeGetAssetResult(event) {
@@ -109,13 +109,18 @@ var resolver = {
       type: "core",
       statusCode: response.status,
       headers: Object.fromEntries(response.headers.entries()),
-      // Workers and Node types differ.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      body: response.body || new ReadableStream(),
+      body: getResponseBody(method, response),
       isBase64Encoded: false
     };
   }
 };
+function getResponseBody(method, response) {
+  if (method === "HEAD") {
+    return null;
+  }
+  return response.body || new ReadableStream();
+}
 function isUserWorkerFirst(runWorkerFirst, pathname) {
   if (!Array.isArray(runWorkerFirst)) {
     return runWorkerFirst ?? false;
@@ -142,7 +147,7 @@ function isUserWorkerFirst(runWorkerFirst, pathname) {
 }
 var asset_resolver_default = resolver;
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.14.6_next@16.0.7_babel-plugin-react-compiler@1.0.0_react-dom@1_e8f5fe015b16f82edbdf846c956646a9/node_modules/@opennextjs/cloudflare/dist/api/config.js
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/config.js
 function defineCloudflareConfig(config = {}) {
   const { incrementalCache, tagCache, queue, cachePurge, enableCacheInterception = false, routePreloadingBehavior = "none" } = config;
   return {

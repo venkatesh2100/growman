@@ -22,7 +22,37 @@ export type LocalPattern = {
  * @returns A promise that resolves to the resolved request.
  */
 export declare function handleImageRequest(requestURL: URL, requestHeaders: Headers, env: CloudflareEnv): Promise<Response>;
+/**
+ * Handles requests to /cdn-cgi/image/ in development.
+ *
+ * Extracts the image URL, fetches the image, and checks the content type against
+ * Cloudflare's supported input formats.
+ *
+ * @param requestURL The full request URL.
+ * @param env The Cloudflare environment bindings.
+ * @returns A promise that resolves to the image response.
+ */
+export declare function handleCdnCgiImageRequest(requestURL: URL, env: CloudflareEnv): Promise<Response>;
+/**
+ * Parses a /cdn-cgi/image/ request URL.
+ *
+ * Extracts the image URL from the `/cdn-cgi/image/<options>/<image-url>` path format.
+ * Rejects protocol-relative URLs (`//...`). The cdn-cgi options are not parsed or
+ * validated as they are Cloudflare's concern.
+ *
+ * @param pathname The URL pathname (e.g. `/cdn-cgi/image/width=640,quality=75,format=auto/path/to/image.png`).
+ * @returns the parsed URL result or an error.
+ */
+export declare function parseCdnCgiImageRequest(pathname: string): {
+    ok: true;
+    url: string;
+    static: boolean;
+} | ErrorResult;
 export type OptimizedImageFormat = "image/avif" | "image/webp";
+type ErrorResult = {
+    ok: false;
+    message: string;
+};
 export declare function matchLocalPattern(pattern: LocalPattern, url: {
     pathname: string;
     search: string;

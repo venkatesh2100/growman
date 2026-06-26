@@ -12,9 +12,14 @@ export default function Home() {
     <div className="min-h-screen bg-[#F9FBF7]">
       <HomeHero />
       <PlantSection />
-      <BenefitsSection />
+      {/* <BenefitsSection /> */}
       <NewsLetterSection />
       <Footer />
     </div>
   );
 }
+
+
+
+
+

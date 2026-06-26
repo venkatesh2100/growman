@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { ShoppingCart, Zap, Sun, Droplets, BarChart3, Leaf, TreePine, Flower2, Wind, Gift, Building2, Scissors, CloudSun } from "lucide-react";
+import { ShoppingCart, Zap, Sun, Leaf, TreePine, Flower2 } from "lucide-react";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "../../lib/toast";
@@ -108,91 +108,8 @@ function GrowmanGuaranteeBadge({ compact = false }: { compact?: boolean }) {
   );
 }
 
-type CareTipIcon =
-  | "sun"
-  | "water"
-  | "easy"
-  | "outdoor"
-  | "air"
-  | "shade"
-  | "gift"
-  | "office"
-  | "bonsai"
-  | "leaf";
-
-type CareTip = { icon: CareTipIcon; text: string };
-
-const DEFAULT_CARE_TIPS: CareTip[] = [
-  { icon: "sun", text: "Bright indirect light" },
-  { icon: "water", text: "Keep soil moist" },
-  { icon: "easy", text: "Easy to care" },
-];
-
-const CATEGORY_CARE_TIPS: Record<string, CareTip[]> = {
-  "indoor-plants": [
-    { icon: "sun", text: "Bright indirect light" },
-    { icon: "water", text: "Keep soil moist" },
-    { icon: "easy", text: "Easy to care" },
-  ],
-  "outdoor-plants": [
-    { icon: "sun", text: "Full sun preferred" },
-    { icon: "water", text: "Water regularly" },
-    { icon: "outdoor", text: "Outdoor hardy" },
-  ],
-  avenue: [
-    { icon: "sun", text: "Full sunlight" },
-    { icon: "outdoor", text: "Avenue planting" },
-    { icon: "easy", text: "Low maintenance" },
-  ],
-  "ornamental-plants": [
-    { icon: "sun", text: "Moderate light" },
-    { icon: "water", text: "Even moisture" },
-    { icon: "easy", text: "Decorative foliage" },
-  ],
-};
-
-const TAG_CARE_TIPS: Record<string, CareTip> = {
-  "low-light": { icon: "shade", text: "Low light tolerant" },
-  "air-purify": { icon: "air", text: "Air purifying" },
-  "air purify": { icon: "air", text: "Air purifying" },
-  bonsai: { icon: "bonsai", text: "Needs pruning" },
-  gift: { icon: "gift", text: "Perfect gift plant" },
-  office: { icon: "office", text: "Office friendly" },
-  "good-luck": { icon: "gift", text: "Good luck plant" },
-  "stress-free": { icon: "easy", text: "Stress-free care" },
-  indoor: { icon: "sun", text: "Indoor suitable" },
-  outdoor: { icon: "outdoor", text: "Best outdoors" },
-  medicinal: { icon: "leaf", text: "Medicinal plant" },
-};
-
 function normalizeCategoryKey(value?: string): string {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, "-");
-}
-
-function getCareTips(
-  category?: { name?: string; slug?: string },
-  tags?: string[]
-): CareTip[] {
-  const slugKey = normalizeCategoryKey(category?.slug);
-  const nameKey = normalizeCategoryKey(category?.name);
-  const base =
-    CATEGORY_CARE_TIPS[slugKey] ??
-    CATEGORY_CARE_TIPS[nameKey] ??
-    DEFAULT_CARE_TIPS;
-
-  const tips = [...base];
-  const seen = new Set(tips.map((tip) => tip.text));
-
-  for (const tag of tags ?? []) {
-    const tagTip =
-      TAG_CARE_TIPS[normalizeCategoryKey(tag)] ?? TAG_CARE_TIPS[tag.trim().toLowerCase()];
-    if (tagTip && !seen.has(tagTip.text)) {
-      tips.push(tagTip);
-      seen.add(tagTip.text);
-    }
-  }
-
-  return tips.slice(0, 3);
 }
 
 function CategoryIcon({
@@ -209,33 +126,6 @@ function CategoryIcon({
   if (key.includes("avenue")) return <TreePine className={className} strokeWidth={2} />;
   if (key.includes("ornamental")) return <Flower2 className={className} strokeWidth={2} />;
   return <Leaf className={className} strokeWidth={2} />;
-}
-
-function CareTipIcon({ icon, className }: { icon: CareTipIcon; className?: string }) {
-  switch (icon) {
-    case "sun":
-      return <Sun className={className} strokeWidth={2} />;
-    case "water":
-      return <Droplets className={className} strokeWidth={2} />;
-    case "easy":
-      return <BarChart3 className={className} strokeWidth={2} />;
-    case "outdoor":
-      return <TreePine className={className} strokeWidth={2} />;
-    case "air":
-      return <Wind className={className} strokeWidth={2} />;
-    case "shade":
-      return <CloudSun className={className} strokeWidth={2} />;
-    case "gift":
-      return <Gift className={className} strokeWidth={2} />;
-    case "office":
-      return <Building2 className={className} strokeWidth={2} />;
-    case "bonsai":
-      return <Scissors className={className} strokeWidth={2} />;
-    case "leaf":
-      return <Leaf className={className} strokeWidth={2} />;
-    default:
-      return <Leaf className={className} strokeWidth={2} />;
-  }
 }
 
 function CategoryBadge({
@@ -262,95 +152,10 @@ function CategoryBadge({
   );
 }
 
-function CareTipsStrip({
-  tips,
-  productSlug,
-  revealOnHover = true,
-}: {
-  tips: CareTip[];
-  productSlug: string;
-  revealOnHover?: boolean;
-}) {
-  if (tips.length === 0) return null;
-
-  const tipsContent = (
-    <div className="border-t border-slate-100 pt-2.5">
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-        {tips.map((tip) => (
-          <div
-            key={tip.text}
-            className="flex min-w-0 flex-col items-center gap-1 text-center sm:flex-row sm:items-start sm:gap-1.5 sm:text-left"
-          >
-            <CareTipIcon
-              icon={tip.icon}
-              className="h-3.5 w-3.5 shrink-0 text-emerald-600 sm:h-4 sm:w-4"
-            />
-            <span className="text-[9px] leading-snug text-slate-600 sm:text-[10px]">
-              {tip.text}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  return (
-    <Link
-      href={`/product/${productSlug}`}
-      className={
-        revealOnHover
-          ? "grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity,margin] duration-300 ease-out group-hover/card:grid-rows-[1fr] group-hover/card:opacity-100 group-hover/card:mt-2.5 hover:text-emerald-800"
-          : "mt-2 block opacity-100"
-      }
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="overflow-hidden">{tipsContent}</div>
-    </Link>
-  );
-}
-
-function DoothaAskPanel({ productName }: { productName: string }) {
-  const openDootha = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.dispatchEvent(
-      new CustomEvent("growman:chatbot-prefill", {
-        detail: {
-          message: `Tell me how to care for ${productName}. What light, watering, and soil does it need?`,
-        },
-      })
-    );
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={openDootha}
-      className="pointer-events-none absolute right-0 top-[42%] z-50 flex translate-x-2 items-center gap-2 rounded-l-full border border-emerald-200 border-r-0 bg-white py-2 pl-2 pr-3 opacity-0 shadow-[0_8px_24px_rgba(16,185,129,0.18)] transition-all duration-300 ease-out group-hover/card:pointer-events-auto group-hover/card:translate-x-full group-hover/card:opacity-100 hover:bg-emerald-50"
-      aria-label={`Ask Dootha AI about ${productName}`}
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50">
-        <Image src="/dootha.svg" alt="" width={22} height={22} />
-      </span>
-      <span className="flex flex-col items-start leading-tight">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600">
-          Ask Dootha
-        </span>
-        <span className="text-xs font-semibold text-emerald-900">AI plant care</span>
-      </span>
-    </button>
-  );
-}
-
 export default function ProductCard({ product }: { product: AnyProduct }) {
   const [hovered, setHovered] = useState(false);
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
-  const productTags = Array.isArray(product.tags) ? product.tags : [];
-  const careTips = useMemo(
-    () => getCareTips(product.category, productTags),
-    [product.category, productTags]
-  );
 
   // Normalize sizes so we can still render if backend omits them
   const normalizedSizes = useMemo(() => {
@@ -424,9 +229,9 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
   const productUrl = `/product/${product?.slug ?? ""}`;
 
   return (
-    <div className="relative h-full w-full md:overflow-visible">
+    <div className="relative h-full w-full">
       {/* Mobile: Amazon-like minimal design */}
-      <div className="flex h-full flex-col bg-white touch-manipulation md:hidden">
+      <div className="flex h-full flex-col  touch-manipulation md:hidden">
         <Link
           href={`/product/${product?.slug ?? ""}`}
           target="_blank"
@@ -478,12 +283,6 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               {product.name}
             </h2>
           </Link>
-
-          <CareTipsStrip
-            tips={careTips}
-            productSlug={product.slug}
-            revealOnHover={false}
-          />
 
           {/* Pricing - clean and minimal */}
           {firstPrice !== null && firstPrice !== undefined && firstPrice > 0 ? (
@@ -594,27 +393,30 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
         </div>
       </div>
 
-      {/* Desktop: hover lift + care tips + Dootha panel */}
+      {/* Desktop: hover lift + care tips overlay */}
       <div className="relative hidden h-full md:block">
-        <div className="group/card relative flex h-full flex-col overflow-visible rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 ease-out hover:z-40 hover:scale-[1.04] hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]">
-          {/* <DoothaAskPanel productName={product.name} /> */}
-
+        <div
+          className="group/card relative flex h-full flex-col overflow-hidden rounded-xl  shadow-sm  duration-300 ease-out group-hover/card:shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {/* Stretched link makes the entire card clickable to view product */}
           <Link
             href={productUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative block aspect-square overflow-hidden bg-gray-50 touch-manipulation"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-          >
-          <div className="relative w-full h-full">
+            className="absolute inset-0 z-10"
+            aria-label={`View ${product.name}`}
+          />
+
+          <div className="relative aspect-square overflow-hidden bg-gray-50">
             {allImages.length > 0 && allImages[0] ? (
               <Image
                 src={hovered && allImages[1] ? allImages[1] : allImages[0]}
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                className="object-cover transition-transform duration-300 group-hover/card:scale-105 will-change-transform"
+                className="object-cover transition-transform duration-500 group-hover/card:scale-105 will-change-transform"
                 loading="lazy"
                 unoptimized={isRemoteImage(
                   hovered && allImages[1] ? allImages[1] : allImages[0]
@@ -633,7 +435,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             )}
             {/* Stock badge */}
             <div
-              className={`absolute top-2 right-2 px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium shadow-sm ${
+              className={`absolute top-2 right-2 z-[2] px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium shadow-sm ${
                 totalStock > 0
                   ? "bg-green-500 text-white"
                   : "bg-red-500 text-white"
@@ -643,33 +445,23 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             </div>
             {/* Discount badge */}
             {discountPercent > 0 && (
-              <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-red-500 text-white text-[10px] sm:text-xs font-bold shadow-sm">
+              <div className="absolute top-2 left-2 z-[2] px-2 py-1 rounded-md bg-red-500 text-white text-[10px] sm:text-xs font-bold shadow-sm">
                 {discountPercent}% OFF
               </div>
             )}
             {showGrowmanGuarantee && <GrowmanGuaranteeBadge />}
           </div>
-          </Link>
 
           <div className="flex flex-1 flex-col p-3 sm:p-4">
             {product.category?.name && <CategoryBadge category={product.category} />}
 
-            <Link
-              href={productUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="touch-manipulation"
-            >
-              <h2 className="mb-0 min-h-10 line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover/card:text-emerald-800 sm:min-h-12 sm:text-[15px]">
-                {product.name}
-              </h2>
-            </Link>
-
-            <CareTipsStrip tips={careTips} productSlug={product.slug} />
+            <h2 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover/card:text-emerald-800 sm:text-[15px]">
+              {product.name}
+            </h2>
 
           {/* Pricing Display */}
           {firstPrice !== null && firstPrice !== undefined && firstPrice > 0 ? (
-            <div className="mb-2 mt-2 sm:mb-3 sm:mt-3">
+            <div className="mb-2 mt-1.5 sm:mb-3">
               <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-base sm:text-lg font-bold text-gray-900">
                   ₹{firstPrice ? firstPrice.toFixed(0) : "0"}
@@ -694,7 +486,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           ) : null}
 
           {/* Action Buttons */}
-          <div className="mt-auto flex gap-1.5 sm:gap-2">
+          <div className="relative z-20 mt-auto flex gap-1.5 sm:gap-2">
             <button
               onClick={(e) => {
                 e.preventDefault();

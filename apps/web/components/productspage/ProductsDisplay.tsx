@@ -34,12 +34,14 @@ export default function ProductsDisplay({
           <p className="text-lg">{emptyMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 overflow-visible py-1 md:grid-cols-3 md:gap-6 md:py-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 items-start gap-2 overflow-visible py-1 md:grid-cols-3 md:gap-6 md:py-2 lg:grid-cols-4">
           {products.map(product => (
-            <ProductCard
+            <div
               key={`${product.id}-${product.sizes[0]?.id || 'default'}`}
-              product={product}
-            />
+              className="relative z-0 h-full origin-center transition-[transform,z-index] duration-300 ease-out hover:z-50 hover:scale-[1.03]"
+            >
+              <ProductCard product={product} />
+            </div>
           ))}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { apiFetch } from './api';
 import type { Brand, Category, Product } from './types';
+import { slugify } from './shopFilters';
 
 // Cache configuration - revalidate every 60 seconds
 const REVALIDATE_TIME = 60;
@@ -170,13 +171,14 @@ export function filterProducts(
     );
   }
 
-  // Filter by tags
+  // Filter by tags (slug-normalized)
   if (searchParams.tag) {
     const tags = Array.isArray(searchParams.tag)
       ? searchParams.tag
       : [searchParams.tag];
-    filtered = filtered.filter(p => 
-      p.tags && tags.some(tag => p.tags?.includes(tag))
+    const normalized = tags.map((tag) => slugify(tag));
+    filtered = filtered.filter((product) =>
+      product.tags?.some((productTag) => normalized.includes(slugify(productTag)))
     );
   }
 

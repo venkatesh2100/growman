@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Package, ShieldCheck, Truck } from "lucide-react";
+import { Star, Package, ShieldCheck, Truck, Tag } from "lucide-react";
 import Link from "next/link";
 import ImageGallery from "./ImageGallery";
 import ProductTabs from "./ProductTabs";
@@ -10,6 +10,7 @@ import RelatedProducts from "./RealatedProducts";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
+import { ProductCareTips } from "../../../lib/careTips";
 
 export default function ProductPageClient({
   product,
@@ -43,6 +44,14 @@ export default function ProductPageClient({
       ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
         product.reviews.length
       : 4;
+
+  const discountPercent =
+    product.mrp && selectedSize && product.mrp > selectedSize.price
+      ? Math.round((1 - selectedSize.price / product.mrp) * 100)
+      : 0;
+
+  const totalStock = product.sizes.reduce((sum, size) => sum + size.stock, 0);
+  const productTags = product.tags ?? [];
 
   // Fetch related products from API
   useEffect(() => {
@@ -126,6 +135,29 @@ export default function ProductPageClient({
         {/* Product Details - Mobile optimized */}
         <div className="p-0 sm:p-2">
           <div className="border-b border-gray-200 pb-4 sm:pb-6">
+            {/* Category + tags */}
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Link
+                href={`/categories/${product.category.slug}`}
+                className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 hover:bg-emerald-100"
+              >
+                {product.category.name}
+              </Link>
+              {product.subcategory && (
+                <Link
+                  href={`/categories/${product.category.slug}/${product.subcategory.slug}`}
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  {product.subcategory.name}
+                </Link>
+              )}
+              {product.featured && (
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                  Featured
+                </span>
+              )}
+            </div>
+
             {/* Title */}
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">{product.name}</h1>
 
@@ -156,9 +188,17 @@ export default function ProductPageClient({
                   (selectedSize?.stock ?? 0) > 0 ? "text-green-600" : "text-red-600"
                   }`}
                   >
-                {/* <span className="pr-1">{selectedSize?.stock}</span> */}
                 {(selectedSize?.stock ?? 0) > 0 ? "In Stock" : "Out of Stock"}
               </span>
+
+              {totalStock > 0 && (
+                <>
+                  <span className="hidden sm:inline mx-2 text-gray-300">|</span>
+                  <span className="text-xs sm:text-sm text-gray-600">
+                    {totalStock} units available
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Brand - Mobile compact */}
@@ -188,23 +228,47 @@ export default function ProductPageClient({
                     </span>
 
                     <span className="text-sm sm:text-base text-green-600 font-medium">
-                      {Math.round((1 - selectedSize.price / product.mrp) * 100)}% off
+                      {discountPercent}% off
                     </span>
                   </>
                 )}
               </div>
 
-              {/* {product.taxInfo && (
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">+ {product.taxInfo}</p>
-              )} */}
+              {product.taxInfo && (
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">{product.taxInfo}</p>
+              )}
             </div>
 
-            {/* Description - Mobile compact */}
-            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 leading-relaxed">
-              {product.shortDescription}
-            </p>
+            {/* Description */}
+            {(product.shortDescription || product.description) && (
+              <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 leading-relaxed">
+                {product.shortDescription || product.description}
+              </p>
+            )}
 
-            {/* Size Selector - Mobile optimized */}
+            {/* Tags */}
+            {productTags.length > 0 && (
+              <div className="mb-4 sm:mb-6">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <Tag className="h-4 w-4 text-emerald-600" />
+                  <h3 className="text-sm font-semibold text-gray-900 sm:text-base">Tags</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {productTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-md border border-emerald-100 bg-white px-2.5 py-1 text-xs font-medium text-emerald-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <ProductCareTips category={product.category} tags={productTags} />
+
+            {/* Size Selector */}
             <div className="mb-4 sm:mb-6">
               <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">
                 Available Sizes:
@@ -217,9 +281,11 @@ export default function ProductPageClient({
                   productSlug={product.slug}
                 />
               )}
+
+              {/* f */}
             </div>
 
-            {/* Attributes - Mobile optimized */}
+            {/* Key Features */}
             {product.attributes.length > 0 && (
               <div className="mb-4 sm:mb-6">
                 <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">
@@ -253,7 +319,7 @@ export default function ProductPageClient({
             {[
               { icon: Truck, title: "Free Delivery", sub: "Delivery in 2-4 days" },
               { icon: ShieldCheck, title: "Plant Health ", sub: "Quality checked" },
-              { icon: Package, title: "Easy Returns", sub: "10 Day Policy" },
+              { icon: Package, title: "GG Quality", sub: "Growman Garuntee" },
             ].map(({ icon: Icon, title, sub }, i) => (
               <div
                 key={i}

@@ -92,6 +92,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 
 		r.Get("/brands", h.ListBrands)
 		r.Get("/tags", h.ListTags)
+		r.Get("/catalog", h.ListCatalog)
 
 		// Image upload route
 		r.Post("/images/upload", h.UploadImage)

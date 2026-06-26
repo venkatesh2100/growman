@@ -10,6 +10,7 @@ import { searchProducts } from "../../lib/api";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
 import { LogOut, Package, Settings, ShoppingBag, LogIn, Heart, Mic, ScanSearch } from "lucide-react";
+import CategoryFilterBar from "./CategoryFilterBar";
 
 interface Product {
   id: number;
@@ -37,65 +38,6 @@ const navLinks = [
   { href: "/shop", label: "Shop" },
   { href: "/categories", label: "Categories" },
   { href: "/about", label: "About" },
-];
-
-const mainCategories = [
-  {
-    name: "Gardening",
-    subcategories: ["Top Plants' Packs", "Packs by Features", "Miniature Gardens & Kits", "Packs by Location", "Packs by Occasions", "Packs by Season"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    name: "Plants",
-    subcategories: ["Trending Plants", "By Type", "By Features & Uses", "By Location", "Foliage Plants", "Flowering Plants", "By Season", "By Color"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    name: "Seeds",
-    subcategories: ["Trending Seeds", "Vegetable/Herb Seeds", "Flower Seeds", "Tree and Forestry Seeds", "All Seasons Seeds", "Easy to Grow Seeds"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z" />
-        <path d="M9 13h2v5a1 1 0 11-2 0v-5z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Planters",
-    subcategories: ["Trending Planters", "By Type", "By Material", "By Color", "By Size", "By Shape"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    name: "Gifts",
-    subcategories: ["Trending Gifts", "Plants as Corporate Gifts", "Gifts for Festivals", "Gifts for Loved Ones", "Gifts for Occasions"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clipRule="evenodd" />
-        <path d="M9 11H5v6a2 2 0 002 2h4v-8zm2 8v-8h4v6a2 2 0 01-2 2h-2z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Accessories",
-    subcategories: ["Best Seller Accessories", "Gardening Tools", "Miniature Garden Toys", "Gardening Accessories", "Addons"],
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
 ];
 
 const Icon = ({ children, className = "h-5 w-5" }: { children: React.ReactNode; className?: string }) => (
@@ -131,12 +73,6 @@ const MenuIcon = () => (
 const CloseIcon = () => (
   <Icon className="h-6 w-6">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </Icon>
-);
-
-const ChevronDown = ({ className = "" }: { className?: string }) => (
-  <Icon className={`h-4 w-4 ml-1 ${className}`}>
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </Icon>
 );
 
@@ -187,7 +123,6 @@ export default function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -256,7 +191,6 @@ export default function Navbar() {
 
   useEffect(() => {
     setIsMenuOpen(false);
-    setActiveCategory(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -265,7 +199,6 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) setActiveCategory(null);
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) setShowSearchResults(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -780,62 +713,8 @@ export default function Navbar() {
         </AnimatePresence>
       </motion.header>
 
-      <motion.div
-        animate={{ y: showCategories ? 0 : -100, opacity: showCategories ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-14 sm:top-16 md:top-20 w-full bg-gradient-to-r from-emerald-50 to-green-50 z-40 shadow-sm border-b border-emerald-100"
-      >
-        <div className="container mx-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3">
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 md:gap-4 justify-center">
-            {mainCategories.map((category, index) => (
-              <div key={index} className="group relative">
-                <button
-                  className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation"
-                  onClick={() => setActiveCategory(activeCategory === index ? null : index)}
-                >
-                  <span className="hidden sm:inline">{category.icon}</span>
-                  <span className="sm:ml-0">{category.name}</span>
-                  <ChevronDown className={`ml-1 ${activeCategory === index ? "rotate-180" : ""}`} />
-                </button>
-                {activeCategory === index && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute left-0 mt-1 w-56 sm:w-64 bg-white border border-emerald-100 rounded-lg shadow-lg z-50 max-h-[60vh] overflow-y-auto overscroll-contain"
-                  >
-                    <div className="py-2">
-                      {Array.isArray(category.subcategories) && category.subcategories.map((sub, subIndex) => (
-                        <Link
-                          key={subIndex}
-                          href={`/category/${sub.toLowerCase().replace(/\s+/g, "-")}`}
-                          className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 hover:text-emerald-900 transition-colors touch-manipulation"
-                          onClick={() => setActiveCategory(null)}
-                        >
-                          {sub}
-                        </Link>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            ))}
-            <Link href="/buy-again" prefetch={false} className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span className="hidden sm:inline">Buy Again</span>
-              <span className="sm:hidden">Buy Again</span>
-            </Link>
-            <Link href="/gift-options" prefetch={false} className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-emerald-800 font-medium hover:text-emerald-700 active:text-emerald-900 hover:bg-white active:bg-emerald-50 rounded-lg transition-colors whitespace-nowrap border border-emerald-200 shadow-sm touch-manipulation">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-              </svg>
-              <span className="hidden sm:inline">Gift Options</span>
-              <span className="sm:hidden">Gifts</span>
-            </Link>
-          </div>
-        </div>
-      </motion.div>
+      <CategoryFilterBar show={showCategories} />
+      
       <div className="h-20 sm:h-24 md:h-28 lg:h-32"></div>
     </div>
   );

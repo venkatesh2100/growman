@@ -1,148 +1,104 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Download } from "lucide-react";
+import Image from "next/image";
+import { X, Smartphone } from "lucide-react";
+import { openPlayStore, PLAY_STORE_URL } from "../../lib/appLinks";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+const DISMISS_KEY = "growman-app-install-dismissed";
 
 export default function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Check if running on iOS
-    const iOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !(window as any).MSStream;
-    setIsIOS(iOS);
-
-    // Check if already installed (standalone mode)
     const standalone =
-      (window.navigator as any).standalone ||
-      window.matchMedia("(display-mode: standalone)").matches;
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true || window.matchMedia("(display-mode: standalone)").matches;
     setIsStandalone(standalone);
 
-    // Listen for beforeinstallprompt event (Android/Chrome)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show prompt after a delay (user has interacted with the site)
-      setTimeout(() => {
-        if (!standalone) {
-          setShowPrompt(true);
-        }
-      }, 3000);
-    };
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsMobile(mobile);
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    // Check if user has dismissed the prompt before (localStorage)
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
+    const dismissed = localStorage.getItem(DISMISS_KEY);
     if (dismissed) {
-      const dismissedTime = parseInt(dismissed, 10);
-      const daysSinceDismissed =
-        (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      // Show again after 7 days
-      if (daysSinceDismissed < 7) {
-        setShowPrompt(false);
-      }
+      const daysSince = (Date.now() - Number(dismissed)) / (1000 * 60 * 60 * 24);
+      if (daysSince < 7) return;
     }
 
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    };
+    if (!standalone) {
+      const timer = window.setTimeout(() => setVisible(true), 2500);
+      return () => window.clearTimeout(timer);
+    }
   }, []);
 
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === "accepted") {
-        setShowPrompt(false);
-        setDeferredPrompt(null);
-      }
-    }
+  const handleDismiss = () => {
+    setVisible(false);
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+  };
+
+  const handleInstall = () => {
+    openPlayStore();
     handleDismiss();
   };
 
-  const handleDismiss = () => {
-    setShowPrompt(false);
-    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
-  };
+  if (!visible || isStandalone) return null;
 
-  // Don't show if already installed or on desktop
-  if (isStandalone || !showPrompt) {
-    return null;
-  }
+  return (
+    <div
+      className={`fixed z-50 ${
+        isMobile
+          ? "bottom-0 left-0 right-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          : "bottom-6 right-6 max-w-sm"
+      }`}
+    >
+      <div className="relative rounded-xl border border-emerald-100 bg-white p-4 shadow-[0_12px_40px_rgba(15,23,42,0.18)]">
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="absolute right-2 top-2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          aria-label="Dismiss app install prompt"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
-  // iOS instructions
-  if (isIOS) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-        <div className="bg-white border-t border-gray-200 shadow-lg p-4 mx-4 mb-4 rounded-lg">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex items-start gap-3 pr-8">
-            <Download className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                Install Growman App
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Tap the share button and select "Add to Home Screen"
-              </p>
-            </div>
+        <div className="flex items-start gap-3 pr-6">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+            <Smartphone className="h-6 w-6 text-emerald-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-gray-900">
+              Get the Growman app
+            </h3>
+            <p className="mt-0.5 text-xs leading-snug text-gray-600">
+              Shop plants faster on mobile with our Android app on Google Play.
+            </p>
+            <button
+              type="button"
+              onClick={handleInstall}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 sm:w-auto"
+            >
+              <Image
+                src="/icons/growman.svg"
+                alt=""
+                width={18}
+                height={18}
+                className="brightness-0 invert"
+              />
+              Install on Google Play
+            </button>
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block text-center text-[11px] text-emerald-700 underline sm:text-left"
+            >
+              View on Play Store
+            </a>
           </div>
         </div>
       </div>
-    );
-  }
-
-  // Android/Chrome prompt
-  if (deferredPrompt) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-        <div className="bg-white border-t border-gray-200 shadow-lg p-4 mx-4 mb-4 rounded-lg">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 touch-manipulation"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex items-start gap-3 pr-8">
-            <Download className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                Install Growman App
-              </h3>
-              <p className="text-xs text-gray-600 mb-3">
-                Get a faster, app-like experience on your device
-              </p>
-              <button
-                onClick={handleInstallClick}
-                className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 transition-colors touch-manipulation"
-              >
-                Install Now
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

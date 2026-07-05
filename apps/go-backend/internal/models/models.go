@@ -299,3 +299,24 @@ type RequestedProduct struct {
 	RequesterPhone string `json:"requesterPhone,omitempty"`
 	AdminNotes     string `gorm:"type:text" json:"adminNotes,omitempty"`
 }
+
+// OrderSupportRequest stores delivery/support escalations from chat or support forms.
+type OrderSupportRequest struct {
+	Base
+	OrderID          *uint   `gorm:"index" json:"orderId,omitempty"`
+	UserID           *uint   `gorm:"index" json:"userId,omitempty"`
+	CustomerName     string  `json:"customerName,omitempty"`
+	CustomerEmail    string  `json:"customerEmail,omitempty"`
+	CustomerPhone    string  `json:"customerPhone,omitempty"`
+	IssueType        string  `gorm:"index" json:"issueType"` // delivery_delay, refund, tracking, order_support
+	Priority         string  `gorm:"default:'high';index" json:"priority"`
+	UserMessage      string  `gorm:"type:text;not null" json:"userMessage"`
+	OrderStatus      string  `json:"orderStatus,omitempty"`
+	PaymentStatus    string  `json:"paymentStatus,omitempty"`
+	OrderAmount      float64 `json:"orderAmount,omitempty"`
+	OrderItems       string  `gorm:"type:text" json:"orderItems,omitempty"`
+	ExpectedDelivery string  `json:"expectedDelivery,omitempty"`
+	Status           string  `gorm:"default:'pending';index" json:"status"` // pending, in_progress, resolved
+	Source           string  `gorm:"default:'chatbot';index" json:"source"`
+	AdminNotes       string  `gorm:"type:text" json:"adminNotes,omitempty"`
+}

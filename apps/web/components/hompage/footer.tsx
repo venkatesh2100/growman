@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { PLAY_STORE_URL } from "../../lib/appLinks";
 import {
   FaFacebookF,
   FaInstagram,
@@ -188,21 +189,52 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between  md:flex-row items-center    text-center md:text-left">
-          {/* QR Section */}
-          <div className="hidden md:flex items-center gap-4 rounded-xl">
+        <div className="flex flex-col justify-between   md:flex-row items-center    text-center md:text-left">
+          {/* App install — mobile */}
+          {/* <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-6 flex w-full items-center mx-auto gap-4 rounded-xl p-4 text-left md:hidden"
+          >
             <Image
-              src="/frame.svg"
-              alt="Growman QR Code"
-              height={160}
-              width={160}
-              className="rounded-lg"
+              src="/qr-code.svg"
+              alt="Install Growman app"
+              height={72}
+              width={72}
+              className="shrink-0 rounded-lg bg-white p-1"
+            />
+            <div className="text-sm text-green-100 leading-tight">
+              <p className="font-semibold text-white">Get the Growman app</p>
+              <p className="mt-1">Install free on Google Play</p>
+              <span className="mt-2 inline-block rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-green-800">
+                Install on Google Play
+              </span>
+            </div>
+          </a> */}
+
+          {/* App install — desktop */}
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-6 hidden items-center gap-4 rounded-xl p-4 transition-colors  md:mb-0 md:flex"
+          >
+            <Image
+              src="/qr-code.svg"
+              alt="Growman app QR code"
+              height={120}
+              width={120}
+              className="shrink-0 rounded-lg bg-white p-1"
             />
             <div className="text-sm text-green-200 leading-tight">
-              <p className="font-semibold text-white">Scan to shop</p>
-              <p>Open Growman on mobile</p>
+              <p className="font-semibold text-white">Get the Growman app</p>
+              <p className="mt-1">Scan the QR or click to open Google Play</p>
+              <span className="mt-2 inline-block text-xs font-medium text-emerald-300 underline">
+                Install on Google Play →
+              </span>
             </div>
-          </div>
+          </a>
 
           <div className="font-serif italic tracking-wide text-emerald-300 text-xl">
             <Image src="/404.png" width={140} height={240} alt="404"  className="md:w-50 " />

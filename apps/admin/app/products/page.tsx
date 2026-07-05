@@ -33,12 +33,34 @@ type ProductResponse = {
   pagination?: { total?: number; page?: number; pageSize?: number };
 };
 
+type OrderSupportRequest = {
+  id: number;
+  orderId?: number;
+  userId?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  issueType: string;
+  priority: string;
+  userMessage: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  orderAmount?: number;
+  orderItems?: string;
+  expectedDelivery?: string;
+  status: string;
+  source?: string;
+  createdAt?: string;
+};
+
 export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [supportRequests, setSupportRequests] = useState<OrderSupportRequest[]>([]);
+  const [supportLoading, setSupportLoading] = useState(true);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
 
@@ -57,8 +79,37 @@ export default function ProductsPage() {
     }
   };
 
+  const loadSupportRequests = async () => {
+    try {
+      setSupportLoading(true);
+      const res = await apiFetch("/order-support-requests?status=pending");
+      if (!res.ok) throw new Error("Failed to fetch support requests");
+      const data = (await res.json()) as OrderSupportRequest[];
+      setSupportRequests(Array.isArray(data) ? data : []);
+    } catch {
+      setSupportRequests([]);
+    } finally {
+      setSupportLoading(false);
+    }
+  };
+
+  const resolveSupportRequest = async (id: number) => {
+    try {
+      const res = await apiFetch(`/order-support-requests/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "resolved" }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setMessage(`Support ticket #${id} marked resolved.`);
+      await loadSupportRequests();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : "Failed to update ticket.");
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadSupportRequests();
   }, []);
 
   const totalStock = useMemo(
@@ -160,13 +211,109 @@ export default function ProductsPage() {
           </p>
         </section>
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card label="Total Products" value={String(products.length)} />
           <Card label="Total Stock" value={String(totalStock)} />
           <Card
             label="Featured Products"
             value={String(products.filter((p) => p.featured).length)}
           />
+          <Card
+            label="Priority Order Support"
+            value={String(supportRequests.length)}
+            highlight={supportRequests.length > 0}
+          />
+        </section>
+
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/40 shadow-sm">
+          <div className="border-b border-amber-200 px-5 py-4">
+            <h2 className="text-lg font-semibold text-slate-900">Priority order support (from Dootha chat)</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Delivery delays, escalations, and order help requests from customers.
+            </p>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full min-w-[1100px] text-sm">
+              <thead className="bg-white/80 text-left text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Ticket</th>
+                  <th className="px-4 py-3 font-medium">Order</th>
+                  <th className="px-4 py-3 font-medium">Customer</th>
+                  <th className="px-4 py-3 font-medium">Issue</th>
+                  <th className="px-4 py-3 font-medium">Order details</th>
+                  <th className="px-4 py-3 font-medium">Message</th>
+                  <th className="px-4 py-3 font-medium">When</th>
+                  <th className="px-4 py-3 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supportLoading ? (
+                  <tr>
+                    <td className="px-4 py-6 text-slate-500" colSpan={8}>
+                      Loading support requests...
+                    </td>
+                  </tr>
+                ) : supportRequests.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-6 text-slate-500" colSpan={8}>
+                      No pending order support requests.
+                    </td>
+                  </tr>
+                ) : (
+                  supportRequests.map((req) => (
+                    <tr key={req.id} className="border-t border-amber-100 bg-white">
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-800">
+                          HIGH #{req.id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {req.orderId ? `#${req.orderId}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        <div>{req.customerName || "—"}</div>
+                        <div className="text-xs text-slate-500">{req.customerEmail || req.customerPhone || ""}</div>
+                      </td>
+                      <td className="px-4 py-3 capitalize text-slate-700">
+                        {(req.issueType || "order_support").replace(/_/g, " ")}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {req.orderStatus && (
+                          <div>
+                            {req.orderStatus}
+                            {req.paymentStatus ? ` · ${req.paymentStatus}` : ""}
+                          </div>
+                        )}
+                        {req.orderAmount != null && req.orderAmount > 0 && (
+                          <div className="text-xs">₹{Math.round(req.orderAmount)}</div>
+                        )}
+                        {req.orderItems && (
+                          <div className="mt-1 line-clamp-2 text-xs text-slate-500">{req.orderItems}</div>
+                        )}
+                        {req.expectedDelivery && (
+                          <div className="text-xs text-slate-500">ETA: {req.expectedDelivery}</div>
+                        )}
+                      </td>
+                      <td className="max-w-xs px-4 py-3 text-slate-700">
+                        <p className="line-clamp-3 text-xs">{req.userMessage}</p>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">
+                        {req.createdAt ? new Date(req.createdAt).toLocaleString() : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => resolveSupportRequest(req.id)}
+                          className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                        >
+                          Resolve
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         {error && (
@@ -282,11 +429,25 @@ export default function ProductsPage() {
   );
 }
 
-function Card({ label, value }: { label: string; value: string }) {
+function Card({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div
+      className={`rounded-xl border p-4 shadow-sm ${
+        highlight ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"
+      }`}
+    >
       <p className="text-sm text-slate-600">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+      <p className={`mt-1 text-2xl font-bold ${highlight ? "text-amber-900" : "text-slate-900"}`}>
+        {value}
+      </p>
     </div>
   );
 }

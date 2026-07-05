@@ -42,5 +42,6 @@ func (h *Handler) AutoMigrate() error {
 		&models.Payment{},
 		&models.Wishlist{},
 		&models.RequestedProduct{},
+		&models.OrderSupportRequest{},
 	)
 }

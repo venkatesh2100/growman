@@ -119,6 +119,8 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			pr.Get("/auth/me", h.Me)
 			pr.Get("/dashboard/map", h.DashboardMap)
 			pr.Get("/requested-products", h.ListRequestedProducts)
+			pr.Get("/order-support-requests", h.ListOrderSupportRequests)
+			pr.Patch("/order-support-requests/{id}/status", h.UpdateOrderSupportStatus)
 			pr.Put("/auth/profile", h.UpdateProfile)
 			pr.Post("/auth/save-location", h.SaveLocation)
 			// Orders endpoint for authenticated users

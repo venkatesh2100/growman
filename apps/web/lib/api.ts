@@ -32,6 +32,29 @@ export function getApiUrl(): string {
 }
 
 /**
+ * Resolve JWT from zustand store or persisted storage (handles rehydration lag).
+ */
+export function resolveAuthToken(): string | null {
+  const fromStore = useAuthStore.getState().token;
+  if (fromStore) return fromStore;
+
+  if (typeof window !== 'undefined') {
+    const direct = localStorage.getItem('token');
+    if (direct) return direct;
+    try {
+      const raw = localStorage.getItem('auth-storage');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { state?: { token?: string } };
+        if (parsed.state?.token) return parsed.state.token;
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return null;
+}
+
+/**
  * Fetch from the external API
  * Automatically includes Authorization header if token is available
  */
@@ -39,12 +62,7 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
   const apiUrl = getApiUrl();
   const url = path.startsWith('/') ? `${apiUrl}${path}` : `${apiUrl}/${path}`;
 
-  // Get token from store or localStorage (for backward compatibility)
-  let token: string | null = null;
-  if (typeof window !== 'undefined') {
-    const authStore = useAuthStore.getState();
-    token = authStore.token || localStorage.getItem('token');
-  }
+  const token = resolveAuthToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

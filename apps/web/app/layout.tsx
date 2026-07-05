@@ -28,6 +28,10 @@ export const metadata: Metadata = {
   },
 
   manifest: "/manifest.json",
+
+  other: {
+    "google-play-app": "app-id=com.venky2100.growman",
+  },
 };
 
 /* ---------------- VIEWPORT ---------------- */

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2, Camera, Trash2 } from "lucide-react";
-import { apiFetch, getApiUrl } from "../../lib/api";
+import { MessageCircle, X, Send, Loader2, Camera, Trash2, Package } from "lucide-react";
+import { apiFetch, getApiUrl, resolveAuthToken } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -20,6 +20,16 @@ interface Message {
     price: number;
     imageUrl?: string;
   }>;
+  orders?: Array<{
+    id: number;
+    status: string;
+    amount: number;
+    createdAt: string;
+    expectedDeliveryDate?: string;
+    itemCount: number;
+    itemPreview: string;
+    imageUrl?: string;
+  }>;
 }
 
 const STORAGE_KEY_MESSAGES = "plant-chatbot-messages";
@@ -31,6 +41,14 @@ const DEFAULT_MESSAGE: Message = {
   content:
     "Hi! I'm **Dootha**, your Growman plant assistant. Ask about care, pests, light, or watering — I can suggest products from our store too.",
 };
+
+function orderStatusClass(status: string) {
+  const s = status.toLowerCase();
+  if (s.includes("delivered")) return "bg-green-100 text-green-800";
+  if (s.includes("ship") || s.includes("delivery")) return "bg-blue-100 text-blue-800";
+  if (s.includes("pending")) return "bg-red-100 text-red-800";
+  return "bg-amber-100 text-amber-800";
+}
 
 export default function PlantChatbot() {
   // Initialize with consistent values for SSR (always false, always default message)
@@ -133,11 +151,13 @@ export default function PlantChatbot() {
     setIsLoading(true);
 
     try {
+      const token = resolveAuthToken();
       const response = await apiFetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
+          token: token ?? undefined,
           conversationHistory: priorMessages.map((m) => ({
             role: m.role,
             content: m.content,
@@ -172,11 +192,24 @@ export default function PlantChatbot() {
         throw new Error("Invalid response from server");
       }
 
+      const rawOrders = Array.isArray(data.orders) ? data.orders : [];
+      const orders = rawOrders.map((o: Record<string, unknown>) => ({
+        id: Number(o.id),
+        status: String(o.status ?? ""),
+        amount: typeof o.amount === "number" ? o.amount : Number(o.amount ?? 0),
+        createdAt: String(o.createdAt ?? o.created_at ?? ""),
+        expectedDeliveryDate: (o.expectedDeliveryDate ?? o.expected_delivery_date) as string | undefined,
+        itemCount: Number(o.itemCount ?? o.item_count ?? 0),
+        itemPreview: String(o.itemPreview ?? o.item_preview ?? ""),
+        imageUrl: (o.imageUrl ?? o.image_url) as string | undefined,
+      }));
+
       const doothaMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "dootha",
         content: data.response || "I'm sorry, I couldn't process that request.",
         products: data.recommendedProducts || [],
+        orders: orders.length > 0 ? orders : undefined,
       };
 
       setMessages((prev) => [...prev, doothaMessage]);
@@ -302,13 +335,13 @@ export default function PlantChatbot() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                     message.role === "user"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-white text-gray-800 border border-emerald-100 shadow-sm"
+                      ? "bg-emerald-600 text-white rounded-br-md"
+                      : "bg-white text-gray-800 border border-emerald-100 shadow-sm rounded-bl-md"
                   }`}
                 >
                   {message.role === "dootha" ? (
@@ -316,46 +349,92 @@ export default function PlantChatbot() {
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   )}
-
-                  {/* Product Recommendations */}
-                  {message.products && message.products.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-emerald-200">
-                      <p className="text-xs font-semibold mb-2 text-emerald-700">
-                        Recommended Products:
-                      </p>
-                      <div className="space-y-2">
-                        {message.products.map((product) => (
-                          <Link
-                            key={product.id}
-                            href={`/product/${product.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block p-2 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <div className="flex items-center gap-2">
-                              {product.imageUrl && (
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-800 truncate">
-                                  {product.name}
-                                </p>
-                                <p className="text-xs text-emerald-600 font-semibold">
-                                  ₹{product.price}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
+
+                {/* Order cards */}
+                {message.role === "dootha" && message.orders && message.orders.length > 0 && (
+                  <div className="mt-2 w-full max-w-[85%] space-y-2">
+                    {message.orders.map((order) => (
+                      <Link
+                        key={order.id}
+                        href="/orders"
+                        onClick={() => setIsOpen(false)}
+                        className="flex overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50/40"
+                      >
+                        <div className="relative h-[76px] w-[76px] shrink-0 bg-gray-100">
+                          {order.imageUrl ? (
+                            <img
+                              src={order.imageUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-emerald-600">
+                              <Package className="h-7 w-7" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-bold text-emerald-950">Order #{order.id}</p>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusClass(order.status)}`}>
+                              {order.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">{order.itemPreview}</p>
+                          <p className="mt-1 text-xs font-bold text-emerald-700">
+                            ₹{Math.round(order.amount)} · {order.createdAt}
+                            {order.expectedDeliveryDate ? ` · ETA ${order.expectedDeliveryDate}` : ""}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                    <Link
+                      href="/orders"
+                      onClick={() => setIsOpen(false)}
+                      className="block py-1 text-center text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                    >
+                      View all orders →
+                    </Link>
+                  </div>
+                )}
+
+                {/* Product recommendations */}
+                {message.role === "dootha" && message.products && message.products.length > 0 && (
+                  <div className="mt-2 w-full max-w-[85%]">
+                    <p className="mb-2 text-xs font-semibold text-emerald-800">Suggested for you</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {message.products.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/product/${product.slug}`}
+                          onClick={() => setIsOpen(false)}
+                          className="w-[112px] shrink-0 overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition-colors hover:border-emerald-200"
+                        >
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-[72px] w-full object-cover bg-gray-100"
+                            />
+                          ) : (
+                            <div className="flex h-[72px] items-center justify-center bg-emerald-50 text-emerald-600">
+                              <Package className="h-6 w-6" />
+                            </div>
+                          )}
+                          <div className="p-2">
+                            <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-emerald-950">
+                              {product.name}
+                            </p>
+                            <p className="mt-0.5 text-[11px] font-bold text-emerald-700">
+                              ₹{Math.round(product.price)}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (

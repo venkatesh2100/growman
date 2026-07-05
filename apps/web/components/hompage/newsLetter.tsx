@@ -17,36 +17,39 @@ export default function NewsLetterSection() {
   };
 
   return (
-    <section className="max-h-[60vh]   py-4 bg-gradient-to-br from-emerald-600 to-green-700">
-      <div className="container mx-auto px-4 max-w-2xl">
+    <section className="bg-gradient-to-br from-emerald-600 to-green-700 py-8 sm:py-10">
+      <div className="container mx-auto max-w-2xl px-4">
         {isSubscribed && (
-          <div className="mb-6  text-white p-4 rounded-xl text-center animate-fade-in">
-            <FaCheck className="inline mr-2" />
-            Welcome! Check your email for newsletter Weekly
+          <div className="mb-4 rounded-xl bg-white/10 p-4 text-center text-white animate-fade-in sm:mb-6">
+            <FaCheck className="mr-2 inline" />
+            Welcome! Check your email for our weekly newsletter.
           </div>
         )}
 
         <div className="text-center">
-          <FaLeaf className="w-12 h-12 text-white mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-white mb-3">
-            Join India's Green Community
+          <FaLeaf className="mx-auto mb-3 h-10 w-10 text-white sm:mb-4 sm:h-12 sm:w-12" />
+          <h2 className="mb-2 text-2xl font-bold text-white sm:mb-3 sm:text-3xl">
+            Join India&apos;s Green Community
           </h2>
-          <p className="text-emerald-100 mb-6">
-            Get plant care tips, exclusive offers
+          <p className="mb-5 text-sm text-emerald-100 sm:mb-6 sm:text-base">
+            Get plant care tips and exclusive offers
           </p>
 
-          <form onSubmit={handleSubmit} className="flex gap-3 mb-6">
+          <form
+            onSubmit={handleSubmit}
+            className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row"
+          >
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              className="flex-1 px-1 sm:px-5 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-emerald-200 focus:outline-none focus:border-emerald-400"
+              className="flex-1 rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-emerald-200 focus:border-emerald-400 focus:outline-none"
               required
             />
             <button
               type="submit"
-              className="px-2 md:px-6 py-3 bg-white text-emerald-700 font-semibold rounded-lg hover:bg-emerald-50 transition-colors"
+              className="rounded-lg bg-white px-6 py-3 font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
             >
               Subscribe
             </button>

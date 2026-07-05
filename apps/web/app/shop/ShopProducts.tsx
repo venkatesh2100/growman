@@ -22,7 +22,7 @@ export default async function ShopProducts({
   return (
     <div id="shop-products">
       {activeFilter && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg  border-emerald-100 bg-emerald-50 px-4 py-3">
           <span className="text-sm text-emerald-900">
             Filter: <strong>{filterLabel}</strong>
             {" · "}

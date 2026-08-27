@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -11,7 +12,10 @@ import (
 
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/msg91"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/phoneutil"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/truecaller"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/api/idtoken"
@@ -23,7 +27,7 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 
-// AuthResponse contains a signed JWT.
+// AuthResponse ctemontains a signed JWT.
 type AuthResponse struct {
 	Token string `json:"token"`
 }
@@ -50,15 +54,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// Phone login
-		if err := h.DB.Where("phone = ?", payload.Email).First(&user).Error; err != nil {
+		// Phone login — match 10-digit and 91-prefixed rows
+		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
 			httpjson.Error(w, http.StatusUnauthorized, "account not found")
 			return
 		}
 	}
 
-	// Verify password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(payload.Password)); err != nil {
+	hash := user.PasswordHashOrEmpty()
+	if hash == "" {
+		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(payload.Password)); err != nil {
 		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -92,13 +100,18 @@ func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		if err := h.DB.Where("phone = ?", payload.Email).First(&user).Error; err != nil {
+		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
 			httpjson.Error(w, http.StatusUnauthorized, "account not found")
 			return
 		}
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(payload.Password)); err != nil {
+	hash := user.PasswordHashOrEmpty()
+	if hash == "" {
+		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(payload.Password)); err != nil {
 		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -166,11 +179,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user
+	pw := string(passwordHash)
 	user := models.User{
 		Name:          payload.Name,
-		Email:         payload.Email,
-		Phone:         payload.Phone,
-		PasswordHash:  string(passwordHash),
+		Email:         models.StrPtr(payload.Email),
+		Phone:         models.StrPtr(payload.Phone),
+		PasswordHash:  &pw,
 		EmailVerified: false, // User needs to verify email
 		Provider:      "local",
 		Role:          "user",
@@ -192,10 +206,11 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, AuthResponse{Token: token})
 }
 
-// CheckUserExists checks if a user exists by email or phone
+// CheckUserExists checks if a user exists by email or phone.
+// Phone matches 10-digit and 91-prefixed variants stored in users.phone.
 func (h *Handler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
-	email := r.URL.Query().Get("email")
-	phone := r.URL.Query().Get("phone")
+	email := strings.TrimSpace(r.URL.Query().Get("email"))
+	phone := strings.TrimSpace(r.URL.Query().Get("phone"))
 
 	if email == "" && phone == "" {
 		httpjson.Error(w, http.StatusBadRequest, "email or phone is required")
@@ -203,24 +218,502 @@ func (h *Handler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	query := h.DB
-	if email != "" {
+	query := h.DB.Model(&models.User{})
+	switch {
+	case email != "" && phone != "":
+		variants := phoneutil.LookupVariants(phone)
+		query = query.Where("email = ? OR phone IN ?", email, variants)
+	case email != "":
 		query = query.Where("email = ?", email)
-	}
-	if phone != "" {
-		if email != "" {
-			query = query.Or("phone = ?", phone)
-		} else {
-			query = query.Where("phone = ?", phone)
-		}
+	default:
+		query = query.Where("phone IN ?", phoneutil.LookupVariants(phone))
 	}
 
 	exists := query.First(&user).Error == nil
 
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
 		"exists": exists,
-		"email":  user.Email,
-		"phone":  user.Phone,
+		"email":  user.EmailOrEmpty(),
+		"phone":  user.PhoneOrEmpty(),
+	})
+}
+
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		return strings.TrimSpace(parts[0])
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+	host := r.RemoteAddr
+	if i := strings.LastIndex(host, ":"); i >= 0 {
+		return host[:i]
+	}
+	return host
+}
+
+// parseRetryChannel accepts JSON number or string ("12") from channel / retryChannel.
+func parseRetryChannel(primary, fallback json.RawMessage) int {
+	for _, raw := range []json.RawMessage{primary, fallback} {
+		if len(raw) == 0 || string(raw) == "null" {
+			continue
+		}
+		var asInt int
+		if err := json.Unmarshal(raw, &asInt); err == nil && asInt > 0 {
+			return asInt
+		}
+		var asStr string
+		if err := json.Unmarshal(raw, &asStr); err == nil {
+			asStr = strings.TrimSpace(asStr)
+			var n int
+			if _, err := fmt.Sscanf(asStr, "%d", &n); err == nil && n > 0 {
+				return n
+			}
+		}
+	}
+	return 0
+}
+
+// SendPhoneOTP sends an MSG91 OTP (widget API preferred; REST template fallback).
+func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Phone        string          `json:"phone"`
+		ReqID        string          `json:"reqId"`        // optional — when set, treat as resend/retry
+		Channel      json.RawMessage `json:"channel"`      // optional retry: 11 SMS, 4 VOICE, 12 WHATSAPP
+		RetryChannel json.RawMessage `json:"retryChannel"` // alias (MSG91 field name)
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	channel := parseRetryChannel(req.RetryChannel, req.Channel)
+	ten := phoneutil.TenDigitIN(req.Phone)
+	if ten == "" {
+		httpjson.Error(w, http.StatusBadRequest, "Enter a valid 10-digit mobile number")
+		return
+	}
+	phone := phoneutil.Msg91Format(ten)
+
+	useWidget := h.Cfg.MSG91WidgetID != "" && h.Cfg.MSG91TokenAuth != ""
+	useTemplate := h.Cfg.MSG91AuthKey != "" && h.Cfg.MSG91TemplateID != ""
+	if !useWidget && !useTemplate {
+		httpjson.Error(w, http.StatusServiceUnavailable, "OTP service is not configured (set MSG91_WIDGET_ID + MSG91_TOKEN_AUTH)")
+		return
+	}
+	if h.Redis == nil {
+		httpjson.Error(w, http.StatusServiceUnavailable, "OTP service temporarily unavailable")
+		return
+	}
+
+	throttle := &msg91.Throttle{RDB: h.Redis}
+	isRetry := strings.TrimSpace(req.ReqID) != ""
+	ok, reason, retryAfter, err := throttle.Allow(r.Context(), phone, clientIP(r), isRetry)
+	if err != nil {
+		log.Printf("[OTP] throttle error: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "Couldn't send the code. Try again.")
+		return
+	}
+	if !ok {
+		secs := int(retryAfter.Seconds())
+		if secs < 1 {
+			secs = 30
+		}
+		msg := "Too many attempts. Try again shortly."
+		switch reason {
+		case msg91.BlockCooldown:
+			msg = fmt.Sprintf("Please wait %d seconds before requesting another code.", secs)
+		case msg91.BlockDayCap:
+			msg = "Daily OTP limit reached for this number. Try again tomorrow, or clear otp:daycap:* in Redis while testing."
+		case msg91.BlockIPCap:
+			msg = "Too many OTP requests from this network. Try again in a bit."
+		}
+		log.Printf("[OTP] throttled phone=%s reason=%s retryAfter=%ds", phone, reason, secs)
+		w.Header().Set("Retry-After", fmt.Sprintf("%d", secs))
+		httpjson.Error(w, http.StatusTooManyRequests, msg)
+		return
+	}
+
+	if useWidget {
+		client := msg91.NewWidgetClient(h.Cfg.MSG91AuthKey, h.Cfg.MSG91WidgetID, h.Cfg.MSG91TokenAuth)
+		if strings.TrimSpace(req.ReqID) != "" {
+			if channel == 0 {
+				channel = 11
+			}
+			newID, err := client.WidgetRetryOTP(r.Context(), strings.TrimSpace(req.ReqID), channel)
+			if err != nil {
+				log.Printf("[OTP] msg91 widget retry failed phone=%s channel=%d: %v", phone, channel, err)
+				httpjson.Error(w, http.StatusBadGateway, "Couldn't resend the code on that channel. Try SMS or another option.")
+				return
+			}
+			log.Printf("[OTP] widget retry ok phone=%s channel=%d reqId=%s", phone, channel, newID)
+			httpjson.JSON(w, http.StatusOK, map[string]any{
+				"cooldownSeconds": 30,
+				"reqId":           newID,
+				"channel":         channel,
+			})
+			return
+		}
+
+		reqID, accessToken, err := client.WidgetSendOTP(r.Context(), phone)
+		if err != nil {
+			log.Printf("[OTP] msg91 widget send failed phone=%s: %v", phone, err)
+			errMsg := err.Error()
+			userFacing := "Couldn't send the code. Check MSG91 Mobile Integration and try again."
+			if strings.Contains(strings.ToLower(errMsg), "ipblocked") || strings.Contains(errMsg, "blocked this server IP") {
+				userFacing = "MSG91 blocked this server's IP. Whitelist your public IP in the MSG91 dashboard (Authkey → IP security), then retry."
+			}
+			httpjson.Error(w, http.StatusBadGateway, userFacing)
+			return
+		}
+		if accessToken != "" {
+			log.Printf("[OTP] widget invisible/already verified phone=%s", phone)
+			user, isNew, err := h.findOrCreateByPhone(ten)
+			if err != nil {
+				httpjson.Error(w, http.StatusInternalServerError, "server error")
+				return
+			}
+			needsProfile := strings.TrimSpace(user.Name) == ""
+			scope := appauth.ScopeFull
+			if needsProfile {
+				scope = appauth.ScopeOnboarding
+			}
+			token, err := appauth.GenerateTokenWithScope(h.Cfg.JWTSecret, user.ID, user.Role, scope, 24*time.Hour)
+			if err != nil {
+				httpjson.Error(w, http.StatusInternalServerError, "token issue failed")
+				return
+			}
+			httpjson.JSON(w, http.StatusOK, map[string]any{
+				"token":        token,
+				"isNewUser":    needsProfile,
+				"isNewAccount": isNew,
+				"verified":     true,
+			})
+			return
+		}
+		log.Printf("[OTP] widget send ok phone=%s reqId=%s", phone, reqID)
+		httpjson.JSON(w, http.StatusOK, map[string]any{"cooldownSeconds": 30, "reqId": reqID})
+		return
+	}
+
+	client := msg91.NewClient(h.Cfg.MSG91AuthKey, h.Cfg.MSG91TemplateID)
+	if err := client.SendOTP(r.Context(), phone); err != nil {
+		log.Printf("[OTP] msg91 send failed: %v", err)
+		httpjson.Error(w, http.StatusBadGateway, "Couldn't send the code. Try again.")
+		return
+	}
+	log.Printf("[OTP] template send ok phone=%s", phone)
+	httpjson.JSON(w, http.StatusOK, map[string]any{"cooldownSeconds": 30})
+}
+
+// VerifyWidgetOTP verifies an MSG91 OTP Widget access-token and issues a Growman JWT.
+// Use this when the mobile app uses @msg91comm/sendotp-react-native DefaultWidget
+// (MSG91 default SMS / no custom DLT template required on your side).
+func (h *Handler) VerifyWidgetOTP(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		AccessToken string `json:"accessToken"`
+		Identifier  string `json:"identifier"` // optional hint from the widget (e.g. 9198…)
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	accessToken := strings.TrimSpace(req.AccessToken)
+	if accessToken == "" {
+		httpjson.Error(w, http.StatusBadRequest, "accessToken is required")
+		return
+	}
+	if h.Cfg.MSG91AuthKey == "" {
+		httpjson.Error(w, http.StatusServiceUnavailable, "OTP service is not configured")
+		return
+	}
+
+	client := msg91.NewClient(h.Cfg.MSG91AuthKey, h.Cfg.MSG91TemplateID)
+	verifiedID, err := client.VerifyAccessToken(r.Context(), accessToken)
+	if err != nil {
+		log.Printf("[OTP] widget access-token verify failed: %v", err)
+		httpjson.Error(w, http.StatusUnauthorized, "That verification didn't check out. Try again.")
+		return
+	}
+
+	// Prefer server-verified identifier; fall back to client hint if MSG91 shape is odd.
+	raw := verifiedID
+	if raw == "" {
+		raw = req.Identifier
+	}
+	ten := phoneutil.TenDigitIN(raw)
+	if ten == "" {
+		log.Printf("[OTP] widget identifier not a mobile: %q", raw)
+		httpjson.Error(w, http.StatusBadRequest, "Verified identifier must be an Indian mobile number")
+		return
+	}
+
+	user, _, err := h.findOrCreateByPhone(ten)
+	if err != nil {
+		log.Printf("[OTP] findOrCreate: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "server error")
+		return
+	}
+
+	h.respondPhoneAuth(w, user, false)
+}
+
+// VerifyPhoneOTP verifies MSG91 OTP and issues a JWT (onboarding scope for new users).
+func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Phone string `json:"phone"`
+		OTP   string `json:"otp"`
+		ReqID string `json:"reqId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	ten := phoneutil.TenDigitIN(req.Phone)
+	otp := strings.TrimSpace(req.OTP)
+	reqID := strings.TrimSpace(req.ReqID)
+	if ten == "" || len(otp) < 4 {
+		httpjson.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	phone := phoneutil.Msg91Format(ten)
+
+	useWidget := h.Cfg.MSG91WidgetID != "" && h.Cfg.MSG91TokenAuth != "" && reqID != ""
+	if useWidget {
+		client := msg91.NewWidgetClient(h.Cfg.MSG91AuthKey, h.Cfg.MSG91WidgetID, h.Cfg.MSG91TokenAuth)
+		if _, err := client.WidgetVerifyOTP(r.Context(), reqID, otp); err != nil {
+			log.Printf("[OTP] widget verify failed phone=%s: %v", phone, err)
+			httpjson.Error(w, http.StatusUnauthorized, "That code didn't match.")
+			return
+		}
+		log.Printf("[OTP] widget verify ok phone=%s", phone)
+	} else {
+		if h.Cfg.MSG91AuthKey == "" || h.Cfg.MSG91TemplateID == "" {
+			httpjson.Error(w, http.StatusServiceUnavailable, "OTP service is not configured")
+			return
+		}
+		client := msg91.NewClient(h.Cfg.MSG91AuthKey, h.Cfg.MSG91TemplateID)
+		if err := client.VerifyOTP(r.Context(), phone, otp); err != nil {
+			log.Printf("[OTP] verify failed: %v", err)
+			httpjson.Error(w, http.StatusUnauthorized, "That code didn't match.")
+			return
+		}
+	}
+
+	user, isNew, err := h.findOrCreateByPhone(ten)
+	if err != nil {
+		log.Printf("[OTP] findOrCreate: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "server error")
+		return
+	}
+
+	h.respondPhoneAuth(w, user, isNew)
+}
+
+// VerifyTruecaller exchanges an Android Truecaller OAuth code for a Growman JWT.
+// When Truecaller returns a name, the user skips complete-profile.
+func (h *Handler) VerifyTruecaller(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		AuthorizationCode string `json:"authorizationCode"`
+		CodeVerifier      string `json:"codeVerifier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpjson.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	code := strings.TrimSpace(req.AuthorizationCode)
+	verifier := strings.TrimSpace(req.CodeVerifier)
+	if code == "" || verifier == "" {
+		httpjson.Error(w, http.StatusBadRequest, "authorizationCode and codeVerifier are required")
+		return
+	}
+	if strings.TrimSpace(h.Cfg.TruecallerClientID) == "" {
+		httpjson.Error(w, http.StatusServiceUnavailable, "Truecaller is not configured")
+		return
+	}
+
+	tc := truecaller.New(h.Cfg.TruecallerClientID)
+	accessToken, err := tc.ExchangeCode(r.Context(), code, verifier)
+	if err != nil {
+		log.Printf("[Truecaller] token exchange failed: %v", err)
+		httpjson.Error(w, http.StatusUnauthorized, "Truecaller verification failed. Try SMS instead.")
+		return
+	}
+	profile, err := tc.UserInfo(r.Context(), accessToken)
+	if err != nil {
+		log.Printf("[Truecaller] userinfo failed: %v", err)
+		httpjson.Error(w, http.StatusUnauthorized, "Couldn't read your Truecaller profile. Try SMS instead.")
+		return
+	}
+
+	ten := phoneutil.TenDigitIN(profile.PhoneNumber)
+	if ten == "" {
+		httpjson.Error(w, http.StatusBadRequest, "Truecaller didn't return a valid Indian mobile number")
+		return
+	}
+
+	user, isNew, err := h.findOrCreateByPhone(ten, phoneAuthProfile{
+		Name:     profile.FullName(),
+		Email:    strings.TrimSpace(profile.Email),
+		Provider: "truecaller",
+	})
+	if err != nil {
+		log.Printf("[Truecaller] findOrCreate: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "server error")
+		return
+	}
+
+	log.Printf("[Truecaller] ok phone=%s name=%q new=%v", ten, user.Name, isNew)
+	h.respondPhoneAuth(w, user, isNew)
+}
+
+type phoneAuthProfile struct {
+	Name     string
+	Email    string
+	Provider string
+}
+
+// respondPhoneAuth issues JWT. isNewUser means "needs complete-profile" (missing name),
+// not merely that the DB row was just inserted — Truecaller users with a name skip onboarding.
+func (h *Handler) respondPhoneAuth(w http.ResponseWriter, user models.User, isNewAccount bool) {
+	needsProfile := strings.TrimSpace(user.Name) == ""
+	scope := appauth.ScopeFull
+	if needsProfile {
+		scope = appauth.ScopeOnboarding
+	}
+	token, err := appauth.GenerateTokenWithScope(h.Cfg.JWTSecret, user.ID, user.Role, scope, 24*time.Hour)
+	if err != nil {
+		httpjson.Error(w, http.StatusInternalServerError, "token issue failed")
+		return
+	}
+	httpjson.JSON(w, http.StatusOK, map[string]any{
+		"token":        token,
+		"isNewUser":    needsProfile,
+		"isNewAccount": isNewAccount,
+		"user": map[string]any{
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.EmailOrEmpty(),
+			"phone": user.PhoneOrEmpty(),
+			"role":  user.Role,
+		},
+	})
+}
+
+// findOrCreateByPhone creates a passwordless phone user (email optional).
+func (h *Handler) findOrCreateByPhone(tenDigit string, profile ...phoneAuthProfile) (models.User, bool, error) {
+	var opt phoneAuthProfile
+	if len(profile) > 0 {
+		opt = profile[0]
+	}
+	if opt.Provider == "" {
+		opt.Provider = "phone"
+	}
+
+	variants := phoneutil.LookupVariants(tenDigit)
+	var user models.User
+	err := h.DB.Where("phone IN ?", variants).First(&user).Error
+	if err == nil {
+		now := time.Now()
+		user.PhoneVerifiedAt = &now
+		if user.Phone == nil || *user.Phone == "" {
+			user.Phone = models.StrPtr(tenDigit)
+		}
+		if strings.TrimSpace(user.Name) == "" && strings.TrimSpace(opt.Name) != "" {
+			user.Name = strings.TrimSpace(opt.Name)
+		}
+		if user.Email == nil && strings.TrimSpace(opt.Email) != "" && strings.Contains(opt.Email, "@") {
+			user.Email = models.StrPtr(strings.TrimSpace(opt.Email))
+		}
+		// Keep password nil for phone/truecaller accounts — never invent one.
+		_ = h.DB.Save(&user).Error
+		return user, false, nil
+	}
+
+	now := time.Now()
+	user = models.User{
+		Name:            strings.TrimSpace(opt.Name),
+		Email:           nil,
+		Phone:           models.StrPtr(tenDigit),
+		PasswordHash:    nil, // passwordless — OTP / Truecaller only
+		PhoneVerifiedAt: &now,
+		Provider:        opt.Provider,
+		Role:            "user",
+	}
+	if email := strings.TrimSpace(opt.Email); email != "" && strings.Contains(email, "@") {
+		user.Email = models.StrPtr(email)
+	}
+	if err := h.DB.Create(&user).Error; err != nil {
+		return models.User{}, false, err
+	}
+	return user, true, nil
+}
+
+// CompletePhoneProfile finalizes a new phone user's name/email and upgrades JWT scope.
+func (h *Handler) CompletePhoneProfile(w http.ResponseWriter, r *http.Request) {
+	claims, ok := appauth.FromContext(r.Context())
+	if !ok {
+		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if claims.Scope != appauth.ScopeOnboarding {
+		httpjson.Error(w, http.StatusForbidden, "invalid token scope")
+		return
+	}
+
+	var req struct {
+		Name  string  `json:"name"`
+		Email *string `json:"email,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Name) == "" {
+		httpjson.Error(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	var user models.User
+	if err := h.DB.First(&user, claims.UserID).Error; err != nil {
+		httpjson.Error(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	user.Name = strings.TrimSpace(req.Name)
+	if req.Email != nil {
+		email := strings.TrimSpace(*req.Email)
+		if email != "" {
+			if !strings.Contains(email, "@") {
+				httpjson.Error(w, http.StatusBadRequest, "valid email is required")
+				return
+			}
+			var existing models.User
+			if err := h.DB.Where("email = ? AND id != ?", email, user.ID).First(&existing).Error; err == nil {
+				httpjson.Error(w, http.StatusConflict, "email already in use")
+				return
+			}
+			user.Email = models.StrPtr(email)
+		}
+	}
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		log.Printf("[OTP] complete profile: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "server error")
+		return
+	}
+
+	token, err := appauth.GenerateTokenWithScope(h.Cfg.JWTSecret, user.ID, user.Role, appauth.ScopeFull, 24*time.Hour)
+	if err != nil {
+		httpjson.Error(w, http.StatusInternalServerError, "token issue failed")
+		return
+	}
+
+	httpjson.JSON(w, http.StatusOK, map[string]any{
+		"token": token,
+		"user": map[string]any{
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.EmailOrEmpty(),
+			"phone": user.PhoneOrEmpty(),
+			"role":  user.Role,
+		},
 	})
 }
 
@@ -244,8 +737,8 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"id":            user.ID,
 		"name":          user.Name,
-		"email":         user.Email,
-		"phone":         user.Phone,
+		"email":         user.EmailOrEmpty(),
+		"phone":         user.PhoneOrEmpty(),
 		"emailVerified": user.EmailVerified,
 		"role":          user.Role,
 		"address": map[string]any{
@@ -301,9 +794,9 @@ func (h *Handler) Google(w http.ResponseWriter, r *http.Request) {
 		// User doesn't exist, create new account
 		user = models.User{
 			Name:          googleUser.Name,
-			Email:         googleUser.Email,
-			Phone:         "", // Google doesn't provide phone
-			PasswordHash:  "", // No password for OAuth users
+			Email:         models.StrPtr(googleUser.Email),
+			Phone:         nil,
+			PasswordHash:  nil,
 			EmailVerified: googleUser.VerifiedEmail,
 			Provider:      "google",
 			Role:          "user",
@@ -582,7 +1075,8 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update password
-	user.PasswordHash = string(passwordHash)
+	pw := string(passwordHash)
+	user.PasswordHash = &pw
 	if err := h.DB.Save(&user).Error; err != nil {
 		log.Printf("[PASSWORD RESET] Error updating password: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to reset password")
@@ -644,7 +1138,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusConflict, "phone number already in use")
 			return
 		}
-		user.Phone = req.Phone
+		user.Phone = models.StrPtr(req.Phone)
 	}
 	if req.AddressLine != "" {
 		user.AddressLine = req.AddressLine
@@ -681,8 +1175,8 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		"user": map[string]any{
 			"id":            user.ID,
 			"name":          user.Name,
-			"email":         user.Email,
-			"phone":         user.Phone,
+			"email":         user.EmailOrEmpty(),
+			"phone":         user.PhoneOrEmpty(),
 			"address": map[string]any{
 				"line":      user.AddressLine,
 				"city":      user.City,

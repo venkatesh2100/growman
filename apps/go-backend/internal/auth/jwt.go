@@ -9,18 +9,33 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	ScopeFull       = "full"
+	ScopeOnboarding = "onboarding"
+)
+
 // Claims represents JWT claims for the API.
 type Claims struct {
 	UserID uint   `json:"userId"`
 	Role   string `json:"role"`
+	Scope  string `json:"scope,omitempty"` // "full" (default) or "onboarding"
 	jwt.RegisteredClaims
 }
 
-// GenerateToken issues a signed JWT for the given user ID and role.
+// GenerateToken issues a signed JWT for the given user ID and role (full scope).
 func GenerateToken(secret string, userID uint, role string, ttl time.Duration) (string, error) {
+	return GenerateTokenWithScope(secret, userID, role, ScopeFull, ttl)
+}
+
+// GenerateTokenWithScope issues a JWT with an explicit auth scope.
+func GenerateTokenWithScope(secret string, userID uint, role, scope string, ttl time.Duration) (string, error) {
+	if scope == "" {
+		scope = ScopeFull
+	}
 	claims := &Claims{
 		UserID: userID,
 		Role:   role,
+		Scope:  scope,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -41,14 +56,31 @@ func ParseToken(secret, tokenString string) (*Claims, error) {
 	}
 
 	if claims, ok := tok.Claims.(*Claims); ok && tok.Valid {
+		if claims.Scope == "" {
+			claims.Scope = ScopeFull
+		}
 		return claims, nil
 	}
 
 	return nil, errors.New("invalid token")
 }
 
-// AuthMiddleware is a placeholder JWT auth middleware.
+// AuthMiddleware requires a valid Bearer JWT (any scope).
 func AuthMiddleware(secret string) func(http.Handler) http.Handler {
+	return requireScope(secret, "")
+}
+
+// FullAuthMiddleware requires a full-scoped JWT (blocks onboarding tokens).
+func FullAuthMiddleware(secret string) func(http.Handler) http.Handler {
+	return requireScope(secret, ScopeFull)
+}
+
+// OnboardingAuthMiddleware requires an onboarding-scoped JWT.
+func OnboardingAuthMiddleware(secret string) func(http.Handler) http.Handler {
+	return requireScope(secret, ScopeOnboarding)
+}
+
+func requireScope(secret, required string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
@@ -66,6 +98,15 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 			claims, err := ParseToken(secret, parts[1])
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
+				return
+			}
+
+			if required == ScopeFull && claims.Scope == ScopeOnboarding {
+				http.Error(w, "complete your profile first", http.StatusForbidden)
+				return
+			}
+			if required == ScopeOnboarding && claims.Scope != ScopeOnboarding {
+				http.Error(w, "invalid token scope", http.StatusForbidden)
 				return
 			}
 

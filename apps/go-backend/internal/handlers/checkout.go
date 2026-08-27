@@ -352,11 +352,12 @@ func (h *Handler) CreateSoftAccount(email, phone, name string) (*models.User, er
 	}
 
 	// Create user
+	pw := string(passwordHash)
 	user := models.User{
 		Name:          name,
-		Email:         email,
-		Phone:         phone,
-		PasswordHash:  string(passwordHash),
+		Email:         models.StrPtr(email),
+		Phone:         models.StrPtr(phone),
+		PasswordHash:  &pw,
 		EmailVerified: true,
 		Provider:      "local",
 		Role:          "user",

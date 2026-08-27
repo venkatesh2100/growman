@@ -186,8 +186,8 @@ func (h *Handler) handleOrderSupportChat(userMessage string, claims *appauth.Cla
 	if loggedIn && claims != nil {
 		record.UserID = &claims.UserID
 		record.CustomerName = user.Name
-		record.CustomerEmail = user.Email
-		record.CustomerPhone = user.Phone
+		record.CustomerEmail = user.EmailOrEmpty()
+		record.CustomerPhone = user.PhoneOrEmpty()
 	}
 	if order != nil {
 		record.OrderStatus = order.Status

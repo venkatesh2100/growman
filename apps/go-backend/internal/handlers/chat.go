@@ -407,8 +407,8 @@ func (h *Handler) userOrdersQuery(userID uint) *gorm.DB {
 	if err := h.DB.Select("email", "phone").First(&user, userID).Error; err != nil {
 		return q.Where("user_id = ?", userID)
 	}
-	email := strings.ToLower(strings.TrimSpace(user.Email))
-	phone := strings.TrimSpace(user.Phone)
+	email := strings.ToLower(strings.TrimSpace(user.EmailOrEmpty()))
+	phone := strings.TrimSpace(user.PhoneOrEmpty())
 	switch {
 	case email != "" && phone != "":
 		return q.Where("user_id = ? OR LOWER(customer_email) = ? OR customer_phone = ?", userID, email, phone)

@@ -44,6 +44,13 @@ type Config struct {
 	CloudflareAPIToken string
 	CloudflareZoneID   string
 	CloudflareAccountID string
+	// MSG91 phone OTP
+	MSG91AuthKey    string
+	MSG91TemplateID string
+	MSG91WidgetID   string
+	MSG91TokenAuth  string
+	// Truecaller OAuth (Android client id from developer portal)
+	TruecallerClientID string
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -83,6 +90,11 @@ func Load() (Config, error) {
 		CloudflareAPIToken: os.Getenv("CLOUDFLARE_API_TOKEN"),
 		CloudflareZoneID:   os.Getenv("CLOUDFLARE_ZONE_ID"),
 		CloudflareAccountID: strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
+		MSG91AuthKey:       os.Getenv("MSG91_AUTH_KEY"),
+		MSG91TemplateID:    os.Getenv("MSG91_TEMPLATE_ID"),
+		MSG91WidgetID:      os.Getenv("MSG91_WIDGET_ID"),
+		MSG91TokenAuth:     os.Getenv("MSG91_TOKEN_AUTH"),
+		TruecallerClientID: firstNonEmpty(os.Getenv("TRUECALLER_CLIENT_ID"), os.Getenv("TRUECALLER_ANDROID_CLIENT_ID")),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")

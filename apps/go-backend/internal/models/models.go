@@ -124,13 +124,14 @@ type Base struct {
 
 type User struct {
 	Base
-	Name          string `json:"name"`
-	Email         string `gorm:"uniqueIndex" json:"email"`
-	Phone         string `gorm:"uniqueIndex" json:"phone"`
-	PasswordHash  string `json:"-"`
-	EmailVerified bool   `gorm:"default:false" json:"emailVerified"`
-	Provider      string `gorm:"default:'local'" json:"provider"` // 'local' or 'google'
-	Role          string `json:"role"`
+	Name            string     `json:"name"`
+	Email           *string    `gorm:"uniqueIndex" json:"email"`
+	Phone           *string    `gorm:"uniqueIndex" json:"phone"`
+	PasswordHash    *string    `json:"-"`
+	PhoneVerifiedAt *time.Time `json:"phoneVerifiedAt,omitempty"`
+	EmailVerified   bool       `gorm:"default:false" json:"emailVerified"`
+	Provider        string     `gorm:"default:'local'" json:"provider"` // 'local', 'google', or 'phone'
+	Role            string     `json:"role"`
 	// Address fields
 	AddressLine string   `json:"addressLine,omitempty"`
 	City        string   `json:"city,omitempty"`
@@ -140,6 +141,38 @@ type User struct {
 	Latitude    *float64 `json:"latitude,omitempty"`
 	Longitude   *float64 `json:"longitude,omitempty"`
 	Reviews     []Review `json:"reviews"`
+}
+
+// StrPtr returns a pointer to s, or nil if s is empty.
+func StrPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// EmailOrEmpty returns email string for API responses.
+func (u User) EmailOrEmpty() string {
+	if u.Email == nil {
+		return ""
+	}
+	return *u.Email
+}
+
+// PhoneOrEmpty returns phone string for API responses.
+func (u User) PhoneOrEmpty() string {
+	if u.Phone == nil {
+		return ""
+	}
+	return *u.Phone
+}
+
+// PasswordHashOrEmpty returns password hash or empty.
+func (u User) PasswordHashOrEmpty() string {
+	if u.PasswordHash == nil {
+		return ""
+	}
+	return *u.PasswordHash
 }
 
 type Category struct {

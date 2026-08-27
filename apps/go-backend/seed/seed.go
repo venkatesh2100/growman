@@ -12,19 +12,22 @@ func EnsureSampleData(db *gorm.DB) error {
 	log.Println("seeding sample data for go-backend...")
 
 	// Users
-	seller := models.User{Email: "seller@example.com"}
+	sellerEmail := "seller@example.com"
+	seller := models.User{Email: &sellerEmail}
 	if err := db.FirstOrCreate(&seller, seller).Error; err != nil {
 		return err
 	}
 	db.Model(&seller).Updates(map[string]any{"name": "Seller", "role": "SELLER"})
 
-	buyer := models.User{Email: "buyer@example.com"}
+	buyerEmail := "buyer@example.com"
+	buyer := models.User{Email: &buyerEmail}
 	if err := db.FirstOrCreate(&buyer, buyer).Error; err != nil {
 		return err
 	}
 	db.Model(&buyer).Updates(map[string]any{"name": "Buyer", "role": "BUYER"})
 
-	admin := models.User{Email: "admin@example.com"}
+	adminEmail := "admin@example.com"
+	admin := models.User{Email: &adminEmail}
 	if err := db.FirstOrCreate(&admin, admin).Error; err != nil {
 		return err
 	}

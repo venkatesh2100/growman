@@ -62,6 +62,10 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			r.Post("/auth/forgot-password/send-otp", h.SendPasswordResetOTP)
 			r.Post("/auth/forgot-password/verify-otp", h.VerifyPasswordResetOTP)
 			r.Post("/auth/forgot-password/reset", h.ResetPassword)
+			r.Post("/auth/otp/send", h.SendPhoneOTP)
+			r.Post("/auth/otp/verify", h.VerifyPhoneOTP)
+			r.Post("/auth/otp/widget/verify", h.VerifyWidgetOTP)
+			r.Post("/auth/truecaller", h.VerifyTruecaller)
 		})
 
 		// Checkout/OTP: 60 req/min (prevents abuse but avoids blocking first-time payments)
@@ -117,6 +121,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 		r.Group(func(pr chi.Router) {
 			pr.Use(appauth.AuthMiddleware(cfg.JWTSecret))
 			pr.Get("/auth/me", h.Me)
+			pr.Post("/auth/profile/complete", h.CompletePhoneProfile)
 			pr.Get("/dashboard/map", h.DashboardMap)
 			pr.Get("/requested-products", h.ListRequestedProducts)
 			pr.Get("/order-support-requests", h.ListOrderSupportRequests)

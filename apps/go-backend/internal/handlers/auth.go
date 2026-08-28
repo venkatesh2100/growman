@@ -27,9 +27,17 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 
-// AuthResponse ctemontains a signed JWT.
+// AuthResponse contains a signed JWT and optional user summary.
 type AuthResponse struct {
-	Token string `json:"token"`
+	Token string           `json:"token"`
+	User  *AuthUserSummary `json:"user,omitempty"`
+}
+
+type AuthUserSummary struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
 }
 
 // Login supports email OR phone + password login
@@ -77,10 +85,16 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, AuthResponse{Token: token})
+	httpjson.JSON(w, http.StatusOK, AuthResponse{
+		Token: token,
+		User: &AuthUserSummary{
+			ID:    user.ID,
+			Name:  user.Name,
+			Email: user.EmailOrEmpty(),
+			Phone: user.PhoneOrEmpty(),
+		},
+	})
 }
-
-// AdminLogin allows only admin/superadmin users to sign in.
 func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	var payload AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

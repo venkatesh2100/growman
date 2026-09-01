@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "@repo/tailwind-config";
 
+@theme inline {
+  --font-space: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Toast animations */
 @keyframes slideInRight {
   from {
@@ -25,6 +29,43 @@
   animation: slideInRight 0.3s ease-out;
 }
 
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes chat-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.45s ease-in-out infinite;
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -38,6 +79,10 @@
 
   .animate-slideInRight {
     animation: none !important;
+  }
+
+  .skeleton-shimmer::after {
+    display: none !important;
   }
 }
 

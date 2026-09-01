@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -11,11 +13,14 @@ import (
 )
 
 const (
-	OTPExpiryMinutes       = 5
-	OTPResendCooldown      = 60 * time.Second
-	OTPCooldownPrefix      = "otp:cooldown:"
-	OTPKeyPrefix           = "otp:email:"
-	PasswordResetOTPPrefix = "otp:password-reset:"
+	OTPExpiryMinutes             = 5
+	OTPResendCooldown            = 60 * time.Second
+	OTPCooldownPrefix            = "otp:cooldown:"
+	OTPKeyPrefix                 = "otp:email:"
+	PasswordResetOTPPrefix       = "otp:password-reset:"
+	PasswordResetCooldownPrefix = "otp:password-reset:cooldown:"
+	PasswordResetVerifiedPrefix  = "otp:password-reset:verified:"
+	redisOpTimeout               = 800 * time.Millisecond
 )
 
 type OTPService struct {
@@ -26,163 +31,284 @@ func NewOTPService(rdb *redis.Client) *OTPService {
 	return &OTPService{Redis: rdb}
 }
 
-// GenerateOTP generates a 6-digit OTP and stores it in Redis
-func (s *OTPService) GenerateOTP(ctx context.Context, email string) (string, error) {
-	if s.Redis == nil {
-		return "", fmt.Errorf("Redis not configured")
-	}
+type memEntry struct {
+	value     string
+	expiresAt time.Time
+}
 
-	// Generate 6-digit OTP
+var memStore sync.Map
+
+func memSet(key, value string, ttl time.Duration) {
+	memStore.Store(key, memEntry{
+		value:     value,
+		expiresAt: time.Now().Add(ttl),
+	})
+}
+
+func memGet(key string) (string, bool) {
+	raw, ok := memStore.Load(key)
+	if !ok {
+		return "", false
+	}
+	entry := raw.(memEntry)
+	if time.Now().After(entry.expiresAt) {
+		memStore.Delete(key)
+		return "", false
+	}
+	return entry.value, true
+}
+
+func memDel(key string) {
+	memStore.Delete(key)
+}
+
+func memTTL(key string) time.Duration {
+	raw, ok := memStore.Load(key)
+	if !ok {
+		return 0
+	}
+	entry := raw.(memEntry)
+	ttl := time.Until(entry.expiresAt)
+	if ttl <= 0 {
+		memStore.Delete(key)
+		return 0
+	}
+	return ttl
+}
+
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func (s *OTPService) withRedisTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithTimeout(ctx, redisOpTimeout)
+}
+
+func (s *OTPService) setValue(ctx context.Context, key, value string, ttl time.Duration) error {
+	memSet(key, value, ttl)
+	if s.Redis == nil {
+		return nil
+	}
+	rctx, cancel := s.withRedisTimeout(ctx)
+	defer cancel()
+	if err := s.Redis.Set(rctx, key, value, ttl).Err(); err != nil {
+	}
+	return nil
+}
+
+func (s *OTPService) getValue(ctx context.Context, key string) (string, bool, error) {
+	if s.Redis != nil {
+		rctx, cancel := s.withRedisTimeout(ctx)
+		val, err := s.Redis.Get(rctx, key).Result()
+		cancel()
+		if err == nil {
+			return val, true, nil
+		}
+		if err != redis.Nil {
+		}
+	}
+	if val, ok := memGet(key); ok {
+		return val, true, nil
+	}
+	return "", false, nil
+}
+
+func (s *OTPService) delValue(ctx context.Context, key string) {
+	memDel(key)
+	if s.Redis == nil {
+		return
+	}
+	rctx, cancel := s.withRedisTimeout(ctx)
+	defer cancel()
+	if err := s.Redis.Del(rctx, key).Err(); err != nil {
+	}
+}
+
+func (s *OTPService) cooldownTTL(ctx context.Context, key string) (time.Duration, error) {
+	if s.Redis != nil {
+		rctx, cancel := s.withRedisTimeout(ctx)
+		ttl, err := s.Redis.TTL(rctx, key).Result()
+		cancel()
+		if err == nil && ttl > 0 {
+			return ttl, nil
+		}
+		if err != nil && err != redis.Nil {
+		}
+	}
+	return memTTL(key), nil
+}
+
+func generateDigits() (string, error) {
 	otpBytes := make([]byte, 3)
 	if _, err := rand.Read(otpBytes); err != nil {
 		return "", err
 	}
-	otp := fmt.Sprintf("%06d", int(otpBytes[0])*256*256+int(otpBytes[1])*256+int(otpBytes[2]))[:6]
+	return fmt.Sprintf("%06d", int(otpBytes[0])*256*256+int(otpBytes[1])*256+int(otpBytes[2]))[:6], nil
+}
 
-	// Hash OTP using bcrypt
-	hashedOTP, err := bcrypt.GenerateFromPassword([]byte(otp), bcrypt.DefaultCost)
+func hashOTP(otp string) (string, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(otp), 4)
 	if err != nil {
 		return "", err
 	}
+	return string(hashed), nil
+}
 
-	// Store in Redis with expiry
-	key := OTPKeyPrefix + email
-	if err := s.Redis.Set(ctx, key, string(hashedOTP), OTPExpiryMinutes*time.Minute).Err(); err != nil {
+// GenerateOTP generates a 6-digit OTP and stores it (Redis + memory fallback).
+func (s *OTPService) GenerateOTP(ctx context.Context, email string) (string, error) {
+	email = normalizeEmail(email)
+	otp, err := generateDigits()
+	if err != nil {
 		return "", err
 	}
-
+	hashed, err := hashOTP(otp)
+	if err != nil {
+		return "", err
+	}
+	key := OTPKeyPrefix + email
+	if err := s.setValue(ctx, key, hashed, OTPExpiryMinutes*time.Minute); err != nil {
+		return "", err
+	}
 	return otp, nil
 }
 
 // VerifyOTP verifies an OTP for an email
 func (s *OTPService) VerifyOTP(ctx context.Context, email, otp string) (bool, error) {
-	if s.Redis == nil {
-		return false, fmt.Errorf("Redis not configured")
-	}
-
+	email = normalizeEmail(email)
 	key := OTPKeyPrefix + email
-	hashedOTP, err := s.Redis.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return false, nil // OTP not found or expired
-	}
+	hashedOTP, ok, err := s.getValue(ctx, key)
 	if err != nil {
 		return false, err
 	}
-
-	// Compare OTP
-	err = bcrypt.CompareHashAndPassword([]byte(hashedOTP), []byte(otp))
-	if err != nil {
-		return false, nil // Invalid OTP
+	if !ok {
+		return false, nil
 	}
-
-	// Delete OTP after successful verification
-	s.Redis.Del(ctx, key)
-
+	if bcrypt.CompareHashAndPassword([]byte(hashedOTP), []byte(otp)) != nil {
+		return false, nil
+	}
+	s.delValue(ctx, key)
 	return true, nil
 }
 
-// CheckOTPExists checks if an OTP exists for an email (for rate limiting)
+// CheckOTPExists checks if an OTP exists for an email
 func (s *OTPService) CheckOTPExists(ctx context.Context, email string) (bool, error) {
-	if s.Redis == nil {
-		return false, fmt.Errorf("Redis not configured")
-	}
-
-	key := OTPKeyPrefix + email
-	exists, err := s.Redis.Exists(ctx, key).Result()
-	return exists > 0, err
+	email = normalizeEmail(email)
+	_, ok, err := s.getValue(ctx, OTPKeyPrefix+email)
+	return ok, err
 }
 
 // GeneratePasswordResetOTP generates a 6-digit OTP for password reset
 func (s *OTPService) GeneratePasswordResetOTP(ctx context.Context, email string) (string, error) {
-	if s.Redis == nil {
-		return "", fmt.Errorf("Redis not configured")
-	}
-
-	// Generate 6-digit OTP
-	otpBytes := make([]byte, 3)
-	if _, err := rand.Read(otpBytes); err != nil {
-		return "", err
-	}
-	otp := fmt.Sprintf("%06d", int(otpBytes[0])*256*256+int(otpBytes[1])*256+int(otpBytes[2]))[:6]
-
-	// Hash OTP using bcrypt
-	hashedOTP, err := bcrypt.GenerateFromPassword([]byte(otp), bcrypt.DefaultCost)
+	email = normalizeEmail(email)
+	otp, err := generateDigits()
 	if err != nil {
 		return "", err
 	}
-
-	// Store in Redis with expiry
-	key := PasswordResetOTPPrefix + email
-	if err := s.Redis.Set(ctx, key, string(hashedOTP), OTPExpiryMinutes*time.Minute).Err(); err != nil {
+	hashed, err := hashOTP(otp)
+	if err != nil {
 		return "", err
 	}
-
+	key := PasswordResetOTPPrefix + email
+	if err := s.setValue(ctx, key, hashed, OTPExpiryMinutes*time.Minute); err != nil {
+		return "", err
+	}
+	// Clear any previous verified marker
+	s.delValue(ctx, PasswordResetVerifiedPrefix+email)
 	return otp, nil
 }
 
-// VerifyPasswordResetOTP verifies an OTP for password reset
+// VerifyPasswordResetOTP verifies the OTP for password reset and marks the email verified.
 func (s *OTPService) VerifyPasswordResetOTP(ctx context.Context, email, otp string) (bool, error) {
-	if s.Redis == nil {
-		return false, fmt.Errorf("Redis not configured")
-	}
-
+	email = normalizeEmail(email)
 	key := PasswordResetOTPPrefix + email
-	hashedOTP, err := s.Redis.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return false, nil // OTP not found or expired
-	}
+	hashedOTP, ok, err := s.getValue(ctx, key)
 	if err != nil {
 		return false, err
 	}
+	if !ok {
+		return false, nil
+	}
+	if bcrypt.CompareHashAndPassword([]byte(hashedOTP), []byte(otp)) != nil {
+		return false, nil
+	}
+	// Keep OTP for the reset step, and mark verified so reset can proceed if Redis flakes.
+	_ = s.setValue(ctx, PasswordResetVerifiedPrefix+email, otp, OTPExpiryMinutes*time.Minute)
+	return true, nil
+}
 
-	// Compare OTP
-	err = bcrypt.CompareHashAndPassword([]byte(hashedOTP), []byte(otp))
-	if err != nil {
-		return false, nil // Invalid OTP
+// ConsumePasswordResetOTP validates OTP (or a prior verification) then deletes reset keys.
+func (s *OTPService) ConsumePasswordResetOTP(ctx context.Context, email, otp string) (bool, error) {
+	email = normalizeEmail(email)
+	verifiedKey := PasswordResetVerifiedPrefix + email
+	otpKey := PasswordResetOTPPrefix + email
+
+	if stored, ok, _ := s.getValue(ctx, verifiedKey); ok && stored == otp {
+		s.delValue(ctx, verifiedKey)
+		s.delValue(ctx, otpKey)
+		return true, nil
 	}
 
-	// Don't delete OTP here - keep it for password reset step
+	valid, err := s.VerifyPasswordResetOTP(ctx, email, otp)
+	if err != nil || !valid {
+		return valid, err
+	}
+	s.delValue(ctx, verifiedKey)
+	s.delValue(ctx, otpKey)
 	return true, nil
 }
 
 // CheckPasswordResetOTPExists checks if a password reset OTP exists for an email
 func (s *OTPService) CheckPasswordResetOTPExists(ctx context.Context, email string) (bool, error) {
-	if s.Redis == nil {
-		return false, fmt.Errorf("Redis not configured")
-	}
-
-	key := PasswordResetOTPPrefix + email
-	exists, err := s.Redis.Exists(ctx, key).Result()
-	return exists > 0, err
+	email = normalizeEmail(email)
+	_, ok, err := s.getValue(ctx, PasswordResetOTPPrefix+email)
+	return ok, err
 }
 
 // DeletePasswordResetOTP deletes the password reset OTP after successful password reset
 func (s *OTPService) DeletePasswordResetOTP(ctx context.Context, email string) error {
-	if s.Redis == nil {
-		return fmt.Errorf("Redis not configured")
-	}
-
-	key := PasswordResetOTPPrefix + email
-	return s.Redis.Del(ctx, key).Err()
+	email = normalizeEmail(email)
+	s.delValue(ctx, PasswordResetOTPPrefix+email)
+	s.delValue(ctx, PasswordResetVerifiedPrefix+email)
+	return nil
 }
 
 // CanResendOTP checks if user can request a new OTP
 func (s *OTPService) CanResendOTP(ctx context.Context, email string) (bool, time.Duration, error) {
-	key := OTPCooldownPrefix + email
-	ttl, err := s.Redis.TTL(ctx, key).Result()
-	if err != nil && err != redis.Nil {
+	email = normalizeEmail(email)
+	ttl, err := s.cooldownTTL(ctx, OTPCooldownPrefix+email)
+	if err != nil {
 		return false, 0, err
 	}
-
 	if ttl <= 0 {
 		return true, 0, nil
 	}
-
 	return false, ttl, nil
 }
 
-// SetResendCooldown sets a 60-second cooldown in Redis
+// SetResendCooldown sets a 60-second cooldown
 func (s *OTPService) SetResendCooldown(ctx context.Context, email string) error {
-	key := OTPCooldownPrefix + email
-	return s.Redis.Set(ctx, key, 1, OTPResendCooldown).Err()
+	email = normalizeEmail(email)
+	return s.setValue(ctx, OTPCooldownPrefix+email, "1", OTPResendCooldown)
+}
+
+// CanResendPasswordResetOTP checks the 60s password-reset resend cooldown.
+func (s *OTPService) CanResendPasswordResetOTP(ctx context.Context, email string) (bool, time.Duration, error) {
+	email = normalizeEmail(email)
+	ttl, err := s.cooldownTTL(ctx, PasswordResetCooldownPrefix+email)
+	if err != nil {
+		return false, 0, err
+	}
+	if ttl <= 0 {
+		return true, 0, nil
+	}
+	return false, ttl, nil
+}
+
+// SetPasswordResetCooldown sets a 60-second password-reset resend cooldown.
+func (s *OTPService) SetPasswordResetCooldown(ctx context.Context, email string) error {
+	email = normalizeEmail(email)
+	return s.setValue(ctx, PasswordResetCooldownPrefix+email, "1", OTPResendCooldown)
 }

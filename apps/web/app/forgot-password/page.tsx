@@ -3,11 +3,88 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
-import { Mail, Lock, Loader2, XCircle, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "../../lib/toast";
 
 type Step = "email" | "otp" | "reset";
+
+const fieldClass =
+  "w-full bg-transparent py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none";
+const fieldWrapClass =
+  "flex items-center rounded-2xl border border-emerald-100 bg-white px-4";
+const primaryBtnClass =
+  "flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-4 text-base font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryBtnClass =
+  "flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-sm font-semibold text-green-900 transition-colors hover:bg-emerald-50/60";
+
+function mapError(code: string, status: number, fallback: string, retryAfter?: number): string {
+  const key = code.toLowerCase();
+  if (status === 429 || key.includes("wait") || key.includes("cooldown") || key.includes("rate") || key.includes("too many")) {
+    if (retryAfter && retryAfter > 0) {
+      return `Wait ${retryAfter}s before requesting another code.`;
+    }
+    return "Wait a minute before requesting another code.";
+  }
+  if (key.includes("not found") || key.includes("does not exist")) {
+    return "No account with that email.";
+  }
+  if (key.includes("expired")) {
+    return "That code expired. Request a new one.";
+  }
+  if (key.includes("invalid") || key.includes("incorrect")) {
+    return "That code is wrong or expired.";
+  }
+  if (key === "email_send_failed" || key === "email_unavailable") {
+    return "Couldn't send the code. Try again.";
+  }
+  if (
+    key === "otp_unavailable" ||
+    key.includes("failed to verify") ||
+    status === 502 ||
+    status === 503
+  ) {
+    return fallback;
+  }
+  if (status >= 500) {
+    return fallback;
+  }
+  return code || fallback;
+}
+
+async function readError(res: Response, fallback: string): Promise<string> {
+  try {
+    const contentType = res.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      const data = await res.json();
+      const retryAfter = Number(data.retry_after) || undefined;
+      return mapError(
+        String(data.error || data.message || ""),
+        res.status,
+        fallback,
+        retryAfter
+      );
+    }
+    const text = (await res.text()).trim();
+    if (text) {
+      try {
+        const data = JSON.parse(text);
+        return mapError(
+          String(data.error || data.message || text),
+          res.status,
+          fallback,
+          Number(data.retry_after) || undefined
+        );
+      } catch {
+        return mapError(text, res.status, fallback);
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return mapError("", res.status, fallback);
+}
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -16,9 +93,26 @@ export default function ForgotPasswordPage() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sendingOtp, setSendingOtp] = useState(false);
+
+  const titles: Record<Step, { title: string; subtitle: string }> = {
+    email: {
+      title: "Forgot password",
+      subtitle: "We'll send a code to your email.",
+    },
+    otp: {
+      title: "Enter code",
+      subtitle: `Sent to ${email}`,
+    },
+    reset: {
+      title: "New password",
+      subtitle: "Choose a password you'll remember.",
+    },
+  };
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,58 +126,24 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-        let errorMessage = "Failed to send OTP";
-        const status = res.status;
-        
-        try {
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await res.json();
-            const apiError = errorData.error || errorData.message;
-            
-            if (apiError) {
-              if (apiError.includes("wait") || apiError.includes("rate limit") || apiError.includes("too many") || status === 429) {
-                errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
-              } else if (apiError.includes("not found") || apiError.includes("does not exist")) {
-                errorMessage = "No account found with this email address.";
-              } else {
-                errorMessage = apiError;
-              }
-            }
-          } else {
-            const text = await res.text();
-            if (text) {
-              try {
-                const errorData = JSON.parse(text);
-                errorMessage = errorData.error || errorData.message || text;
-              } catch {
-                errorMessage = text || errorMessage;
-              }
-            }
-          }
-        } catch {
-          // If parsing fails, use status-based message
-          if (status === 429) {
-            errorMessage = "Too many requests. Please wait a minute before requesting another OTP.";
-          }
-        }
-        
+        const errorMessage = await readError(res, "Couldn't send the code. Try again.");
+        setError(errorMessage);
         toast(errorMessage, "error");
-        throw new Error(errorMessage);
+        return;
       }
 
-      // Consume the response body to clear the stream
       try {
         await res.text();
       } catch {
-        // Ignore if reading fails
+        // ignore
       }
 
-      toast("OTP sent to your email!", "success");
+      toast("Code sent to your email.", "success");
       setStep("otp");
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to send OTP. Please try again.";
+    } catch {
+      const errorMessage = "No connection. Check your internet and try again.";
       setError(errorMessage);
+      toast(errorMessage, "error");
     } finally {
       setSendingOtp(false);
     }
@@ -101,52 +161,24 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-        let errorMessage = "Invalid OTP";
-        try {
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await res.json();
-            const apiError = errorData.error || errorData.message;
-            if (apiError) {
-              if (apiError.includes("expired")) {
-                errorMessage = "OTP has expired. Please request a new one.";
-              } else if (apiError.includes("invalid") || apiError.includes("incorrect")) {
-                errorMessage = "Invalid OTP. Please check and try again.";
-              } else {
-                errorMessage = apiError;
-              }
-            }
-          } else {
-            const text = await res.text();
-            if (text) {
-              try {
-                const errorData = JSON.parse(text);
-                errorMessage = errorData.error || errorData.message || text;
-              } catch {
-                errorMessage = text || errorMessage;
-              }
-            }
-          }
-        } catch {
-          // If parsing fails, use default message
-        }
-        
+        const errorMessage = await readError(res, "Couldn't verify the code. Try again.");
+        setError(errorMessage);
         toast(errorMessage, "error");
-        throw new Error(errorMessage);
+        return;
       }
 
-      // Consume the response body to clear the stream
       try {
         await res.text();
       } catch {
-        // Ignore if reading fails
+        // ignore
       }
 
-      toast("OTP verified successfully!", "success");
+      toast("Code verified.", "success");
       setStep("reset");
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Invalid or expired OTP";
+    } catch {
+      const errorMessage = "That code is wrong or expired.";
       setError(errorMessage);
+      toast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -156,15 +188,15 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 6) {
-      const errorMsg = "Password must be at least 6 characters";
+    if (newPassword.length < 8) {
+      const errorMsg = "Password must be at least 8 characters.";
       setError(errorMsg);
       toast(errorMsg, "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      const errorMsg = "Passwords do not match";
+      const errorMsg = "Passwords don't match.";
       setError(errorMsg);
       toast(errorMsg, "error");
       return;
@@ -184,260 +216,253 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-        let errorMessage = "Failed to reset password";
-        try {
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await res.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } else {
-            const text = await res.text();
-            if (text) {
-              try {
-                const errorData = JSON.parse(text);
-                errorMessage = errorData.error || errorData.message || text;
-              } catch {
-                errorMessage = text || errorMessage;
-              }
-            }
-          }
-        } catch {
-          // If parsing fails, use default message
-        }
-        
+        const errorMessage = await readError(res, "Couldn't reset password. Try again.");
+        setError(errorMessage);
         toast(errorMessage, "error");
-        throw new Error(errorMessage);
+        return;
       }
 
-      // Consume the response body to clear the stream
       try {
         await res.text();
       } catch {
-        // Ignore if reading fails
+        // ignore
       }
 
-      toast("Password reset successfully! Redirecting to login...", "success");
+      toast("Password updated. Sign in.", "success");
       setTimeout(() => {
         router.push("/login");
-      }, 1500);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to reset password";
+      }, 1200);
+    } catch {
+      const errorMessage = "Couldn't reset password. Try again.";
       setError(errorMessage);
+      toast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <div className="bg-emerald-600 p-3 rounded-full">
-              <Lock className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-[#F9FAFB] px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center">
+        <Link
+          href={step === "email" ? "/login" : "#"}
+          prefetch={false}
+          onClick={(e) => {
+            if (step === "otp") {
+              e.preventDefault();
+              setStep("email");
+              setOtp("");
+              setError(null);
+            } else if (step === "reset") {
+              e.preventDefault();
+              setStep("otp");
+              setNewPassword("");
+              setConfirmPassword("");
+              setError(null);
+            }
+          }}
+          className="mb-8 inline-flex h-10 w-10 items-center justify-center rounded-xl text-green-900 transition-colors hover:bg-emerald-50"
+          aria-label="Back"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+
+        <div className="mb-8">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="relative h-11 w-11 overflow-hidden rounded-2xl shadow-sm ring-1 ring-emerald-800/10">
+              <Image src="/growman.png" alt="Growman" fill sizes="44px" className="object-cover" />
             </div>
+            <span className="font-space text-lg font-semibold tracking-tight text-green-900">
+              Growman
+            </span>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {step === "email" && "Forgot Password"}
-            {step === "otp" && "Verify OTP"}
-            {step === "reset" && "Reset Password"}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {step === "email" && "Enter your email address and we'll send you a verification code"}
-            {step === "otp" && "Enter the verification code sent to your email"}
-            {step === "reset" && "Enter your new password"}
-          </p>
+          <h1 className="font-space text-[28px] font-bold tracking-tight text-green-900">
+            {titles[step].title}
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">{titles[step].subtitle}</p>
         </div>
 
-        <div className="mt-8">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-              <XCircle className="w-5 h-5 text-red-600 mr-2" />
-              <p className="text-sm text-red-700">{error}</p>
+        {error ? <p className="mb-4 text-sm text-green-950/55">{error}</p> : null}
+
+        {step === "email" && (
+          <form onSubmit={handleSendOTP} className="space-y-4">
+            <div className={fieldWrapClass}>
+              <Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                className={fieldClass}
+                placeholder="Email address"
+              />
             </div>
-          )}
 
-          {step === "email" && (
-            <form onSubmit={handleSendOTP} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
+            <button type="submit" disabled={sendingOtp || !email.trim()} className={primaryBtnClass}>
+              {sendingOtp ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                "Send code"
+              )}
+            </button>
+          </form>
+        )}
 
+        {step === "otp" && (
+          <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              required
+              maxLength={6}
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setError(null);
+              }}
+              className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-center text-2xl tracking-[0.4em] text-gray-900 placeholder:tracking-[0.4em] placeholder:text-gray-300 focus:outline-none"
+              placeholder="000000"
+            />
+
+            <button
+              type="submit"
+              disabled={loading || otp.length !== 6}
+              className={primaryBtnClass}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Verifying…
+                </>
+              ) : (
+                "Verify code"
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setOtp("");
+                setError(null);
+              }}
+              className="w-full py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+            >
+              Use a different email
+            </button>
+          </form>
+        )}
+
+        {step === "reset" && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className={fieldWrapClass}>
+              <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
+              <input
+                id="newPassword"
+                name="newPassword"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setError(null);
+                }}
+                className={`${fieldClass} pr-2`}
+                placeholder="New password (min. 8)"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+
+            <div className={fieldWrapClass}>
+              <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirm ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setError(null);
+                }}
+                className={`${fieldClass} pr-2`}
+                placeholder="Confirm password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((p) => !p)}
+                className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                aria-label={showConfirm ? "Hide password" : "Show password"}
+              >
+                {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("otp");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setError(null);
+                }}
+                className={secondaryBtnClass}
+              >
+                Back
+              </button>
               <button
                 type="submit"
-                disabled={sendingOtp}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={
+                  loading ||
+                  newPassword.length < 8 ||
+                  newPassword !== confirmPassword
+                }
+                className={`${primaryBtnClass} flex-[1.4]`}
               >
-                {sendingOtp ? (
+                {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Sending OTP...
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Saving…
                   </>
                 ) : (
-                  "Send Verification Code"
+                  "Save password"
                 )}
               </button>
-            </form>
-          )}
+            </div>
+          </form>
+        )}
 
-          {step === "otp" && (
-            <form onSubmit={handleVerifyOTP} className="space-y-6">
-              <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Code
-                </label>
-                <input
-                  id="otp"
-                  name="otp"
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm text-center text-2xl tracking-widest"
-                  placeholder="000000"
-                />
-                <p className="mt-2 text-xs text-gray-500 text-center">
-                  Enter the 6-digit code sent to {email}
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("email");
-                    setOtp("");
-                    setError(null);
-                  }}
-                  className="flex-1 py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                  <ArrowLeft className="w-4 h-4 inline mr-2" />
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || otp.length !== 6}
-                  className="flex-1 py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify Code"
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {step === "reset" && (
-            <form onSubmit={handleResetPassword} className="space-y-6">
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="newPassword"
-                    name="newPassword"
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                    placeholder="Enter new password"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                    placeholder="Confirm new password"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("otp");
-                    setNewPassword("");
-                    setConfirmPassword("");
-                    setError(null);
-                  }}
-                  className="flex-1 py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                  <ArrowLeft className="w-4 h-4 inline mr-2" />
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || newPassword.length < 6 || newPassword !== confirmPassword}
-                  className="flex-1 py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
-                      Resetting...
-                    </>
-                  ) : (
-                    "Reset Password"
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="mt-6 text-center">
-            <Link
-              href="/login"
-              className="text-sm text-emerald-600 hover:text-emerald-500 flex items-center justify-center"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to login
-            </Link>
-          </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/login"
+            prefetch={false}
+            className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+          >
+            Back to sign in
+          </Link>
         </div>
       </div>
     </div>
   );
 }
-

@@ -52,7 +52,7 @@ func (h *Handler) CreateRequestedProduct(w http.ResponseWriter, r *http.Request)
 		RequesterName:  strings.TrimSpace(req.RequesterName),
 		RequesterEmail: strings.TrimSpace(req.RequesterEmail),
 		RequesterPhone: strings.TrimSpace(req.RequesterPhone),
-		AdminNotes:     strings.TrimSpace(req.AdminNotes),
+		AdminNotes:     "",
 	}
 
 	if err := h.DB.Create(&record).Error; err != nil {

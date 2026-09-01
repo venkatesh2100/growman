@@ -2,6 +2,7 @@ package db
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
@@ -10,32 +11,47 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// Connect opens a GORM connection to Postgres using the provided config.
-// Prioritizes Hyperdrive URL if available, otherwise falls back to direct DATABASE_URL.
-// Configures connection pooling for optimal performance.
 func Connect(cfg config.Config) (*gorm.DB, error) {
-	logLevel := logger.Silent
-	if cfg.AppEnv == "development" {
-		logLevel = logger.Info
+	slow := 800 * time.Millisecond
+	level := logger.Warn
+	if cfg.AppEnv != "development" {
+		level = logger.Error
+		slow = 1500 * time.Millisecond
 	}
+	if os.Getenv("LOG_SQL") == "1" || os.Getenv("LOG_SQL") == "true" {
+		level = logger.Info
+		slow = 200 * time.Millisecond
+	}
+
+	gormLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             slow,
+			LogLevel:                  level,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
 
 	gormCfg := &gorm.Config{
-		Logger: logger.Default.LogMode(logLevel),
-		// Disable automatic transaction for better performance
+		Logger:                 gormLogger,
 		SkipDefaultTransaction: true,
-		// Prepare statements for better performance
-		PrepareStmt: true,
+		PrepareStmt:            true,
 	}
 
-	// Use Hyperdrive URL if available, otherwise use direct database URL
-	connectionString := cfg.HyperdriveURL
+	// Prefer direct DATABASE_URL. Hyperdrive helps Cloudflare Workers ↔ Postgres;
+	// using it from a local/VM Go process often adds multi-second latency per query.
+	connectionString := cfg.DatabaseURL
+	using := "DATABASE_URL"
 	if connectionString == "" {
-		connectionString = cfg.DatabaseURL
-		if cfg.AppEnv == "development" {
-			log.Println("Using direct database connection (DATABASE_URL)")
-		}
-	} else {
-		log.Println("Using Cloudflare Hyperdrive connection (HYPERDRIVE_URL)")
+		connectionString = cfg.HyperdriveURL
+		using = "HYPERDRIVE_URL"
+	}
+	if connectionString == "" {
+		return nil, errNoDatabaseURL
+	}
+	if cfg.AppEnv == "development" {
+		log.Printf("[DB] connecting via %s", using)
 	}
 
 	db, err := gorm.Open(postgres.Open(connectionString), gormCfg)
@@ -43,20 +59,41 @@ func Connect(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// Configure connection pooling for optimal performance
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
 	}
 
-	// Set maximum number of open connections
-	// For Google Cloud, keep this reasonable to avoid connection exhaustion
-	sqlDB.SetMaxOpenConns(25) // Adjust based on your database tier
-	sqlDB.SetMaxIdleConns(10) // Keep some idle connections for faster response
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // Recycle connections periodically
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Close idle connections after 10 minutes
+	maxOpen := cfg.DBMaxOpenConns
+	if maxOpen <= 0 {
+		maxOpen = 40
+	}
+	maxIdle := cfg.DBMaxIdleConns
+	if maxIdle <= 0 {
+		maxIdle = 10
+	}
+	if maxIdle > maxOpen {
+		maxIdle = maxOpen
+	}
 
-	log.Println("Database connection pool configured: MaxOpen=25, MaxIdle=10")
+	sqlDB.SetMaxOpenConns(maxOpen)
+	sqlDB.SetMaxIdleConns(maxIdle)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+
+	warm := maxIdle
+	if warm > 4 {
+		warm = 4
+	}
+	for i := 0; i < warm; i++ {
+		_ = sqlDB.Ping()
+	}
 
 	return db, nil
 }
+
+var errNoDatabaseURL = errString("DATABASE_URL or HYPERDRIVE_URL is required")
+
+type errString string
+
+func (e errString) Error() string { return string(e) }

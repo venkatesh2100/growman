@@ -17,7 +17,7 @@ import (
 )
 
 type RazorpayWebhookPayload struct {
-	Event string                 `json:"event"`
+	Event   string                 `json:"event"`
 	Payload map[string]interface{} `json:"payload"`
 }
 
@@ -98,6 +98,8 @@ func (h *Handler) handlePaymentCaptured(payload map[string]interface{}) error {
 		return err
 	}
 
+	alreadyPaid := order.PaymentStatus == "paid"
+
 	// Update order status
 	order.RazorpayPaymentID = razorpayPaymentID
 	order.PaymentStatus = "paid"
@@ -136,20 +138,20 @@ func (h *Handler) handlePaymentCaptured(payload map[string]interface{}) error {
 	}
 
 	// Send order confirmation email
-	if order.CustomerEmail != "" {
+	if !alreadyPaid && order.CustomerEmail != "" {
 		go func() {
 			emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
-			
+
 			// Prepare items for email
 			items := make([]map[string]interface{}, len(order.Items))
 			for i, item := range order.Items {
 				items[i] = map[string]interface{}{
 					"name":     item.Name,
-					"quantity": item.Quantity,
+					"quantity": float64(item.Quantity),
 					"price":    item.Price * float64(item.Quantity),
 				}
 			}
-			
+
 			if err := emailService.SendOrderConfirmationEmail(
 				order.CustomerEmail,
 				order.CustomerName,
@@ -160,6 +162,9 @@ func (h *Handler) handlePaymentCaptured(payload map[string]interface{}) error {
 				log.Printf("[EMAIL] Error sending order confirmation email: %v", err)
 			}
 		}()
+	}
+	if !alreadyPaid {
+		h.notifyMerchantPaidOrder(order)
 	}
 
 	return nil
@@ -177,4 +182,3 @@ func (h *Handler) verifyWebhookSignature(body, signature string) bool {
 
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
-

@@ -35,16 +35,15 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Get optional prefix from form (e.g., "products", "categories", "users")
-	prefix := r.FormValue("prefix")
-	if prefix == "" {
-		prefix = "uploads"
-	}
+	prefix := sanitizeUploadPrefix(r.FormValue("prefix"))
 
-	// Generate image_key: prefix/timestamp-random.extension
-	ext := filepath.Ext(header.Filename)
+	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if ext == "" {
-		ext = ".jpg" // default extension
+		ext = ".jpg"
+	}
+	if !allowedImageExt(ext) {
+		httpjson.Error(w, http.StatusBadRequest, "unsupported image type")
+		return
 	}
 
 	// Generate unique filename: timestamp-random
@@ -53,22 +52,13 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	// imageKey := fmt.Sprintf("%s/%d-%s%s", prefix, timestamp, random, ext)
 	//?Generate Humanreadable names
 	imageKey := GenerateImageKey(prefix, header.Filename)
-	// Get content type
 	contentType := header.Header.Get("Content-Type")
-	if contentType == "" {
-		// Try to detect from extension
-		switch strings.ToLower(ext) {
-		case ".jpg", ".jpeg":
-			contentType = "image/jpeg"
-		case ".png":
-			contentType = "image/png"
-		case ".gif":
-			contentType = "image/gif"
-		case ".webp":
-			contentType = "image/webp"
-		default:
-			contentType = "image/jpeg"
-		}
+	if !allowedImageMIME(contentType) {
+		contentType = contentTypeFromExt(ext)
+	}
+	if !allowedImageMIME(contentType) {
+		httpjson.Error(w, http.StatusBadRequest, "unsupported image type")
+		return
 	}
 
 	// Upload to cloud storage
@@ -127,4 +117,40 @@ func (h *Handler) UploadImageFromReader(ctx context.Context, imageKey string, re
 		return fmt.Errorf("image service not configured")
 	}
 	return h.ImageService.UploadImage(ctx, imageKey, reader, contentType)
+}
+
+func sanitizeUploadPrefix(prefix string) string {
+	prefix = strings.ToLower(strings.Trim(prefix, "/"))
+	prefix = strings.ReplaceAll(prefix, "..", "")
+	prefix = strings.ReplaceAll(prefix, "\\", "")
+	var b strings.Builder
+	for _, r := range prefix {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		}
+	}
+	out := b.String()
+	if out == "" {
+		return "uploads"
+	}
+	return out
+}
+
+func allowedImageExt(ext string) bool {
+	switch strings.ToLower(ext) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp":
+		return true
+	default:
+		return false
+	}
+}
+
+func allowedImageMIME(ct string) bool {
+	ct = strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
+	switch ct {
+	case "image/jpeg", "image/png", "image/gif", "image/webp":
+		return true
+	default:
+		return false
+	}
 }

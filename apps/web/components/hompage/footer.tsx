@@ -29,36 +29,45 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4  gap-2">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="relative">
-                {/* <Image src="/logo.png" width={30} height={20} alt="logo" /> */}
-                <FaLeaf className="w-8 h-8 text-emerald-400" />
-                {/* <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-100 rounded-full animate-pulse"></div> */}
-              </div>
-              <h2 className="text-2xl font-bold">Growman</h2>
-            </div>
+            <Link
+              href="/"
+              className="mb-4 flex items-center gap-2 touch-manipulation"
+              aria-label="Growman home"
+            >
+              <Image
+                src="/growman.png"
+                alt="Growman"
+                width={56}
+                height={56}
+                className="h-11 w-11 sm:h-14 sm:w-14 rounded-md object-contain"
+              />
+              <h2 className="text-4xl font-space font-bold">Growman</h2>
+            </Link>
             <p className="text-green-200 text-sm mb-4">
               Premium plants & gardening solutions for Indian homes
             </p>
             <div className=" flex gap-3">
               <a
-                href="#"
+                href="https://www.instagram.com/growman.live/"
+                target="_blank"
                 className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
                 aria-label="Facebook"
               >
                 <FaFacebookF className="w-4 h-4" />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/growman.live/"
+                target="_blank"
                 className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
                 aria-label="Instagram"
               >
                 <FaInstagram className="w-4 h-4" />
               </a>
               <a
-                href="#"
+                href="https://www.twitter.com/growman.live/"
                 className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
                 aria-label="Twitter"
+                target="_blank"
               >
                 <FaTwitter className="w-4 h-4" />
               </a>
@@ -78,7 +87,7 @@ export default function Footer() {
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
                 >
-                  <FaLeaf className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                  {/* <FaLeaf className="w-3 h-3 group-hover:scale-110 transition-transform" /> */}
                   <span>Indoor Plants</span>
                 </Link>
               </li>
@@ -179,7 +188,7 @@ export default function Footer() {
 
               <li className="flex items-center gap-2">
                 <FaPhone className="w-3 h-3 text-emerald-400" />
-                <span>+91 93463 95054</span>
+                <span>+91 95535 70568</span>
               </li>
               <li className="flex items-center gap-2">
                 <FaClock className="w-3 h-3 text-emerald-400" />

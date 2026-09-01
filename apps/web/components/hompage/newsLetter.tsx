@@ -27,7 +27,7 @@ export default function NewsLetterSection() {
         )}
 
         <div className="text-center">
-          <FaLeaf className="mx-auto mb-3 h-10 w-10 text-white sm:mb-4 sm:h-12 sm:w-12" />
+          {/* <FaLeaf className="mx-auto mb-3 h-10 w-10 text-white sm:mb-4 sm:h-12 sm:w-12" /> */}
           <h2 className="mb-2 text-2xl font-bold text-white sm:mb-3 sm:text-3xl">
             Join India&apos;s Green Community
           </h2>

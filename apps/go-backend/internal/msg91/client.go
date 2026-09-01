@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -189,7 +188,6 @@ func (c *Client) WidgetRetryOTP(ctx context.Context, reqID string, channel int) 
 		return "", fmt.Errorf("unsupported retry channel %d (use 11=SMS, 12=WhatsApp, 4=Voice)", channel)
 	}
 	channelStr := fmt.Sprintf("%d", channel)
-	log.Printf("[MSG91] retryOtp reqId=%s retryChannel=%s", reqID, channelStr)
 	out, raw, err := c.postJSON(ctx, "https://control.msg91.com/api/v5/widget/retryOtp", map[string]any{
 		"widgetId":     c.WidgetID,
 		"tokenAuth":    c.TokenAuth,

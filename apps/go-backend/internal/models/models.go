@@ -216,12 +216,12 @@ type Product struct {
 	ImageKey       string        `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
 	ImageURL       string        `gorm:"-" json:"imageUrl"`                // Resolved URL (not stored in DB, computed from ImageKey)
 	Status         string        `json:"status"`
-	Featured       bool          `json:"featured"`
+	Featured       bool          `gorm:"index:idx_products_featured" json:"featured"`
 	Tags           StringArray   `gorm:"type:text[]" json:"tags"`
 	Stock          int           `json:"stock"`
-	CategoryID     uint          `json:"categoryId"`
+	CategoryID     uint          `gorm:"index:idx_products_category" json:"categoryId"`
 	Category       Category      `json:"category"`
-	SubcategoryID  *uint         `json:"subcategoryId"`
+	SubcategoryID  *uint         `gorm:"index:idx_products_subcategory" json:"subcategoryId"`
 	Subcategory    *Subcategory  `json:"subcategory"`
 	BrandID        *uint         `json:"brandId"`
 	Brand          *Brand        `json:"brand"`
@@ -273,12 +273,12 @@ type OrderItem struct {
 // Order represents a customer order
 type Order struct {
 	Base
-	UserID               *uint       `json:"userId,omitempty"`
+	UserID               *uint       `gorm:"index:idx_orders_user" json:"userId,omitempty"`
 	User                 *User       `json:"user,omitempty"`
 	RazorpayOrderID      string      `gorm:"uniqueIndex" json:"razorpayOrderId"`
 	RazorpayPaymentID    string      `json:"razorpayPaymentId,omitempty"`
 	PaymentStatus        string      `gorm:"default:'created'" json:"paymentStatus"` // created, paid, failed
-	Status               string      `json:"status"`                                 // pending, paid, failed, cancelled (legacy)
+	Status               string      `gorm:"index:idx_orders_status" json:"status"`  // pending, paid, failed, cancelled (legacy)
 	Amount               float64     `json:"amount"`
 	Currency             string      `json:"currency"`
 	ExpectedDeliveryDate *time.Time  `json:"expectedDeliveryDate,omitempty"`

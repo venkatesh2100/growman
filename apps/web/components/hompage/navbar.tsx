@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaLeaf } from "react-icons/fa";
 import { searchProducts } from "../../lib/api";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
@@ -76,44 +75,101 @@ const CloseIcon = () => (
   </Icon>
 );
 
-const SearchResults = ({ results, onProductClick, onClose }: { results: Product[]; onProductClick: (slug: string) => void; onClose?: () => void }) => (
+const SearchResults = ({
+  results,
+  loading,
+  query,
+  onProductClick,
+  onViewAll,
+  onClose,
+}: {
+  results: Product[];
+  loading: boolean;
+  query: string;
+  onProductClick: (slug: string) => void;
+  onViewAll: () => void;
+  onClose?: () => void;
+}) => (
   <AnimatePresence>
-    {results.length > 0 && (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-emerald-100 max-h-[60vh] sm:max-h-96 overflow-y-auto z-50 overscroll-contain"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      className="absolute top-full left-0 right-0 z-50 mt-2 max-h-[60vh] overflow-y-auto overscroll-contain rounded-2xl border border-emerald-100/80 bg-white shadow-[0_12px_40px_rgba(6,78,59,0.12)] sm:max-h-96"
+    >
+      {loading && results.length === 0 ? (
+        <div className="space-y-2 p-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-2">
+              <div className="h-11 w-11 shrink-0 rounded-lg bg-emerald-50" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-3 w-[75%] rounded bg-slate-100" />
+                <div className="h-3 w-[33%] rounded bg-slate-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : results.length === 0 ? (
+        <div className="px-4 py-5 text-center">
+          <p className="text-sm text-gray-500">No matches for “{query}”</p>
+          <button
+            type="button"
+            onClick={() => {
+              onViewAll();
+              onClose?.();
+            }}
+            className="mt-2 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+          >
+            Search catalog
+          </button>
+        </div>
+      ) : (
         <div className="p-2">
-          {results.map((product) => (
+          {results.slice(0, 8).map((product) => (
             <button
               key={product.id}
+              type="button"
               onClick={() => {
                 onProductClick(product.slug);
                 onClose?.();
               }}
-              className="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors text-left touch-manipulation"
+              className="flex w-full touch-manipulation items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-emerald-50 active:bg-emerald-100 sm:p-2.5"
             >
-              {product.imageUrl && (
+              {product.imageUrl ? (
                 <Image
                   src={product.imageUrl.trim()}
                   alt={product.name}
-                  width={48}
-                  height={48}
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0"
+                  width={44}
+                  height={44}
+                  className="h-11 w-11 shrink-0 rounded-lg object-cover"
                 />
+              ) : (
+                <div className="h-11 w-11 shrink-0 rounded-lg bg-emerald-50" />
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-green-900 truncate">{product.name}</p>
-                {product.category && <p className="text-[10px] sm:text-xs text-emerald-600 truncate">{product.category.name}</p>}
-                <p className="text-xs sm:text-sm font-semibold text-emerald-700 mt-0.5 sm:mt-1">{product.currency} {product.price.toFixed(2)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-green-900">{product.name}</p>
+                {product.category ? (
+                  <p className="truncate text-xs text-gray-500">{product.category.name}</p>
+                ) : null}
               </div>
+              <p className="shrink-0 text-sm font-semibold text-emerald-700">
+                {product.currency} {Number(product.price || 0).toFixed(0)}
+              </p>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              onViewAll();
+              onClose?.();
+            }}
+            className="mt-1 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+          >
+            View all results
+          </button>
         </div>
-      </motion.div>
-    )}
+      )}
+    </motion.div>
   </AnimatePresence>
 );
 
@@ -138,6 +194,7 @@ export default function Navbar() {
   const navbarRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const voiceResultRef = useRef<string | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
@@ -206,34 +263,44 @@ export default function Navbar() {
   }, []);
 
   const performSearch = useCallback(async (query: string) => {
-    if (!query || query.trim().length < 2) {
+    const q = query.trim();
+    if (q.length < 2) {
       setSearchResults([]);
       setShowSearchResults(false);
+      setIsSearching(false);
       return;
     }
+
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
     setIsSearching(true);
+    setShowSearchResults(true);
     try {
-      const response = await searchProducts(query);
-      // Extract products array from paginated response
-      const products = Array.isArray(response.data) ? response.data : [];
-      setSearchResults(products);
-      setShowSearchResults(products.length > 0);
+      const response = await searchProducts(q, 1, 8, controller.signal);
+      if (controller.signal.aborted) return;
+      setSearchResults(Array.isArray(response.data) ? response.data : []);
+      setShowSearchResults(true);
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
       console.error("Error searching products:", error);
       setSearchResults([]);
-      setShowSearchResults(false);
+      setShowSearchResults(true);
     } finally {
-      setIsSearching(false);
+      if (!controller.signal.aborted) setIsSearching(false);
     }
   }, []);
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (searchQuery.trim().length >= 2) {
-      searchTimeoutRef.current = setTimeout(() => performSearch(searchQuery), 300);
+      searchTimeoutRef.current = setTimeout(() => performSearch(searchQuery), 200);
     } else {
+      searchAbortRef.current?.abort();
       setSearchResults([]);
       setShowSearchResults(false);
+      setIsSearching(false);
     }
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -396,12 +463,18 @@ export default function Navbar() {
         }`}
       >
         <div className="container mx-auto px-3 sm:px-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center space-x-1.5 sm:space-x-2 group touch-manipulation">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center group-hover:from-green-700 group-hover:to-emerald-600">
-              {/* <Image src="/logo.png" width={120} height={120} alt="logo" /> */}
-              <FaLeaf className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
-            </div>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-green-800 group-hover:text-emerald-700 transition-colors">Growman</h1>
+          <Link href="/" className="flex items-center sm:gap-1 group touch-manipulation">
+            <Image
+              src="/logo.png"
+              alt="Growman"
+              width={56}
+              height={56}
+              priority
+              className="h-11 w-11 sm:h-14 sm:w-14 object-contain"
+            />
+            <h1 className="font-space text-2xl sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
+              Growman
+            </h1>
           </Link>
 
           <nav className="hidden md:flex space-x-1">
@@ -467,7 +540,15 @@ export default function Navbar() {
                   )}
                 </button>
               </form>
-              {showSearchResults && <SearchResults results={searchResults} onProductClick={handleProductClick} />}
+              {showSearchResults && (
+                <SearchResults
+                  results={searchResults}
+                  loading={isSearching}
+                  query={searchQuery.trim()}
+                  onProductClick={handleProductClick}
+                  onViewAll={handleCatalogSearch}
+                />
+              )}
             </div>
 
             <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
@@ -679,7 +760,16 @@ export default function Navbar() {
                 <ShoppingBag className="h-4 w-4" />
                 Search shop
               </button>
-              {showSearchResults && <SearchResults results={searchResults} onProductClick={handleProductClick} onClose={() => setIsSearchOpen(false)} />}
+              {showSearchResults && (
+                <SearchResults
+                  results={searchResults}
+                  loading={isSearching}
+                  query={searchQuery.trim()}
+                  onProductClick={handleProductClick}
+                  onViewAll={handleCatalogSearch}
+                  onClose={() => setIsSearchOpen(false)}
+                />
+              )}
             </div>
           </motion.div>
         )}

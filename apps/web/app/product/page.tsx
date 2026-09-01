@@ -53,15 +53,25 @@ export default async function ProductsPage(
           {/* Categories Grid */}
           <section className="mb-12">
             <h2 className="text-2xl font-semibold text-green-800 mb-6">Browse Categories</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div
+              className="
+                flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto pb-3
+                snap-x snap-mandatory scroll-smooth scrollbar-hide
+                -mx-3 sm:-mx-4 px-3 sm:px-4
+              "
+            >
               {categories.map(category => (
-                <CategoryCard
+                <div
                   key={category.id}
-                  category={{
-                    ...category,
-                    products: categoryFilters.find(c => c.id === category.id)?.count || 0
-                  }}
-                />
+                  className="shrink-0 w-[58%] sm:w-[200px] md:w-[220px] snap-start"
+                >
+                  <CategoryCard
+                    category={{
+                      ...category,
+                      products: categoryFilters.find(c => c.id === category.id)?.count || 0
+                    }}
+                  />
+                </div>
               ))}
             </div>
           </section>

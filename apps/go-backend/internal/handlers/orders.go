@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
-	"github.com/venkatesh2100/growman/apps/go-backend/internal/cache"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 	paginationpkg "github.com/venkatesh2100/growman/apps/go-backend/pkg/pagination"
@@ -25,7 +23,7 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	// Parse pagination parameters
 	paginationParams := paginationpkg.ParsePagination(r)
@@ -48,7 +46,7 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		":status:" + statusFilter +
 		":orderId:" + orderIDFilter +
 		":search:" + strings.ToLower(searchFilter)
-	cacheHelper := cache.NewHelper(h.Redis)
+	cacheHelper := h.Cache
 
 	var orders []models.Order
 	var total int64
@@ -56,10 +54,9 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	// Try to get from cache (shorter TTL for user-specific data)
 	hit, err := cacheHelper.Get(ctx, cacheKey, &orders)
 	if err != nil {
-		log.Printf("[CACHE] Error getting orders from cache: %v", err)
+		// ignore cache errors; fall through to DB
 	}
 
-	// Get total count
 	totalCacheKey := "orders:" + cacheScope +
 		":total:status:" + statusFilter +
 		":orderId:" + orderIDFilter +
@@ -68,11 +65,6 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	totalHit, _ := cacheHelper.Get(ctx, totalCacheKey, &cachedTotal)
 
 	if hit && totalHit {
-		log.Printf("[CACHE] Orders page %d for %s served from Redis", paginationParams.Page, cacheScope)
-		// Resolve image URLs for order items
-		for i := range orders {
-			h.ResolveOrderItemImageURLsSlice(orders[i].Items)
-		}
 		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
 		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
 			Data:       orders,
@@ -82,9 +74,6 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Cache miss: fetch from database with pagination
-	log.Printf("[CACHE] Cache miss, fetching orders page %d for %s from DB", paginationParams.Page, cacheScope)
-
-	// Get total count
 	countQuery := h.DB.Model(&models.Order{})
 	if !isAdmin {
 		countQuery = countQuery.Where("user_id = ?", claims.UserID)
@@ -146,20 +135,13 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Store in cache with shorter TTL for user-specific data
-	if err := cacheHelper.Set(ctx, cacheKey, orders, 5*time.Minute); err != nil {
-		log.Printf("[CACHE] Failed to cache orders: %v", err)
-	}
-
-	// Cache total count
-	if err := cacheHelper.Set(ctx, totalCacheKey, total, 10*time.Minute); err != nil {
-		log.Printf("[CACHE] Failed to cache orders total: %v", err)
-	}
-
-	// Resolve image URLs for order items
+	// Resolve image URLs before caching so hits skip extra work
 	for i := range orders {
 		h.ResolveOrderItemImageURLsSlice(orders[i].Items)
 	}
+
+	_ = cacheHelper.Set(ctx, cacheKey, orders, 2*time.Minute)
+	_ = cacheHelper.Set(ctx, totalCacheKey, total, 5*time.Minute)
 
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
 	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
@@ -236,8 +218,8 @@ func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheHelper := cache.NewHelper(h.Redis)
-	ctx := context.Background()
+	cacheHelper := h.Cache
+	ctx := r.Context()
 	_ = cacheHelper.DeletePattern(ctx, "orders:*")
 
 	if err := h.DB.Preload("Items").Preload("User").Where("id = ?", orderID).First(&order).Error; err != nil {
@@ -297,8 +279,8 @@ func (h *Handler) UpdateOrderExpectedDeliveryDate(w http.ResponseWriter, r *http
 		return
 	}
 
-	cacheHelper := cache.NewHelper(h.Redis)
-	ctx := context.Background()
+	cacheHelper := h.Cache
+	ctx := r.Context()
 	_ = cacheHelper.DeletePattern(ctx, "orders:*")
 
 	if err := h.DB.Preload("Items").Preload("User").Where("id = ?", orderID).First(&order).Error; err != nil {

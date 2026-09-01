@@ -58,13 +58,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(payload.Email, "@") {
 		// Email login
 		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 	} else {
 		// Phone login — match 10-digit and 91-prefixed rows
 		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 	}
@@ -110,12 +110,12 @@ func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if strings.Contains(payload.Email, "@") {
 		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 	} else {
 		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "account not found")
+			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 	}
@@ -173,8 +173,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusBadRequest, "phone is required")
 		return
 	}
-	if len(payload.Password) < 6 {
-		httpjson.Error(w, http.StatusBadRequest, "password must be at least 6 characters")
+	if len(payload.Password) < 8 {
+		httpjson.Error(w, http.StatusBadRequest, "password must be at least 8 characters")
+		return
+	}
+	if len(payload.Password) > 72 {
+		httpjson.Error(w, http.StatusBadRequest, "password is too long")
 		return
 	}
 
@@ -209,6 +213,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 		return
 	}
+	h.notifyMerchantNewUser(user, "signup", clientIP(r), r.UserAgent())
 
 	// Generate token
 	token, err := appauth.GenerateToken(h.Cfg.JWTSecret, user.ID, user.Role, 24*time.Hour)
@@ -342,7 +347,6 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 		case msg91.BlockIPCap:
 			msg = "Too many OTP requests from this network. Try again in a bit."
 		}
-		log.Printf("[OTP] throttled phone=%s reason=%s retryAfter=%ds", phone, reason, secs)
 		w.Header().Set("Retry-After", fmt.Sprintf("%d", secs))
 		httpjson.Error(w, http.StatusTooManyRequests, msg)
 		return
@@ -360,7 +364,6 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 				httpjson.Error(w, http.StatusBadGateway, "Couldn't resend the code on that channel. Try SMS or another option.")
 				return
 			}
-			log.Printf("[OTP] widget retry ok phone=%s channel=%d reqId=%s", phone, channel, newID)
 			httpjson.JSON(w, http.StatusOK, map[string]any{
 				"cooldownSeconds": 30,
 				"reqId":           newID,
@@ -381,7 +384,6 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if accessToken != "" {
-			log.Printf("[OTP] widget invisible/already verified phone=%s", phone)
 			user, isNew, err := h.findOrCreateByPhone(ten)
 			if err != nil {
 				httpjson.Error(w, http.StatusInternalServerError, "server error")
@@ -405,7 +407,6 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		log.Printf("[OTP] widget send ok phone=%s reqId=%s", phone, reqID)
 		httpjson.JSON(w, http.StatusOK, map[string]any{"cooldownSeconds": 30, "reqId": reqID})
 		return
 	}
@@ -416,7 +417,6 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusBadGateway, "Couldn't send the code. Try again.")
 		return
 	}
-	log.Printf("[OTP] template send ok phone=%s", phone)
 	httpjson.JSON(w, http.StatusOK, map[string]any{"cooldownSeconds": 30})
 }
 
@@ -500,7 +500,6 @@ func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusUnauthorized, "That code didn't match.")
 			return
 		}
-		log.Printf("[OTP] widget verify ok phone=%s", phone)
 	} else {
 		if h.Cfg.MSG91AuthKey == "" || h.Cfg.MSG91TemplateID == "" {
 			httpjson.Error(w, http.StatusServiceUnavailable, "OTP service is not configured")
@@ -577,7 +576,6 @@ func (h *Handler) VerifyTruecaller(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[Truecaller] ok phone=%s name=%q new=%v", ten, user.Name, isNew)
 	h.respondPhoneAuth(w, user, isNew)
 }
 
@@ -660,6 +658,7 @@ func (h *Handler) findOrCreateByPhone(tenDigit string, profile ...phoneAuthProfi
 	if err := h.DB.Create(&user).Error; err != nil {
 		return models.User{}, false, err
 	}
+	h.notifyMerchantNewUser(user, "phone/"+opt.Provider, "", "")
 	return user, true, nil
 }
 
@@ -821,6 +820,7 @@ func (h *Handler) Google(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 			return
 		}
+		h.notifyMerchantNewUser(user, "google", clientIP(r), r.UserAgent())
 	} else {
 		// User exists, update provider if needed
 		if user.Provider != "google" {
@@ -928,49 +928,63 @@ func (h *Handler) SendPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate email
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
 		httpjson.Error(w, http.StatusBadRequest, "valid email is required")
 		return
 	}
 
-	// Check if user exists
+	ctx := r.Context()
+
+	// Check if user exists — same OK message either way (no account enumeration)
 	var user models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		// Don't reveal if user exists or not for security
+	if err := h.DB.WithContext(ctx).Where("email = ?", req.Email).First(&user).Error; err != nil {
 		httpjson.JSON(w, http.StatusOK, map[string]interface{}{
 			"message": "If an account exists with this email, a password reset code has been sent",
 		})
 		return
 	}
 
-	// Check rate limiting (1 OTP per 60 seconds)
-	otpService := services.NewOTPService(h.Redis)
-	ctx := context.Background()
-
-	exists, err := otpService.CheckPasswordResetOTPExists(ctx, req.Email)
-	if err == nil && exists {
-		httpjson.Error(w, http.StatusTooManyRequests, "please wait before requesting another OTP")
+	if h.Cfg.SMTPEmail == "" || h.Cfg.SMTPPassword == "" {
+		log.Printf("[PASSWORD RESET] SMTP credentials not configured")
+		httpjson.Error(w, http.StatusServiceUnavailable, "email_unavailable")
 		return
 	}
 
-	// Generate and send OTP
+	otpService := services.NewOTPService(h.Redis)
+	canResend, ttl, err := otpService.CanResendPasswordResetOTP(ctx, req.Email)
+	if err != nil {
+		log.Printf("[PASSWORD RESET] Cooldown check failed: %v", err)
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
+		return
+	}
+	if !canResend {
+		httpjson.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"error":       "otp_cooldown",
+			"retry_after": int(ttl.Seconds()),
+		})
+		return
+	}
+
 	otp, err := otpService.GeneratePasswordResetOTP(ctx, req.Email)
 	if err != nil {
 		log.Printf("[PASSWORD RESET] Error generating OTP: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to generate OTP")
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
 
-	// Send email
 	emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
 	if err := emailService.SendPasswordResetOTP(req.Email, otp); err != nil {
 		log.Printf("[PASSWORD RESET] Error sending OTP email: %v", err)
-		// Don't fail the request if email fails, but log it
+		_ = otpService.DeletePasswordResetOTP(ctx, req.Email)
+		httpjson.Error(w, http.StatusBadGateway, "email_send_failed")
+		return
 	}
 
+	_ = otpService.SetPasswordResetCooldown(ctx, req.Email)
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
-		"message": "If an account exists with this email, a password reset code has been sent",
+		"message":  "If an account exists with this email, a password reset code has been sent",
+		"cooldown": 60,
 	})
 }
 
@@ -988,7 +1002,7 @@ func (h *Handler) VerifyPasswordResetOTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Validate email
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
 		httpjson.Error(w, http.StatusBadRequest, "valid email is required")
 		return
@@ -999,14 +1013,11 @@ func (h *Handler) VerifyPasswordResetOTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Verify OTP
 	otpService := services.NewOTPService(h.Redis)
-	ctx := context.Background()
-
-	valid, err := otpService.VerifyPasswordResetOTP(ctx, req.Email, req.OTP)
+	valid, err := otpService.VerifyPasswordResetOTP(r.Context(), req.Email, req.OTP)
 	if err != nil {
 		log.Printf("[PASSWORD RESET] Error verifying OTP: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to verify OTP")
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
 
@@ -1037,7 +1048,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
 		httpjson.Error(w, http.StatusBadRequest, "valid email is required")
 		return
@@ -1048,8 +1059,8 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.NewPassword == "" || len(req.NewPassword) < 6 {
-		httpjson.Error(w, http.StatusBadRequest, "password must be at least 6 characters")
+	if req.NewPassword == "" || len(req.NewPassword) < 8 {
+		httpjson.Error(w, http.StatusBadRequest, "password must be at least 8 characters")
 		return
 	}
 
@@ -1058,47 +1069,39 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify OTP first
+	ctx := r.Context()
 	otpService := services.NewOTPService(h.Redis)
-	ctx := context.Background()
 
-	valid, err := otpService.VerifyPasswordResetOTP(ctx, req.Email, req.OTP)
+	valid, err := otpService.ConsumePasswordResetOTP(ctx, req.Email, req.OTP)
 	if err != nil {
 		log.Printf("[PASSWORD RESET] Error verifying OTP: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to verify OTP")
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
-
 	if !valid {
 		httpjson.Error(w, http.StatusBadRequest, "invalid or expired OTP")
 		return
 	}
 
-	// Find user
 	var user models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := h.DB.WithContext(ctx).Where("email = ?", req.Email).First(&user).Error; err != nil {
 		httpjson.Error(w, http.StatusNotFound, "user not found")
 		return
 	}
 
-	// Hash new password
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to reset password")
 		return
 	}
 
-	// Update password
 	pw := string(passwordHash)
 	user.PasswordHash = &pw
-	if err := h.DB.Save(&user).Error; err != nil {
+	if err := h.DB.WithContext(ctx).Save(&user).Error; err != nil {
 		log.Printf("[PASSWORD RESET] Error updating password: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to reset password")
 		return
 	}
-
-	// Delete OTP after successful password reset
-	otpService.DeletePasswordResetOTP(ctx, req.Email)
 
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
@@ -1108,16 +1111,16 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 // UpdateProfileRequest represents request to update user profile
 type UpdateProfileRequest struct {
-	Name          string   `json:"name,omitempty"`
-	Phone         string   `json:"phone,omitempty"`
-	AlternatePhone string  `json:"alternatePhone,omitempty"`
-	AddressLine   string   `json:"addressLine,omitempty"`
-	City          string   `json:"city,omitempty"`
-	State         string   `json:"state,omitempty"`
-	Pincode       string   `json:"pincode,omitempty"`
-	Country       string   `json:"country,omitempty"`
-	Latitude      *float64 `json:"latitude,omitempty"`
-	Longitude     *float64 `json:"longitude,omitempty"`
+	Name           string   `json:"name,omitempty"`
+	Phone          string   `json:"phone,omitempty"`
+	AlternatePhone string   `json:"alternatePhone,omitempty"`
+	AddressLine    string   `json:"addressLine,omitempty"`
+	City           string   `json:"city,omitempty"`
+	State          string   `json:"state,omitempty"`
+	Pincode        string   `json:"pincode,omitempty"`
+	Country        string   `json:"country,omitempty"`
+	Latitude       *float64 `json:"latitude,omitempty"`
+	Longitude      *float64 `json:"longitude,omitempty"`
 }
 
 // UpdateProfile updates the authenticated user's profile
@@ -1187,10 +1190,10 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Profile updated successfully",
 		"user": map[string]any{
-			"id":            user.ID,
-			"name":          user.Name,
-			"email":         user.EmailOrEmpty(),
-			"phone":         user.PhoneOrEmpty(),
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.EmailOrEmpty(),
+			"phone": user.PhoneOrEmpty(),
 			"address": map[string]any{
 				"line":      user.AddressLine,
 				"city":      user.City,
@@ -1206,13 +1209,13 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 // SaveLocationRequest represents request to save location data
 type SaveLocationRequest struct {
-	AddressLine string   `json:"addressLine"`
-	City        string   `json:"city"`
-	State       string   `json:"state"`
-	Pincode     string   `json:"pincode"`
-	Country     string   `json:"country"`
-	Latitude    float64  `json:"latitude"`
-	Longitude   float64  `json:"longitude"`
+	AddressLine string  `json:"addressLine"`
+	City        string  `json:"city"`
+	State       string  `json:"state"`
+	Pincode     string  `json:"pincode"`
+	Country     string  `json:"country"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
 }
 
 // SaveLocation saves location data for the authenticated user

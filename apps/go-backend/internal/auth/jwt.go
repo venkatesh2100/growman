@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -46,11 +47,20 @@ func GenerateTokenWithScope(secret string, userID uint, role, scope string, ttl 
 	return token.SignedString([]byte(secret))
 }
 
+// IsAdminRole reports whether role can perform admin mutations.
+func IsAdminRole(role string) bool {
+	r := strings.ToLower(strings.TrimSpace(role))
+	return r == "admin" || r == "superadmin"
+}
+
 // ParseToken validates a JWT string and returns claims.
 func ParseToken(secret, tokenString string) (*Claims, error) {
 	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(secret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
 		return nil, err
 	}
@@ -85,28 +95,28 @@ func requireScope(secret, required string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
 			if header == "" {
-				http.Error(w, "missing Authorization header", http.StatusUnauthorized)
+				writeAuthError(w, http.StatusUnauthorized, "missing Authorization header")
 				return
 			}
 
 			parts := strings.SplitN(header, " ", 2)
 			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-				http.Error(w, "invalid Authorization header", http.StatusUnauthorized)
+				writeAuthError(w, http.StatusUnauthorized, "invalid Authorization header")
 				return
 			}
 
 			claims, err := ParseToken(secret, parts[1])
 			if err != nil {
-				http.Error(w, "invalid token", http.StatusUnauthorized)
+				writeAuthError(w, http.StatusUnauthorized, "invalid token")
 				return
 			}
 
 			if required == ScopeFull && claims.Scope == ScopeOnboarding {
-				http.Error(w, "complete your profile first", http.StatusForbidden)
+				writeAuthError(w, http.StatusForbidden, "complete your profile first")
 				return
 			}
 			if required == ScopeOnboarding && claims.Scope != ScopeOnboarding {
-				http.Error(w, "invalid token scope", http.StatusForbidden)
+				writeAuthError(w, http.StatusForbidden, "invalid token scope")
 				return
 			}
 
@@ -114,4 +124,25 @@ func requireScope(secret, required string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// AdminMiddleware requires a valid JWT with an admin role.
+func AdminMiddleware(secret string) func(http.Handler) http.Handler {
+	auth := AuthMiddleware(secret)
+	return func(next http.Handler) http.Handler {
+		return auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, ok := FromContext(r.Context())
+			if !ok || !IsAdminRole(claims.Role) {
+				writeAuthError(w, http.StatusForbidden, "admin access required")
+				return
+			}
+			next.ServeHTTP(w, r)
+		}))
+	}
+}
+
+func writeAuthError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(`{"error":"` + msg + `"}`))
 }

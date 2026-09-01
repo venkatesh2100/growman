@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 
 interface Toast {
   id: string;
@@ -12,21 +12,34 @@ interface Toast {
 let toastIdCounter = 0;
 const listeners: Array<(toasts: Toast[]) => void> = [];
 let toasts: Toast[] = [];
+let lastToastKey = "";
+let lastToastAt = 0;
 
 function notify() {
   listeners.forEach((listener) => listener([...toasts]));
 }
 
-export function toast(message: string, type: "success" | "error" | "info" = "success") {
+export function toast(
+  message: string,
+  type: "success" | "error" | "info" = "success"
+) {
+  const now = Date.now();
+  const key = `${type}:${message}`;
+  // Ignore duplicate toasts fired within a short window (e.g. throw + catch).
+  if (key === lastToastKey && now - lastToastAt < 1500) {
+    return;
+  }
+  lastToastKey = key;
+  lastToastAt = now;
+
   const id = `toast-${++toastIdCounter}`;
   toasts.push({ id, message, type });
   notify();
 
-  // Auto remove after 3 seconds
   setTimeout(() => {
     toasts = toasts.filter((t) => t.id !== id);
     notify();
-  }, 3000);
+  }, 3200);
 }
 
 export function useToast() {
@@ -61,33 +74,36 @@ export function ToastContainer() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] space-y-2">
-      {toastList.map((toast) => (
+    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[9999] flex flex-col items-center gap-2 px-4 sm:inset-x-auto sm:right-6 sm:bottom-auto sm:top-6 sm:items-end">
+      {toastList.map((item) => (
         <div
-          key={toast.id}
-          className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg
-            min-w-[300px] max-w-md animate-slideInRight
-            ${
-              toast.type === "success"
-                ? "bg-emerald-500 text-white"
-                : toast.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
-            }
-          `}
+          key={item.id}
+          role="status"
+          className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-emerald-900/8 bg-white/95 px-4 py-3 shadow-[0_8px_30px_rgba(6,78,59,0.08)] backdrop-blur-md animate-slideInRight"
         >
-          {toast.type === "success" && <CheckCircle className="w-5 h-5 shrink-0" />}
-          <p className="flex-1 text-sm font-medium">{toast.message}</p>
+          <span
+            className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+              item.type === "error"
+                ? "bg-stone-400"
+                : item.type === "info"
+                  ? "bg-emerald-400"
+                  : "bg-emerald-600"
+            }`}
+            aria-hidden
+          />
+          <p className="flex-1 text-sm leading-snug text-green-950/80">
+            {item.message}
+          </p>
           <button
-            onClick={() => removeToast(toast.id)}
-            className="shrink-0 hover:opacity-80 transition-opacity"
+            type="button"
+            onClick={() => removeToast(item.id)}
+            className="shrink-0 rounded-lg p-0.5 text-green-950/30 transition-colors hover:text-green-950/60"
+            aria-label="Dismiss"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       ))}
     </div>
   );
 }
-

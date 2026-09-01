@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Growman API — ReDoc</title>
+  <style>
+    body { margin: 0; }
+    .docs-banner {
+      background: #1a3c2c;
+      color: #e8f5ee;
+      padding: 14px 24px;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .docs-banner h1 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+    .docs-banner a { color: #9be7c4; text-decoration: none; margin-left: 16px; font-size: 0.9rem; }
+    .docs-banner a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="docs-banner">
+    <h1>Growman Backend API</h1>
+    <div>
+      <a href="/docs">Swagger</a>
+      <a href="/redoc">ReDoc</a>
+      <a href="/openapi.yaml">openapi.yaml</a>
+    </div>
+  </div>
+  <redoc spec-url="/openapi.yaml"></redoc>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+</body>
+</html>

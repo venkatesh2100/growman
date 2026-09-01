@@ -168,6 +168,8 @@ apps/go-backend/
    curl http://localhost:8080/healthz
    ```
 
+   Open API docs at [http://localhost:8080/docs](http://localhost:8080/docs).
+
 ## Development
 
 ### Available Scripts
@@ -336,6 +338,19 @@ docker-compose up -d redis
 ```
 
 ## API Documentation
+
+Interactive docs are served by the API itself (OpenAPI 3):
+
+| UI | URL |
+|----|-----|
+| **Swagger UI** (try-it-out) | `http://localhost:8080/docs` |
+| **ReDoc** | `http://localhost:8080/redoc` |
+| OpenAPI YAML | `http://localhost:8080/openapi.yaml` |
+| Aliases | `/swagger`, `/swagger-ui` → `/docs` |
+
+Use **Authorize** in Swagger with a JWT from `/api/v1/auth/login` (or OTP/Google) for protected routes.
+
+The spec source lives at `internal/docs/openapi.yaml`. Update it when you add or change endpoints.
 
 ### Base URL
 
@@ -894,7 +909,8 @@ This starts:
 **Adding a new endpoint**:
 1. Create handler function in appropriate handler file
 2. Add route in `internal/server/router.go`
-3. Update API documentation in this README
+3. Document the path in `internal/docs/openapi.yaml`
+4. Update API documentation in this README
 
 **Adding a new model**:
 1. Define struct in `internal/models/models.go`

@@ -34,28 +34,32 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate email
 	if !services.ValidateEmail(req.Email) {
 		httpjson.Error(w, http.StatusBadRequest, "invalid email format")
 		return
 	}
 
-	// Check if user exists - if yes, they need to login
 	var existingUser models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+	if err := h.DB.WithContext(r.Context()).Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		httpjson.Error(w, http.StatusConflict, "user_exists")
 		return
 	}
 
-	// Check rate limiting (1 OTP per 60 seconds)
-	otpService := services.NewOTPService(h.Redis)
-	ctx := context.Background()
-	canResend, ttl, err := otpService.CanResendOTP(ctx, req.Email)
-	if err != nil {
-		httpjson.Error(w, 500, "internal error")
+	if h.Cfg.SMTPEmail == "" || h.Cfg.SMTPPassword == "" {
+		log.Printf("[EMAIL] SMTP credentials not configured")
+		httpjson.Error(w, http.StatusServiceUnavailable, "email_unavailable")
 		return
 	}
 
+	otpService := services.NewOTPService(h.Redis)
+	ctx := r.Context()
+
+	canResend, ttl, err := otpService.CanResendOTP(ctx, req.Email)
+	if err != nil {
+		log.Printf("[OTP] Cooldown check failed: %v", err)
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
+		return
+	}
 	if !canResend {
 		httpjson.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"error":       "otp_cooldown",
@@ -64,34 +68,24 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// exists, err := otpService.CheckOTPExists(ctx, req.Email)
-	// if err == nil && exists {
-	// 	httpjson.Error(w, http.StatusTooManyRequests, "please wait before requesting another OTP")
-	// 	return
-	// }
-
-	// Generate and send OTP
 	otp, err := otpService.GenerateOTP(ctx, req.Email)
 	if err != nil {
 		log.Printf("[OTP] Error generating OTP: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to generate OTP")
+		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
-	otpService.SetResendCooldown(ctx, req.Email)
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
-		"message":  "OTP sent successfully",
-		"cooldown": 60, 
-	})
-	// Send email
+
 	emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
 	if err := emailService.SendOTPEmail(req.Email, otp); err != nil {
 		log.Printf("[EMAIL] Error sending OTP email: %v", err)
-		// Don't fail the request if email fails, but log it
-		// In production, you might want to queue this
+		httpjson.Error(w, http.StatusBadGateway, "email_send_failed")
+		return
 	}
 
+	_ = otpService.SetResendCooldown(ctx, req.Email)
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
-		"message": "OTP sent successfully",
+		"message":  "OTP sent successfully",
+		"cooldown": 60,
 	})
 }
 
@@ -366,6 +360,7 @@ func (h *Handler) CreateSoftAccount(email, phone, name string) (*models.User, er
 	if err := h.DB.Create(&user).Error; err != nil {
 		return nil, err
 	}
+	h.notifyMerchantNewUser(user, "checkout-soft-account", "", "")
 
 	// Send account creation email (async, don't fail if it errors)
 	go func() {

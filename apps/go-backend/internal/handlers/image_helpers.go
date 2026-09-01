@@ -47,4 +47,3 @@ func (h *Handler) ResolveOrderItemImageURLsSlice(items []models.OrderItem) {
 		h.ResolveOrderItemImageURL(&items[i])
 	}
 }
-

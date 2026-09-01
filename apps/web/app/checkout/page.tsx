@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {  useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
-import { ShoppingBag, CreditCard, CheckCircle, XCircle, Loader2, Mail, LogIn, Navigation } from "lucide-react";
+import { ShoppingBag, CreditCard, CheckCircle, Loader2, Mail, LogIn, Navigation } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "../../lib/store/cartStore";
@@ -995,19 +995,13 @@ const handleCart = () =>{
                 </div>
               </div>
 
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-                  <XCircle className="w-5 h-5 text-red-600 mr-2" />
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              )}
+              {error ? (
+                <p className="mb-4 text-sm text-green-950/55">{error}</p>
+              ) : null}
 
-              {paymentStatus === "success" && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                  <p className="text-sm text-green-700">Payment successful! Redirecting...</p>
-                </div>
-              )}
+              {paymentStatus === "success" ? (
+                <p className="mb-4 text-sm text-emerald-700">Payment successful. Redirecting…</p>
+              ) : null}
 
               <button
                 onClick={handlePayment}

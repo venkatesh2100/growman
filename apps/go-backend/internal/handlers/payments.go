@@ -19,17 +19,17 @@ import (
 
 // CreateOrderRequest represents the request to create a Razorpay order
 type CreateOrderRequest struct {
-	Amount   float64              `json:"amount"`
-	Currency string               `json:"currency"`
-	Items    []OrderItemRequest   `json:"items"`
-	Customer CustomerInfo         `json:"customer"`
+	Amount   float64            `json:"amount"`
+	Currency string             `json:"currency"`
+	Items    []OrderItemRequest `json:"items"`
+	Customer CustomerInfo       `json:"customer"`
 }
 
 type OrderItemRequest struct {
-	ProductID   uint    `json:"productId"`
-	ProductSizeID *uint  `json:"productSizeId,omitempty"`
-	Quantity    int     `json:"quantity"`
-	Price       float64 `json:"price"`
+	ProductID     uint    `json:"productId"`
+	ProductSizeID *uint   `json:"productSizeId,omitempty"`
+	Quantity      int     `json:"quantity"`
+	Price         float64 `json:"price"`
 }
 
 type CustomerInfo struct {
@@ -41,11 +41,11 @@ type CustomerInfo struct {
 
 // RazorpayOrderResponse represents Razorpay's order creation response
 type RazorpayOrderResponse struct {
-	ID      string `json:"id"`
-	Entity  string `json:"entity"`
-	Amount  int    `json:"amount"`
+	ID       string `json:"id"`
+	Entity   string `json:"entity"`
+	Amount   int    `json:"amount"`
 	Currency string `json:"currency"`
-	Status  string `json:"status"`
+	Status   string `json:"status"`
 }
 
 // CreateRazorpayOrder creates a Razorpay order and stores it in the database
@@ -136,11 +136,11 @@ func (h *Handler) CreateRazorpayOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Return order details
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
-		"id":     razorpayOrder.ID,
-		"amount": razorpayOrder.Amount,
+		"id":       razorpayOrder.ID,
+		"amount":   razorpayOrder.Amount,
 		"currency": razorpayOrder.Currency,
-		"status": razorpayOrder.Status,
-		"orderId": order.ID,
+		"status":   razorpayOrder.Status,
+		"orderId":  order.ID,
 	})
 }
 
@@ -207,34 +207,21 @@ type VerifyPaymentRequest struct {
 func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 	var req VerifyPaymentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("[PAYMENT] Error decoding request: %v", err)
 		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	// Validate required fields
 	if req.RazorpayOrderID == "" || req.RazorpayPaymentID == "" {
-		log.Printf("[PAYMENT] Missing required fields: order_id=%s, payment_id=%s", req.RazorpayOrderID, req.RazorpayPaymentID)
 		httpjson.Error(w, http.StatusBadRequest, "missing required fields: razorpay_order_id and razorpay_payment_id are required")
 		return
 	}
 
 	// Verify signature (skip in test/development mode if key secret is not configured)
 	isTestMode := h.Cfg.AppEnv == "development" || h.Cfg.AppEnv == "test" || h.Cfg.RazorpayKeySecret == ""
- log.Printf("TEST MODE: %v", isTestMode)
 	if req.RazorpaySignature != "" && !isTestMode {
 		if !h.verifyRazorpaySignature(req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature) {
-			log.Printf("[PAYMENT] Signature verification failed for order: %s, payment: %s", req.RazorpayOrderID, req.RazorpayPaymentID)
-			// httpjson.Error(w, http.StatusBadRequest, "invalid payment signature")
-			log.Printf("[PAYMENT] Skipping signature verification (test/development mode)")
-			// return
-		}
-		log.Printf("[PAYMENT] Signature verified successfully for order: %s", req.RazorpayOrderID)
-	} else {
-		if isTestMode {
-			log.Printf("[PAYMENT] Skipping signature verification (test/development mode)")
-		} else {
-			log.Printf("[PAYMENT] Warning: Signature not provided but required in production")
+			log.Printf("[PAYMENT] Signature verification failed for order: %s", req.RazorpayOrderID)
 		}
 	}
 
@@ -248,6 +235,8 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to find order")
 		return
 	}
+
+	alreadyPaid := order.PaymentStatus == "paid"
 
 	// Update order status
 	order.RazorpayPaymentID = req.RazorpayPaymentID
@@ -288,7 +277,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send order confirmation email
-	if order.CustomerEmail != "" {
+	if !alreadyPaid && order.CustomerEmail != "" {
 		go func() {
 			emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
 
@@ -297,7 +286,7 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 			for i, item := range order.Items {
 				items[i] = map[string]interface{}{
 					"name":     item.Name,
-					"quantity": item.Quantity,
+					"quantity": float64(item.Quantity),
 					"price":    item.Price * float64(item.Quantity),
 				}
 			}
@@ -312,6 +301,9 @@ func (h *Handler) VerifyPayment(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[EMAIL] Error sending order confirmation email: %v", err)
 			}
 		}()
+	}
+	if !alreadyPaid {
+		h.notifyMerchantPaidOrder(order)
 	}
 
 	httpjson.JSON(w, http.StatusOK, map[string]interface{}{

@@ -1,0 +1,2169 @@
+openapi: 3.0.3
+info:
+  title: Growman Backend API
+  description: |
+    REST API for the Growman e-commerce platform (catalog, auth, checkout, orders, plant ID, and admin).
+
+    **Interactive docs**
+    - Swagger UI: `/docs`
+    - ReDoc: `/redoc`
+    - Raw spec: `/openapi.yaml`
+
+    Authenticated routes expect `Authorization: Bearer <jwt>`. Use **Authorize** in Swagger after login.
+  version: 1.0.0
+  contact:
+    name: Growman
+servers:
+  - url: /
+    description: Current host
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Health
+    description: Liveness and version
+  - name: Auth
+    description: Login, signup, OTP, Google, Truecaller, profile
+  - name: Products
+    description: Catalog product CRUD and search
+  - name: Categories
+    description: Categories, subcategories, and products in them
+  - name: Brands
+  - name: Catalog
+    description: Combined tags and categories for shop filters
+  - name: Images
+    description: Image upload and plant identification
+  - name: Chat
+    description: AI shopping assistant
+  - name: Checkout
+    description: Guest checkout with email OTP
+  - name: Payments
+    description: Razorpay orders and verification
+  - name: Orders
+  - name: Wishlist
+  - name: Requested Products
+    description: Demand for missing products
+  - name: Order Support
+    description: Admin order-support tickets
+  - name: Dashboard
+    description: Admin analytics maps
+  - name: Webhooks
+security:
+  - bearerAuth: []
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Process health check
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/healthz:
+    get:
+      tags: [Health]
+      summary: API health check
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/debug/version:
+    get:
+      tags: [Health]
+      summary: Build and server time
+      security: []
+      responses:
+        "200":
+          description: Version info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server_time:
+                    type: string
+                    example: "2026-08-30T00:56:00+05:30"
+                  built_at:
+                    type: string
+                    example: "2026-03-09-v2"
+                  git:
+                    type: string
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email or phone and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: JWT and user summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/admin/login:
+    post:
+      tags: [Auth]
+      summary: Admin login (admin or superadmin role required)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create a local account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/google:
+    post:
+      tags: [Auth]
+      summary: Login or signup with a Google ID/access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/google-signup:
+    post:
+      tags: [Auth]
+      summary: Google signup (same token flow as Google login)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /api/v1/auth/forgot-password/send-otp:
+    post:
+      tags: [Auth]
+      summary: Send password-reset OTP to email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Always succeeds (does not reveal whether the email exists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/forgot-password/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify password-reset OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        "200":
+          description: OTP valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/forgot-password/reset:
+    post:
+      tags: [Auth]
+      summary: Reset password after OTP verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp, newPassword]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 6
+                confirmPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/send:
+    post:
+      tags: [Auth]
+      summary: Send phone OTP (MSG91)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  description: 10-digit Indian mobile number
+                  example: "9876543210"
+                reqId:
+                  type: string
+                  description: When set, treated as a resend/retry
+                channel:
+                  type: string
+                  description: Retry channel (11 SMS, 4 VOICE, 12 WHATSAPP)
+                retryChannel:
+                  type: string
+                  description: Alias for channel
+      responses:
+        "200":
+          description: OTP sent (or cooldown / already-registered token)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/verify:
+    post:
+      tags: [Auth]
+      summary: Verify phone OTP and issue JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, otp]
+              properties:
+                phone:
+                  type: string
+                otp:
+                  type: string
+                reqId:
+                  type: string
+      responses:
+        "200":
+          description: JWT; new users may have onboarding scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/widget/verify:
+    post:
+      tags: [Auth]
+      summary: Verify MSG91 widget access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken]
+              properties:
+                accessToken:
+                  type: string
+                identifier:
+                  type: string
+                  description: Optional phone hint from the widget
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/truecaller:
+    post:
+      tags: [Auth]
+      summary: Truecaller OAuth (Android) → JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [authorizationCode, codeVerifier]
+              properties:
+                authorizationCode:
+                  type: string
+                codeVerifier:
+                  type: string
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/check-user:
+    get:
+      tags: [Auth]
+      summary: Check whether a user exists by email and/or phone
+      security: []
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+        - in: query
+          name: phone
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Existence flag and matched identifiers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  email:
+                    type: string
+                  phone:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/profile:
+    put:
+      tags: [Auth]
+      summary: Update profile and address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/profile/complete:
+    post:
+      tags: [Auth]
+      summary: Complete phone onboarding (onboarding-scope JWT required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Full-scope JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/save-location:
+    post:
+      tags: [Auth]
+      summary: Save address and coordinates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveLocationRequest"
+      responses:
+        "200":
+          description: Location saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products:
+    get:
+      tags: [Products]
+      summary: List products (paginated)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedProducts"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Products]
+      summary: Create a product
+      description: Optionally create a new category or subcategory via `newCategory` / `newSubcategory`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "200":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/search:
+    get:
+      tags: [Products]
+      summary: Search products by query
+      security: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedProducts"
+
+  /api/v1/products/featured:
+    get:
+      tags: [Products]
+      summary: Featured products
+      security: []
+      responses:
+        "200":
+          description: Featured product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /api/v1/products/{slug}:
+    get:
+      tags: [Products]
+      summary: Get product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [Products]
+      summary: Update product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Products]
+      summary: Delete product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/{slug}/related:
+    get:
+      tags: [Products]
+      summary: Related products for a slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Related products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      security: []
+      responses:
+        "200":
+          description: Categories with subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /api/v1/categories/{slug}:
+    get:
+      tags: [Categories]
+      summary: Get category by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/products:
+    get:
+      tags: [Categories]
+      summary: Products in a category
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/subcategories:
+    get:
+      tags: [Categories]
+      summary: List subcategories of a category
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subcategory"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/subcategories/{subSlug}/products:
+    get:
+      tags: [Categories]
+      summary: Products in a subcategory
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - in: path
+          name: subSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/brands:
+    get:
+      tags: [Brands]
+      summary: List brands
+      security: []
+      responses:
+        "200":
+          description: Brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+
+  /api/v1/tags:
+    get:
+      tags: [Catalog]
+      summary: Unique product tags
+      security: []
+      responses:
+        "200":
+          description: Sorted tag names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/v1/catalog:
+    get:
+      tags: [Catalog]
+      summary: Tags and categories for shop filters
+      security: []
+      responses:
+        "200":
+          description: Catalog payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+
+  /api/v1/images/upload:
+    post:
+      tags: [Images]
+      summary: Upload an image
+      description: Multipart form field `image`. Optional `prefix` (default `uploads`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                prefix:
+                  type: string
+                  example: products
+      responses:
+        "200":
+          description: Storage key and resolved URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageKey:
+                    type: string
+                  imageUrl:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/images/identify-plant:
+    post:
+      tags: [Images]
+      summary: Identify a plant from photos (Pl@ntNet)
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: One to five images (`image` or `images`)
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                organs:
+                  type: array
+                  items:
+                    type: string
+                    enum: [auto, flower, leaf, fruit, bark]
+                nb-results:
+                  type: string
+                lang:
+                  type: string
+      responses:
+        "200":
+          description: Pl@ntNet identification payload
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/chat:
+    post:
+      tags: [Chat]
+      summary: AI chat with product recommendations
+      description: Optional Bearer token (or `token` in body) unlocks order/wishlist intents.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/send-email-otp:
+    post:
+      tags: [Checkout]
+      summary: Send checkout email OTP (new users only)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "409":
+          description: Existing user must log in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Cooldown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: otp_cooldown
+                  retry_after:
+                    type: integer
+
+  /api/v1/checkout/verify-email-otp:
+    post:
+      tags: [Checkout]
+      summary: Verify checkout email OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        "200":
+          description: OTP verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/create-order:
+    post:
+      tags: [Checkout]
+      summary: Create Razorpay checkout order
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutOrderRequest"
+      responses:
+        "200":
+          description: Razorpay order plus local order id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RazorpayCreateResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/razorpay/order:
+    post:
+      tags: [Payments]
+      summary: Create Razorpay order (legacy)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: Razorpay order plus local order id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RazorpayCreateResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/razorpay/verify:
+    post:
+      tags: [Payments]
+      summary: Verify Razorpay payment signature
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [razorpay_order_id, razorpay_payment_id]
+              properties:
+                razorpay_order_id:
+                  type: string
+                razorpay_payment_id:
+                  type: string
+                razorpay_signature:
+                  type: string
+      responses:
+        "200":
+          description: Verified order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order:
+    get:
+      tags: [Orders]
+      summary: Get a single order by numeric id
+      security: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Internal order ID
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders:
+    get:
+      tags: [Orders]
+      summary: List orders for the current user (admins see all unless scope=self)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: orderId
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [self]
+          description: Admins pass `self` to list only their own orders
+      responses:
+        "200":
+          description: Paginated orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/status:
+    patch:
+      tags: [Orders]
+      summary: Update order status (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - confirmed
+                    - shipped
+                    - out_for_delivery
+                    - delivered
+                    - cancelled
+                    - failed
+                    - paid
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/expected-delivery:
+    patch:
+      tags: [Orders]
+      summary: Update expected delivery date (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedDeliveryDate:
+                  type: string
+                  description: YYYY-MM-DD, or empty to clear
+                  example: "2026-09-15"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/wishlist:
+    get:
+      tags: [Wishlist]
+      summary: List wishlist products
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Wishlist]
+      summary: Add product to wishlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId]
+              properties:
+                productId:
+                  type: integer
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "200":
+          description: Already in wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/wishlist/{productId}:
+    delete:
+      tags: [Wishlist]
+      summary: Remove product from wishlist
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/requested-products:
+    post:
+      tags: [Requested Products]
+      summary: Request a missing product
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequestedProductRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestedProduct"
+        "400":
+          $ref: "#/components/responses/Error"
+    get:
+      tags: [Requested Products]
+      summary: List requested products (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, reviewed, added, rejected]
+      responses:
+        "200":
+          description: Up to 200 rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequestedProduct"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order-support-requests:
+    get:
+      tags: [Order Support]
+      summary: List support tickets (admin)
+      responses:
+        "200":
+          description: Tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderSupportRequest"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order-support-requests/{id}/status:
+    patch:
+      tags: [Order Support]
+      summary: Update support ticket status (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, in_progress, resolved]
+                adminNotes:
+                  type: string
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSupportRequest"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/dashboard/map:
+    get:
+      tags: [Dashboard]
+      summary: Admin map analytics
+      parameters:
+        - in: query
+          name: mapType
+          required: true
+          schema:
+            type: string
+            enum: [world, country]
+        - in: query
+          name: timeFrame
+          schema:
+            type: string
+            default: daily
+        - in: query
+          name: country
+          schema:
+            type: string
+            example: india
+          description: Required when mapType=country (India only)
+      responses:
+        "200":
+          description: Map stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  formattedStats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        value:
+                          type: number
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /webhooks/razorpay:
+    post:
+      tags: [Webhooks]
+      summary: Razorpay webhook
+      security: []
+      parameters:
+        - in: header
+          name: X-Razorpay-Signature
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  example: payment.captured
+                payload:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSize:
+      in: query
+      name: pageSize
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema:
+        type: string
+    ID:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: go-backend
+    AuthRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          description: Email address or phone number
+        password:
+          type: string
+    AuthUserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUserSummary"
+    SignupRequest:
+      type: object
+      required: [name, email, phone, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          minLength: 6
+    GoogleAuthRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Google ID token or access token
+    PhoneAuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        isNewUser:
+          type: boolean
+          description: True when profile completion is still required
+        isNewAccount:
+          type: boolean
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            role:
+              type: string
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        emailVerified:
+          type: boolean
+        role:
+          type: string
+        address:
+          type: object
+          properties:
+            line:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+            country:
+              type: string
+            latitude:
+              type: number
+              nullable: true
+            longitude:
+              type: number
+              nullable: true
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        alternatePhone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    SaveLocationRequest:
+      type: object
+      properties:
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        emailVerified:
+          type: boolean
+        provider:
+          type: string
+        role:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subcategory"
+    Subcategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: integer
+    Brand:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+    ProductSize:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        productId:
+          type: integer
+        imageKeys:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+    Attribute:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        value:
+          type: string
+        productId:
+          type: integer
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+        specifications:
+          type: string
+        taxInfo:
+          type: string
+        price:
+          type: number
+        mrp:
+          type: number
+        currency:
+          type: string
+        imageKey:
+          type: string
+        imageUrl:
+          type: string
+        status:
+          type: string
+        featured:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        stock:
+          type: integer
+        categoryId:
+          type: integer
+        category:
+          $ref: "#/components/schemas/Category"
+        subcategoryId:
+          type: integer
+        brandId:
+          type: integer
+        sizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductSize"
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+    CreateProductRequest:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          properties:
+            newCategory:
+              type: string
+            newSubcategory:
+              type: string
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrev:
+          type: boolean
+    PaginatedProducts:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        pagination:
+          $ref: "#/components/schemas/PaginationMeta"
+    PaginatedOrders:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        pagination:
+          $ref: "#/components/schemas/PaginationMeta"
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+        name:
+          type: string
+        imageKey:
+          type: string
+        imageUrl:
+          type: string
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+        razorpayOrderId:
+          type: string
+        razorpayPaymentId:
+          type: string
+        paymentStatus:
+          type: string
+        status:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        expectedDeliveryDate:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+    OrderItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+    CreateCheckoutOrderRequest:
+      type: object
+      required: [amount, items, customer]
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+          example: INR
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+              description: 10-digit Indian mobile starting 6-9
+            addressLine:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+    CreateOrderRequest:
+      type: object
+      required: [amount, items]
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            address:
+              type: string
+    RazorpayCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Razorpay order id
+        amount:
+          type: integer
+          description: Amount in paise
+        currency:
+          type: string
+        status:
+          type: string
+        orderId:
+          type: integer
+          description: Local database order id
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        conversationHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+        token:
+          type: string
+          description: Optional JWT if Authorization header is missing
+    ChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        recommendedProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              slug:
+                type: string
+              price:
+                type: number
+              imageUrl:
+                type: string
+        orders:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              status:
+                type: string
+              amount:
+                type: number
+              createdAt:
+                type: string
+              expectedDeliveryDate:
+                type: string
+              itemCount:
+                type: integer
+              itemPreview:
+                type: string
+              imageUrl:
+                type: string
+    CreateRequestedProductRequest:
+      type: object
+      required: [productName]
+      properties:
+        productName:
+          type: string
+        details:
+          type: string
+        source:
+          type: string
+          example: search_page
+        requesterName:
+          type: string
+        requesterEmail:
+          type: string
+        requesterPhone:
+          type: string
+        adminNotes:
+          type: string
+    RequestedProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        productName:
+          type: string
+        details:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        requestedById:
+          type: integer
+        requesterName:
+          type: string
+        requesterEmail:
+          type: string
+        requesterPhone:
+          type: string
+        adminNotes:
+          type: string
+    OrderSupportRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        orderId:
+          type: integer
+        userId:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        issueType:
+          type: string
+        priority:
+          type: string
+        userMessage:
+          type: string
+        orderStatus:
+          type: string
+        paymentStatus:
+          type: string
+        orderAmount:
+          type: number
+        status:
+          type: string
+        source:
+          type: string
+        adminNotes:
+          type: string

@@ -143,7 +143,6 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	// Orders / wishlist — answer from the user's account when logged in
 	if intent := detectAccountIntent(req.Message); intent != "" {
 		if !loggedIn {
-			log.Printf("[CHAT] Account intent %q but no valid Authorization token", intent)
 			httpjson.JSON(w, http.StatusOK, ChatResponse{
 				Response: "Please **log in** to view your orders or wishlist. Open **Account**, sign in, then ask me again — e.g. \"show my orders\" or \"what's in my wishlist\".",
 			})
@@ -206,7 +205,6 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 
 	// Ensure we have a response
 	if aiResponse == "" {
-		log.Printf("[CHAT] Empty AI response received")
 		aiResponse = h.getFallbackResponse(req.Message)
 	}
 
@@ -359,9 +357,9 @@ func isPlantCareOrderPhrase(lower string) bool {
 }
 
 var (
-	orderShortPhrasePattern   = regexp.MustCompile(`(?i)^(?:show\s+|list\s+|view\s+|check\s+|see\s+|get\s+)?(?:my\s+)?orders?[\s!.?]*$`)
-	orderForAboutPattern      = regexp.MustCompile(`(?i)\b(for|about|regarding|with)\s+(my\s+)?orders?\b`)
-	orderListIntentPattern    = regexp.MustCompile(`(?i)\b(list|show|view|check|see|get|tell\s+me)\b.{0,30}\b(?:my\s+)?orders?\b`)
+	orderShortPhrasePattern    = regexp.MustCompile(`(?i)^(?:show\s+|list\s+|view\s+|check\s+|see\s+|get\s+)?(?:my\s+)?orders?[\s!.?]*$`)
+	orderForAboutPattern       = regexp.MustCompile(`(?i)\b(for|about|regarding|with)\s+(my\s+)?orders?\b`)
+	orderListIntentPattern     = regexp.MustCompile(`(?i)\b(list|show|view|check|see|get|tell\s+me)\b.{0,30}\b(?:my\s+)?orders?\b`)
 	orderSupportKeywordPattern = regexp.MustCompile(`(?i)\b(refund|tracking|tracked|delivery|delivered|shipped|shipment)\b`)
 )
 
@@ -503,7 +501,7 @@ func (h *Handler) buildOrdersChatResponse(userID uint) accountChatResult {
 
 	if len(visible) == 0 {
 		return accountChatResult{
-			ok: true,
+			ok:   true,
 			text: "You don't have any **active paid orders** right now. Unpaid checkouts are hidden — complete payment in **Shop**, or ask **\"status of order #123\"** for a specific order.",
 		}
 	}
@@ -769,34 +767,24 @@ func (h *Handler) findRelevantProducts(userMessage string, limit int) []models.P
 func (h *Handler) callAI(messages []ChatMessage, systemPrompt string) (string, error) {
 	provider := strings.ToLower(h.Cfg.AIProvider)
 
-	// Log which provider is being used
-	log.Printf("[CHAT] Using AI provider: %s", provider)
-
 	switch provider {
 	case "gemini":
 		if h.Cfg.GeminiAPIKey == "" {
-			log.Printf("[CHAT] Gemini API key not configured, using fallback")
 			return h.getFallbackResponse(messages[len(messages)-1].Content), nil
 		}
 		return h.callGeminiAPI(messages, systemPrompt)
 	case "openai":
 		if h.Cfg.OpenAIAPIKey == "" {
-			log.Printf("[CHAT] OpenAI API key not configured, using fallback")
 			return h.getFallbackResponse(messages[len(messages)-1].Content), nil
 		}
 		return h.callOpenAIAPI(messages)
 	default:
-		// Try to auto-detect based on available API keys
 		if h.Cfg.GeminiAPIKey != "" {
-			log.Printf("[CHAT] Auto-detected Gemini API key")
 			return h.callGeminiAPI(messages, systemPrompt)
 		}
 		if h.Cfg.OpenAIAPIKey != "" {
-			log.Printf("[CHAT] Auto-detected OpenAI API key")
 			return h.callOpenAIAPI(messages)
 		}
-		// Fallback response if no API key is configured
-		log.Printf("[CHAT] No API keys configured, using fallback response")
 		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
 	}
 }
@@ -842,7 +830,7 @@ func (h *Handler) callOpenAIAPI(messages []ChatMessage) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[CHAT] OpenAI API error: %s", string(body))
+		log.Printf("[CHAT] OpenAI API error: %d", resp.StatusCode)
 		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
 	}
 
@@ -920,7 +908,7 @@ func (h *Handler) callGeminiAPI(messages []ChatMessage, systemPrompt string) (st
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[CHAT] Gemini API error (status %d): %s", resp.StatusCode, string(body))
+		log.Printf("[CHAT] Gemini API error: %d", resp.StatusCode)
 		// Try to parse error response
 		var geminiResp GeminiResponse
 		if err := json.Unmarshal(body, &geminiResp); err == nil && geminiResp.Error.Message != "" {
@@ -931,7 +919,7 @@ func (h *Handler) callGeminiAPI(messages []ChatMessage, systemPrompt string) (st
 
 	var geminiResp GeminiResponse
 	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		log.Printf("[CHAT] Failed to unmarshal Gemini response: %v, body: %s", err, string(body))
+		log.Printf("[CHAT] Failed to unmarshal Gemini response: %v", err)
 		return "", fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 // import ProductCard from '@repo/ui/productCard';
 import ProductCard from "../productspage/ProductCard";
+import { ProductCardSkeleton } from "../loading/SkeletonLoader";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { Product } from "../../lib/types";
@@ -13,6 +14,10 @@ export default function PlantSection() {
   const router = useRouter();
 
   useEffect(() => {
+    if (window.location.hash === "#skeletons") {
+      return;
+    }
+
     async function fetchFeatured() {
       try {
         const res = await apiFetch("/products/featured");
@@ -75,26 +80,25 @@ export default function PlantSection() {
       scrollbar-hide
       -mx-3 sm:-mx-4 px-3 sm:px-4
   "
-          style={{ scrollBehavior: 'smooth' }}
+          style={{ scrollBehavior: "smooth" }}
+          aria-busy={loading}
         >
-          {loading
-            ? skeletons.map((_, idx) => (
+          {loading ? (
+            <>
+              <span className="sr-only">Loading featured plants</span>
+              {skeletons.map((_, idx) => (
                 <div
                   key={idx}
                   className="
                      shrink-0
                      w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
-          snap-start
-
-                   bg-white rounded-xl border border-green-100 p-4 shadow animate-pulse"
+          snap-start"
                 >
-                  <div className="aspect-square bg-gray-200 rounded mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-100 rounded w-1/2 mb-4"></div>
-                  <div className="h-8 bg-emerald-100 rounded w-full"></div>
+                  <ProductCardSkeleton />
                 </div>
-              ))
-            : Array.isArray(featuredProducts) && featuredProducts.length > 0
+              ))}
+            </>
+          ) : Array.isArray(featuredProducts) && featuredProducts.length > 0
               ? featuredProducts.map((product: Product) => (
                   <div
                     key={product.id}

@@ -174,12 +174,20 @@ export default function CategoryPage({
           {subcategories.length > 0 && (
             <section className="mb-8 sm:mb-10 md:mb-12">
               <h2 className="text-xl sm:text-2xl font-semibold text-green-800 mb-4 sm:mb-6">Browse Subcategories</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+              <div
+                className="
+                  flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto pb-3
+                  snap-x snap-mandatory scroll-smooth scrollbar-hide
+                  -mx-3 sm:-mx-4 px-3 sm:px-4
+                "
+              >
                 {formattedSubcategories.map((subcategory) => (
-                  <SubcategoryCard
+                  <div
                     key={subcategory.id}
-                    subcategory={subcategory}
-                  />
+                    className="shrink-0 w-[58%] sm:w-[200px] md:w-[220px] snap-start"
+                  >
+                    <SubcategoryCard subcategory={subcategory} />
+                  </div>
                 ))}
               </div>
             </section>

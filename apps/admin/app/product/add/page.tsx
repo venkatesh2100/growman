@@ -397,6 +397,9 @@ export default function AddProductPage() {
     const res = await fetch(`${apiUrl}/images/upload`, {
       method: "POST",
       body: formData,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      },
     });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();

@@ -1,16 +1,22 @@
 import "@repo/ui/styles.css";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import Navbar from "../components/hompage/navbar";
 import { ToastContainer } from "../lib/toast";
 import ServiceWorkerRegistration from "../components/pwa/ServiceWorkerRegistration";
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import PlantChatbot from "../components/chatbot/PlantChatbot";
+import BrowseEngagementBeacon from "../components/BrowseEngagementBeacon";
 
 
 const geist = Geist({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  weight: ["500", "600", "700"],
+});
 
 /* ---------------- METADATA ---------------- */
 export const metadata: Metadata = {
@@ -66,9 +72,10 @@ export default function RootLayout({
       </Script>
 
       <body
-        className={`${geist.className} bg-linear-to-r from-green-50 to-emerald-50`}
+        className={`${geist.className} ${spaceGrotesk.variable} bg-linear-to-r from-green-50 to-emerald-50`}
       >
         <ServiceWorkerRegistration />
+        <BrowseEngagementBeacon />
         <Navbar />
         {children}
         <PlantChatbot />

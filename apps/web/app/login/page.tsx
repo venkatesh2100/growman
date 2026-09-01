@@ -4,8 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
-import { LogIn, Mail, Lock, Loader2, XCircle, CheckCircle } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import GoogleLoginButton from "./GoogleLoginButton";
 import { toast } from "../../lib/toast";
@@ -20,13 +21,13 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const setToken = useAuthStore((state) => state.setToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [humanOk, setHumanOk] = useState(() => !isTurnstileSiteConfigured());
 
   useEffect(() => {
-    // Pre-fill email from query params
     const emailParam = searchParams?.get("email");
     if (emailParam) {
       setEmail(emailParam);
@@ -36,6 +37,13 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!email.trim() || !password) {
+      const msg = "Enter your email and password.";
+      setError(msg);
+      toast(msg, "error");
+      return;
+    }
 
     if (isTurnstileSiteConfigured() && !humanOk) {
       toast("Please complete the security check (bottom-right).", "error");
@@ -48,185 +56,190 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
       const res = await apiFetch("/auth/login", {
         method: "POST",
         body: JSON.stringify({
-          email, // Can be email or phone
+          email: email.trim(),
           password,
         }),
       });
 
       if (!res.ok) {
-        let errorMessage = "Login failed";
+        let errorMessage = "Couldn't sign you in. Try again.";
         try {
           const contentType = res.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             const errorData = await res.json();
-            const apiError = errorData.error || errorData.message;
-            
-            // Map common errors to user-friendly messages
-            if (apiError) {
-              if (apiError.includes("invalid credentials") || apiError.includes("unauthorized")) {
-                errorMessage = "Invalid email/phone or password. Please check and try again.";
-              } else if (apiError.includes("not found") || apiError.includes("does not exist")) {
-                errorMessage = "No account found with this email/phone. Please sign up first.";
-              } else {
-                errorMessage = apiError;
-              }
+            const apiError = String(errorData.error || errorData.message || "").toLowerCase();
+
+            if (res.status === 429) {
+              errorMessage = "Too many attempts. Wait a bit and try again.";
+            } else if (
+              apiError.includes("account not found") ||
+              apiError.includes("not found") ||
+              apiError.includes("does not exist")
+            ) {
+              errorMessage = "No account with that email. Sign up first.";
+            } else if (
+              apiError.includes("invalid") ||
+              apiError.includes("credential") ||
+              apiError.includes("unauthorized")
+            ) {
+              errorMessage = "Wrong email or password.";
+            } else if (res.status >= 500) {
+              errorMessage = "Couldn't sign you in. Try again.";
             }
-          } else {
-            const text = await res.text();
-            errorMessage = text || `Server returned ${res.status}`;
+          } else if (res.status >= 500) {
+            errorMessage = "Couldn't sign you in. Try again.";
           }
         } catch {
-          errorMessage = `Server returned ${res.status}`;
+          errorMessage = "Couldn't sign you in. Try again.";
         }
-        
+
+        setError(errorMessage);
         toast(errorMessage, "error");
-        throw new Error(errorMessage);
+        return;
       }
 
       const data = await res.json();
-      
-      // Store token using auth store
       setToken(data.token);
-      toast("Login successful! Welcome back!", "success");
+      toast("Signed in.", "success");
       setSuccess(true);
 
-      // Redirect after short delay
       const redirect = searchParams?.get("redirect") || "/";
       setTimeout(() => {
         router.push(redirect);
-      }, 1500);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "Login failed. Please try again.";
+      }, 800);
+    } catch {
+      const errorMsg = "No connection. Check your internet and try again.";
       setError(errorMsg);
+      toast(errorMsg, "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F9FAFB] px-4 py-8 sm:px-6 sm:py-12">
       <TurnstileGate onHumanVerified={setHumanOk} />
-      <div className="max-w-md w-full space-y-6 sm:space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <div className="bg-emerald-600 p-2.5 sm:p-3 rounded-full">
-              <LogIn className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center">
+        <Link
+          href="/"
+          prefetch={false}
+          className="mb-8 inline-flex h-10 w-10 items-center justify-center rounded-xl text-green-900 transition-colors hover:bg-emerald-50"
+          aria-label="Back to home"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+
+        <div className="mb-8">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="relative h-11 w-11 overflow-hidden rounded-2xl shadow-sm ring-1 ring-emerald-800/10">
+              <Image src="/growman.png" alt="Growman" fill sizes="44px" className="object-cover" />
             </div>
+            <span className="font-space text-lg font-semibold tracking-tight text-green-900">
+              Growman
+            </span>
           </div>
-          <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
+          <h1 className="font-space text-[28px] font-bold tracking-tight text-green-900">
             Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-xs sm:text-sm text-gray-600">
-            Or{" "}
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">
+            New here?{" "}
             <Link
               href="/signup"
               prefetch={false}
-              className="font-medium text-emerald-600 hover:text-emerald-500 active:text-emerald-700 touch-manipulation"
+              className="font-semibold text-emerald-600 hover:text-emerald-700"
             >
-              create a new account
+              Create an account
             </Link>
           </p>
         </div>
 
-        <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleLogin}>
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-              <XCircle className="w-5 h-5 text-red-600 mr-2" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
+        <form className="space-y-4" onSubmit={handleLogin}>
+          {error ? (
+            <p className="text-sm text-green-950/55">{error}</p>
+          ) : null}
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
-              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-              <p className="text-sm text-green-700">Login successful! Redirecting...</p>
-            </div>
-          )}
+          {success ? (
+            <p className="text-sm text-emerald-700">Signed in. Redirecting…</p>
+          ) : null}
 
-          <div className="space-y-3 sm:space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Email or Phone
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="text"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none relative block w-full pl-9 sm:pl-10 pr-3 py-2.5 sm:py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 text-sm sm:text-base touch-manipulation"
-                  placeholder="Email or phone number"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full pl-9 sm:pl-10 pr-3 py-2.5 sm:py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 text-sm sm:text-base touch-manipulation"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </div>
+          <div className="flex items-center rounded-2xl border border-emerald-100 bg-white px-4">
+            <Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
+            <input
+              id="email"
+              name="email"
+              type="text"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              className="w-full bg-transparent py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              placeholder="Email or phone number"
+            />
           </div>
 
-          <div className="space-y-3">
+          <div className="flex items-center rounded-2xl border border-emerald-100 bg-white px-4">
+            <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+              className="w-full bg-transparent py-4 pr-2 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              placeholder="Enter your password"
+            />
             <button
-              type="submit"
-              disabled={loading || success || (isTurnstileSiteConfigured() && !humanOk)}
-              className="group relative w-full flex justify-center py-2.5 sm:py-3 px-4 border border-transparent text-sm sm:text-base font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed touch-manipulation"
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+              className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Sign in
-                </>
-              )}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
-            
-            {googleClientId && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-                  </div>
-                </div>
+          </div>
 
-                <GoogleLoginButton />
+          <button
+            type="submit"
+            disabled={loading || success || (isTurnstileSiteConfigured() && !humanOk)}
+            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-4 text-base font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <LogIn className="h-5 w-5" />
+                Sign in
               </>
             )}
-          </div>
+          </button>
 
-          <div className="text-center">
+          {googleClientId ? (
+            <div className="pt-2">
+              <div className="relative my-4 flex items-center">
+                <div className="h-px flex-1 bg-emerald-100" />
+                <span className="mx-3 text-sm text-gray-500">Or continue with</span>
+                <div className="h-px flex-1 bg-emerald-100" />
+              </div>
+              <GoogleLoginButton />
+            </div>
+          ) : null}
+
+          <div className="pt-2 text-center">
             <Link
               href="/forgot-password"
               prefetch={false}
-              className="text-sm text-emerald-600 hover:text-emerald-500"
+              className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
             >
               Forgot your password?
             </Link>
@@ -239,27 +252,15 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
 
 function LoginPageFallback() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8">
-        <div className="flex justify-center">
-          <div className="bg-emerald-600 p-2.5 sm:p-3 rounded-full">
-            <LogIn className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-          </div>
-        </div>
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+      <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
     </div>
   );
 }
 
 export default function LoginPage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-  
-  // Always wrap with provider, but pass clientId to content
-  // Wrap LoginPageContent in Suspense because it uses useSearchParams
+
   return (
     <GoogleOAuthProvider clientId={googleClientId || "dummy"}>
       <Suspense fallback={<LoginPageFallback />}>
@@ -268,4 +269,3 @@ export default function LoginPage() {
     </GoogleOAuthProvider>
   );
 }
-

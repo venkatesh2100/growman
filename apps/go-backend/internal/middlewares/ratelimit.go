@@ -1,74 +1,76 @@
 package middlewares
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-redis/redis/v8"
 )
 
-// RateLimitConfig holds rate limiting configuration
+const rateLimitLua = `
+local n = redis.call("INCR", KEYS[1])
+if n == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return n
+`
+
+// RateLimitConfig holds rate limiting configuration.
 type RateLimitConfig struct {
 	Redis      *redis.Client
-	Limit      int           // Number of requests allowed
-	Window     time.Duration // Time window for rate limit
-	Identifier func(*http.Request) string // Function to extract identifier (IP, user ID, etc.)
+	Limit      int
+	Window     time.Duration
+	Name       string
+	Identifier func(*http.Request) string
 }
 
-// RateLimiter returns a middleware that rate limits requests using Redis
+// RateLimiter rate-limits with a fixed Redis window. Fail-open if Redis is unavailable.
 func RateLimiter(config RateLimitConfig) func(next http.Handler) http.Handler {
+	name := config.Name
+	if name == "" {
+		name = "api"
+	}
+	windowSec := int(config.Window.Seconds())
+	if windowSec < 1 {
+		windowSec = 1
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if config.Redis == nil {
-				// If Redis is not available, skip rate limiting
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			// Get identifier (default to IP address)
-			identifier := config.Identifier(r)
+			identifier := ""
+			if config.Identifier != nil {
+				identifier = config.Identifier(r)
+			}
 			if identifier == "" {
-				identifier = middleware.GetReqID(r.Context())
-				if identifier == "" {
-					identifier = r.RemoteAddr
-				}
+				identifier = ClientIP(r)
 			}
 
-			// Create rate limit key
-			key := "ratelimit:" + identifier
-			ctx := context.Background()
-
-			// Use Redis INCR with expiration
-			pipe := config.Redis.Pipeline()
-			incr := pipe.Incr(ctx, key)
-			pipe.Expire(ctx, key, config.Window)
-			_, err := pipe.Exec(ctx)
-
+			key := "rl:" + name + ":" + identifier
+			n, err := config.Redis.Eval(r.Context(), rateLimitLua, []string{key}, windowSec).Int64()
 			if err != nil {
-				// If Redis fails, allow the request (fail open)
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			count := incr.Val()
-
-			// Set rate limit headers
 			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(config.Limit))
-			remaining := config.Limit - int(count)
+			remaining := config.Limit - int(n)
 			if remaining < 0 {
 				remaining = 0
 			}
 			w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
 			w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(config.Window).Unix(), 10))
 
-			// Check if limit exceeded
-			if count > int64(config.Limit) {
+			if n > int64(config.Limit) {
+				w.Header().Set("Retry-After", strconv.Itoa(windowSec))
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate limit exceeded"}`))
+				_, _ = w.Write([]byte(`{"error":"rate limit exceeded"}`))
 				return
 			}
 
@@ -77,23 +79,19 @@ func RateLimiter(config RateLimitConfig) func(next http.Handler) http.Handler {
 	}
 }
 
-// IPRateLimiter creates a rate limiter that uses IP address as identifier
+// IPRateLimiter creates a named limiter keyed by client IP.
 func IPRateLimiter(redis *redis.Client, limit int, window time.Duration) func(next http.Handler) http.Handler {
+	return NamedIPRateLimiter(redis, "api", limit, window)
+}
+
+func NamedIPRateLimiter(rdb *redis.Client, name string, limit int, window time.Duration) func(next http.Handler) http.Handler {
 	return RateLimiter(RateLimitConfig{
-		Redis:  redis,
+		Redis:  rdb,
 		Limit:  limit,
 		Window: window,
+		Name:   name,
 		Identifier: func(r *http.Request) string {
-			// Try to get real IP from headers (for proxies/load balancers)
-			ip := r.Header.Get("X-Forwarded-For")
-			if ip == "" {
-				ip = r.Header.Get("X-Real-Ip")
-			}
-			if ip == "" {
-				ip = r.RemoteAddr
-			}
-			return ip
+			return ClientIP(r)
 		},
 	})
 }
-

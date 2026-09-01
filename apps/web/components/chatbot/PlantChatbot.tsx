@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2, Camera, Trash2, Package } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Camera, Package, Leaf } from "lucide-react";
 import { apiFetch, getApiUrl, resolveAuthToken } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,8 +50,29 @@ function orderStatusClass(status: string) {
   return "bg-amber-100 text-amber-800";
 }
 
+function ThinkingIndicator() {
+  return (
+    <div className="mb-2 flex justify-start animate-in fade-in slide-in-from-bottom-1 duration-200">
+      <div className="flex max-w-[80%] items-center gap-3 rounded-2xl rounded-bl-md border border-emerald-100 bg-white px-4 py-3">
+        <div className="flex items-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-1.5 w-1.5 rounded-full bg-emerald-600"
+              style={{
+                animation: "chat-dot 0.84s ease-in-out infinite",
+                animationDelay: `${i * 160}ms`,
+              }}
+            />
+          ))}
+        </div>
+        <span className="text-sm text-gray-500 animate-pulse">Thinking</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PlantChatbot() {
-  // Initialize with consistent values for SSR (always false, always default message)
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([DEFAULT_MESSAGE]);
   const [input, setInput] = useState("");
@@ -59,24 +80,21 @@ export default function PlantChatbot() {
   const [isScanning, setIsScanning] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Load from localStorage only after component mounts (client-side only)
   useEffect(() => {
     setIsMounted(true);
 
-    // Load isOpen state
     const savedIsOpen = localStorage.getItem(STORAGE_KEY_IS_OPEN);
     if (savedIsOpen === "true") {
       setIsOpen(true);
     }
 
-    // Load messages
     const savedMessages = localStorage.getItem(STORAGE_KEY_MESSAGES);
     if (savedMessages) {
       try {
@@ -90,14 +108,12 @@ export default function PlantChatbot() {
     }
   }, []);
 
-  // Save messages to localStorage whenever they change (but not during initial load)
   useEffect(() => {
     if (isMounted && typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
     }
   }, [messages, isMounted]);
 
-  // Save isOpen state to localStorage (but not during initial load)
   useEffect(() => {
     if (isMounted && typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY_IS_OPEN, isOpen.toString());
@@ -106,7 +122,7 @@ export default function PlantChatbot() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -166,7 +182,6 @@ export default function PlantChatbot() {
       });
 
       if (!response.ok) {
-        // Try to get error message from response
         let errorText = "Failed to get response";
         try {
           const errorData = await response.text();
@@ -198,7 +213,9 @@ export default function PlantChatbot() {
         status: String(o.status ?? ""),
         amount: typeof o.amount === "number" ? o.amount : Number(o.amount ?? 0),
         createdAt: String(o.createdAt ?? o.created_at ?? ""),
-        expectedDeliveryDate: (o.expectedDeliveryDate ?? o.expected_delivery_date) as string | undefined,
+        expectedDeliveryDate: (o.expectedDeliveryDate ?? o.expected_delivery_date) as
+          | string
+          | undefined,
         itemCount: Number(o.itemCount ?? o.item_count ?? 0),
         itemPreview: String(o.itemPreview ?? o.item_preview ?? ""),
         imageUrl: (o.imageUrl ?? o.image_url) as string | undefined,
@@ -219,19 +236,12 @@ export default function PlantChatbot() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "dootha",
-        content: error instanceof Error && error.message
-          ? `I'm sorry, I encountered an error: ${error.message}. Please check your API key configuration or try again later.`
-          : "I'm sorry, I encountered an error. Please try again later.",
+        content: "I'm having trouble connecting. Please try again in a moment.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleClearChat = () => {
-    setMessages([DEFAULT_MESSAGE]);
-    toast("Chat cleared", "info");
   };
 
   const identifyPlantFromFile = async (file: File) => {
@@ -261,9 +271,9 @@ export default function PlantChatbot() {
 
       if (name) {
         setInput(`What is ${name} and how do I care for it?`);
-        toast("Plant identified! Edit and send.", "success");
+        toast("Plant identified! Edit the message and send.", "success");
       } else {
-        toast("Could not identify plant. Try clearer photo.", "error");
+        toast("Could not identify plant. Try a clearer photo.", "error");
       }
     } catch (error) {
       console.error("Plant identification error:", error);
@@ -280,7 +290,7 @@ export default function PlantChatbot() {
     event.target.value = "";
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -289,167 +299,192 @@ export default function PlantChatbot() {
 
   return (
     <>
-      {/* Chat Button */}
+      {/* FAB — matches mobile tab open affordance */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-        aria-label="Open chat"
+        className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg transition-all duration-300 hover:bg-emerald-700 hover:shadow-xl sm:bottom-6 sm:right-6"
+        aria-label={isOpen ? "Close chat" : "Open chat"}
       >
         {isOpen ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6" />
+          <X className="h-6 w-6" />
         ) : (
-          <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
+          <MessageCircle className="h-6 w-6" />
         )}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-6 sm:z-50 sm:w-96 sm:max-w-[calc(100vw-3rem)] sm:h-[600px] sm:max-h-[calc(100vh-8rem)] sm:rounded-lg z-50 bg-white shadow-2xl flex flex-col border-0 sm:border sm:border-emerald-100">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white p-3 sm:p-4 sm:rounded-t-lg flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Image src="/dootha.svg" alt="Dootha AI" width={24} height={24} className="sm:w-[30px] sm:h-[30px]" />
-              <h3 className="font-semibold text-sm sm:text-base">Dootha AI</h3>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleClearChat}
-                className="hover:bg-white/20 rounded-full p-1 transition-colors"
-                aria-label="Clear chat"
-                title="Clear chat"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+        <>
+          {/* Mobile backdrop like mobile modal dim */}
+          <button
+            type="button"
+            aria-label="Close chat overlay"
+            className="fixed inset-0 z-40 bg-black/45 sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div
+            className="
+              fixed inset-x-0 bottom-0 z-50 flex h-[min(92dvh,720px)] flex-col overflow-hidden
+              rounded-t-3xl border border-emerald-100 bg-white shadow-2xl
+              sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[600px] sm:max-h-[calc(100vh-8rem)]
+              sm:w-[24rem] sm:max-w-[calc(100vw-3rem)] sm:rounded-3xl
+            "
+            role="dialog"
+            aria-label="Dootha plant assistant"
+          >
+            {/* Header — light canvas like mobile */}
+            <div className="flex items-center justify-between border-b border-emerald-100 bg-[#F0F7F4] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="relative h-10 w-10 overflow-hidden rounded-xl">
+                  <Image
+                    src="/growman.png"
+                    alt="Dootha"
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-space text-lg font-semibold tracking-tight text-green-900">
+                    Dootha
+                  </h3>
+                  <p className="text-xs text-gray-500">Growman plant assistant</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-white/20 rounded-full p-1 transition-colors"
+                className="rounded-xl p-2 text-green-900 transition-colors hover:bg-emerald-50"
                 aria-label="Close chat"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-          </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-green-50/50 to-white">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-                    message.role === "user"
-                      ? "bg-emerald-600 text-white rounded-br-md"
-                      : "bg-white text-gray-800 border border-emerald-100 shadow-sm rounded-bl-md"
-                  }`}
-                >
-                  {message.role === "dootha" ? (
-                    <MarkdownRenderer content={message.content} />
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  )}
-                </div>
-
-                {/* Order cards */}
-                {message.role === "dootha" && message.orders && message.orders.length > 0 && (
-                  <div className="mt-2 w-full max-w-[85%] space-y-2">
-                    {message.orders.map((order) => (
-                      <Link
-                        key={order.id}
-                        href="/orders"
-                        onClick={() => setIsOpen(false)}
-                        className="flex overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50/40"
-                      >
-                        <div className="relative h-[76px] w-[76px] shrink-0 bg-gray-100">
-                          {order.imageUrl ? (
-                            <img
-                              src={order.imageUrl}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-emerald-600">
-                              <Package className="h-7 w-7" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-bold text-emerald-950">Order #{order.id}</p>
-                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusClass(order.status)}`}>
-                              {order.status}
-                            </span>
-                          </div>
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">{order.itemPreview}</p>
-                          <p className="mt-1 text-xs font-bold text-emerald-700">
-                            ₹{Math.round(order.amount)} · {order.createdAt}
-                            {order.expectedDeliveryDate ? ` · ETA ${order.expectedDeliveryDate}` : ""}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                    <Link
-                      href="/orders"
-                      onClick={() => setIsOpen(false)}
-                      className="block py-1 text-center text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+            {/* Messages — canvasAlt */}
+            <div className="flex-1 space-y-3 overflow-y-auto bg-[#F9FAFB] p-4">
+              {messages.map((message) => {
+                const isUser = message.role === "user";
+                return (
+                  <div
+                    key={message.id}
+                    className={`mb-1 flex flex-col ${isUser ? "items-end" : "items-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl p-3 ${
+                        isUser
+                          ? "rounded-br-md bg-emerald-700 text-white"
+                          : "rounded-bl-md border border-emerald-100 bg-white text-gray-800"
+                      }`}
                     >
-                      View all orders →
-                    </Link>
-                  </div>
-                )}
-
-                {/* Product recommendations */}
-                {message.role === "dootha" && message.products && message.products.length > 0 && (
-                  <div className="mt-2 w-full max-w-[85%]">
-                    <p className="mb-2 text-xs font-semibold text-emerald-800">Suggested for you</p>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {message.products.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={`/product/${product.slug}`}
-                          onClick={() => setIsOpen(false)}
-                          className="w-[112px] shrink-0 overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition-colors hover:border-emerald-200"
-                        >
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="h-[72px] w-full object-cover bg-gray-100"
-                            />
-                          ) : (
-                            <div className="flex h-[72px] items-center justify-center bg-emerald-50 text-emerald-600">
-                              <Package className="h-6 w-6" />
-                            </div>
-                          )}
-                          <div className="p-2">
-                            <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-emerald-950">
-                              {product.name}
-                            </p>
-                            <p className="mt-0.5 text-[11px] font-bold text-emerald-700">
-                              ₹{Math.round(product.price)}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap text-[15px] leading-5">{message.content}</p>
+                      ) : (
+                        <MarkdownRenderer content={message.content} />
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-emerald-100 rounded-lg px-4 py-2 shadow-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Input */}
-          <div className="p-3 sm:p-4 border-t border-emerald-100 bg-white sm:rounded-b-lg">
-            <div className="flex gap-2">
+                    {!isUser && message.orders && message.orders.length > 0 && (
+                      <div className="mt-2 w-full space-y-2 self-stretch">
+                        {message.orders.map((order) => (
+                          <Link
+                            key={order.id}
+                            href="/orders"
+                            onClick={() => setIsOpen(false)}
+                            className="flex overflow-hidden rounded-2xl border border-emerald-100 bg-white transition-opacity active:opacity-90"
+                          >
+                            <div className="relative h-[76px] w-[76px] shrink-0 bg-gray-100">
+                              {order.imageUrl ? (
+                                <img
+                                  src={order.imageUrl}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-emerald-600">
+                                  <Package className="h-7 w-7" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-bold text-emerald-950">
+                                  Order #{order.id}
+                                </p>
+                                <span
+                                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusClass(order.status)}`}
+                                >
+                                  {order.status}
+                                </span>
+                              </div>
+                              <p className="mt-1 line-clamp-2 text-xs leading-4 text-gray-600">
+                                {order.itemPreview}
+                              </p>
+                              <p className="mt-1 text-xs font-bold text-emerald-600">
+                                ₹{Math.round(order.amount)} · {order.createdAt}
+                                {order.expectedDeliveryDate
+                                  ? ` · ETA ${order.expectedDeliveryDate}`
+                                  : ""}
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                        <Link
+                          href="/orders"
+                          onClick={() => setIsOpen(false)}
+                          className="block py-1 text-center text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                        >
+                          View all orders →
+                        </Link>
+                      </div>
+                    )}
+
+                    {!isUser && message.products && message.products.length > 0 && (
+                      <div className="mt-2 w-full self-stretch">
+                        <p className="mb-2 text-xs font-semibold text-emerald-800">
+                          Suggested for you
+                        </p>
+                        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
+                          {message.products.map((product) => (
+                            <Link
+                              key={product.id}
+                              href={`/product/${product.slug}`}
+                              onClick={() => setIsOpen(false)}
+                              className="h-[164px] w-[112px] shrink-0 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/80 transition-opacity active:opacity-90"
+                            >
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className="h-[92px] w-full bg-gray-100 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-[92px] items-center justify-center bg-emerald-100 text-emerald-600">
+                                  <Leaf className="h-6 w-6" />
+                                </div>
+                              )}
+                              <div className="flex flex-1 flex-col justify-center px-2 py-1.5">
+                                <p className="line-clamp-2 text-[11px] font-semibold leading-[14px] text-emerald-950">
+                                  {product.name}
+                                </p>
+                                <p className="mt-0.5 text-[11px] font-bold text-emerald-600">
+                                  ₹{Math.round(product.price)}
+                                </p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {isLoading ? <ThinkingIndicator /> : null}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Composer — matches mobile */}
+            <div className="flex items-end gap-2 border-t border-emerald-100 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -461,44 +496,50 @@ export default function PlantChatbot() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isScanning || isLoading}
-                className="bg-emerald-50 hover:bg-emerald-100 disabled:bg-gray-100 disabled:text-gray-400 text-emerald-700 rounded-lg px-3 py-2 sm:px-4 transition-colors flex-shrink-0"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600/12 text-emerald-700 transition-colors hover:bg-emerald-600/20 disabled:opacity-50"
                 aria-label="Scan plant"
                 title="Scan plant"
               >
                 {isScanning ? (
-                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Camera className="h-5 w-5" />
                 )}
               </button>
-              <input
+              <textarea
                 ref={inputRef}
-                type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about plants..."
-                className="flex-1 px-3 py-2 sm:px-4 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about plants or care…"
+                rows={1}
+                maxLength={500}
                 disabled={isLoading}
+                className="
+                  max-h-[100px] min-h-[44px] flex-1 resize-none rounded-2xl
+                  border border-emerald-100 bg-[#F9FAFB] px-4 py-3
+                  text-[15px] text-gray-900 placeholder:text-gray-400
+                  focus:border-emerald-300 focus:outline-none focus:ring-0
+                "
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg px-3 py-2 sm:px-4 transition-colors flex-shrink-0"
+                className={`
+                  flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors
+                  ${
+                    input.trim() && !isLoading
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-gray-200 text-gray-400"
+                  }
+                `}
                 aria-label="Send message"
               >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                )}
+                <Send className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center hidden sm:block">
-              Ask me anything about plants! 🌱
-            </p>
           </div>
-        </div>
+        </>
       )}
     </>
   );

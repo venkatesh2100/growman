@@ -210,7 +210,7 @@ func (h *Handler) handleOrderSupportChat(userMessage string, claims *appauth.Cla
 
 	if err := h.DB.Create(&record).Error; err != nil {
 		return accountChatResult{
-			ok: true,
+			ok:   true,
 			text: "Our support team is at **growman.live@gmail.com**. We couldn't save your ticket automatically — please email us with your order number.",
 		}
 	}

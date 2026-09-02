@@ -1,39 +1,43 @@
 # Storage Service
 
-This package provides storage-agnostic image handling for the backend.
+This package provides image upload/retrieval on top of Google Cloud Storage.
 
-## Dependencies
+## Configuration
 
-### Azure Blob Storage
+Set these environment variables:
 
-To use Azure Blob Storage, add the following dependency:
+- `GCS_BUCKET_NAME` (required) — the bucket images are uploaded to/served from.
+- `IMAGE_BASE_URL` (required) — the public base URL prepended to an `imageKey` to
+  build the URL returned to clients, e.g. `https://storage.googleapis.com/your-bucket`
+  (or a CDN/custom domain fronting the bucket).
+- `GCS_PROJECT_ID` (optional) — usually inferred from the credentials.
+- `GCS_CREDENTIALS_JSON` (optional) — path to a service account key file. When unset,
+  the client falls back to Application Default Credentials: `GOOGLE_APPLICATION_CREDENTIALS`,
+  `gcloud auth application-default login`, or the metadata server when running on
+  Cloud Run / GKE / Compute Engine.
 
-```bash
-go get github.com/Azure/azure-storage-blob-go/azblob
-```
+## Bucket setup (one-time)
 
-### Google Cloud Storage
+Images are served by building a public URL from the object's key — the app never
+signs URLs — so the bucket must allow public reads:
 
-To use Google Cloud Storage, add the following dependency:
-
-```bash
-go get cloud.google.com/go/storage
-```
+1. Create the bucket with **uniform bucket-level access** enabled (the modern default).
+2. Grant `roles/storage.objectViewer` to `allUsers` at the bucket level
+   (Console → bucket → Permissions → Grant access), or:
+   ```bash
+   gcloud storage buckets add-iam-policy-binding gs://your-bucket \
+     --member=allUsers --role=roles/storage.objectViewer
+   ```
+3. Grant the app's service account `roles/storage.objectAdmin` (or at least
+   `objectCreator` + `objectViewer`) on the bucket so it can upload.
 
 ## Usage
 
-The storage provider is automatically selected based on environment variables:
-
-- **Azure**: Set `AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`, and `AZURE_STORAGE_CONTAINER_NAME`
-- **GCS**: Set `GCS_BUCKET_NAME` and optionally `GCS_PROJECT_ID`
-
-The `IMAGE_BASE_URL` environment variable is required for both providers.
+`storage.NewImageServiceFromConfig(cfg)` builds an `*ImageService` wired to GCS from
+the `Config` above. `ImageService.UploadImage` stores a file under an `imageKey` and
+`ImageService.ResolveImageURL` turns that key into the public URL clients fetch.
 
 ## Development
 
-For development without cloud storage, you can:
-
-1. Leave storage provider credentials unset (the service will log a warning)
-2. Implement a local file storage provider for testing
-3. Use a mock storage provider in tests
-
+Without `GCS_BUCKET_NAME`/`IMAGE_BASE_URL` set, `NewImageServiceFromConfig` returns an
+error and the server disables uploads (logs a warning) rather than failing to start.

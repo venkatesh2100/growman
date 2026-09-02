@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, Loader2, Lock, LogIn, Mail, XCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  LogIn,
+  Mail,
+  XCircle,
+} from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import {
@@ -17,6 +26,7 @@ export default function AdminLoginPage() {
   const setToken = useAuthStore((state) => state.setToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -56,8 +66,8 @@ export default function AdminLoginPage() {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Invalid email/phone or password.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Invalid email/phone or password.");
       }
 
       const data = await res.json();
@@ -132,12 +142,20 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-emerald-600 hover:text-emerald-500"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -145,13 +163,26 @@ export default function AdminLoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="appearance-none relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Enter your password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -173,15 +204,6 @@ export default function AdminLoginPage() {
               </>
             )}
           </button>
-
-          <div className="text-center">
-            <Link
-              href="/"
-              className="text-sm text-emerald-600 hover:text-emerald-500"
-            >
-              Go back to admin home
-            </Link>
-          </div>
         </form>
       </div>
     </div>

@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// StorageProvider defines the interface for storage providers (Azure, GCS, S3, etc.)
+// StorageProvider defines the interface for a cloud storage backend (currently Google Cloud Storage)
 type StorageProvider interface {
 	// Upload uploads a file to cloud storage and returns the image_key
 	// imageKey: the path/key where the file should be stored (e.g., "products/130239.jpg")

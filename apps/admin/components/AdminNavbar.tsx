@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import { useAuthStore } from "../lib/store/authStore";
 
 type ProductHit = {
   id: number;
@@ -23,6 +25,8 @@ function toSlug(value: string): string {
 
 export default function AdminNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<ProductHit[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +85,12 @@ export default function AdminNavbar() {
     };
   }, []);
 
-  if (pathname === "/login") {
+  const handleLogout = () => {
+    clearAuth();
+    router.replace("/login");
+  };
+
+  if (pathname === "/login" || pathname === "/forgot-password") {
     return null;
   }
 
@@ -164,6 +173,15 @@ export default function AdminNavbar() {
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
       </div>
     </header>
   );

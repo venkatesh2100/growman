@@ -33,7 +33,7 @@ func contentTypeFromExt(ext string) string {
 
 // IdentifyPlant handles plant identification requests by proxying to Pl@ntNet API.
 // Expects multipart/form-data with "image" file(s). Optional "organs" (auto, flower, leaf, fruit, bark).
-// Plant images are silently uploaded to Azure storage in the background.
+// Plant images are silently uploaded to cloud storage in the background.
 func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 	apiKey := h.Cfg.PlantNetAPIKey
 	if apiKey == "" {
@@ -63,7 +63,7 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read all files into buffers (needed for Pl@ntNet and Azure upload)
+	// Read all files into buffers (needed for Pl@ntNet and cloud storage upload)
 	type fileData struct {
 		buf         []byte
 		contentType string
@@ -85,7 +85,7 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		_ = mpw.WriteField("organs", organ)
 	}
 
-	// Add image files and collect buffers for Azure upload
+	// Add image files and collect buffers for cloud storage upload
 	for _, fh := range files {
 		file, err := fh.Open()
 		if err != nil {
@@ -108,7 +108,7 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		}
 		_, _ = part.Write(buf.Bytes())
 
-		// Keep copy for silent Azure upload (goroutine will use it)
+		// Keep copy for silent cloud storage upload (goroutine will use it)
 		contentType := fh.Header.Get("Content-Type")
 		if contentType == "" {
 			contentType = contentTypeFromExt(filepath.Ext(fh.Filename))
@@ -133,7 +133,7 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Silently upload plant images to Azure in the background (non-blocking)
+	// Silently upload plant images to cloud storage in the background (non-blocking)
 	if h.ImageService != nil && len(fileBuffers) > 0 {
 		buffers := fileBuffers
 		go func() {
@@ -148,7 +148,7 @@ func (h *Handler) IdentifyPlant(w http.ResponseWriter, r *http.Request) {
 				imageKey := GenerateImageKey("plants", filename)
 				err := h.ImageService.UploadImage(ctx, imageKey, bytes.NewReader(fd.buf), fd.contentType)
 				if err != nil {
-					log.Printf("[plants] silent Azure upload failed for %s: %v", fd.filename, err)
+					log.Printf("[plants] silent cloud storage upload failed for %s: %v", fd.filename, err)
 				}
 			}
 		}()

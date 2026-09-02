@@ -27,13 +27,11 @@ type Config struct {
 	SMTPHost          string
 	SMTPPort          string
 	MerchantNotifyEmail string // Internal ops alerts (signups, orders, long browse)
-	// Image storage configuration
-	ImageBaseURL       string // Base URL for image storage (e.g., "https://youraccount.blob.core.windows.net/container")
-	AzureAccountName   string // Azure storage account name (optional, for Azure provider)
-	AzureAccountKey    string // Azure storage account key (optional, for Azure provider)
-	AzureContainerName string // Azure container name (optional, for Azure provider)
-	GCSBucketName      string // Google Cloud Storage bucket name (optional, for GCS provider)
-	GCSProjectID       string // Google Cloud project ID (optional, for GCS provider)
+	// Image storage configuration (Google Cloud Storage)
+	ImageBaseURL       string // Base URL for image storage (e.g., "https://storage.googleapis.com/your-bucket")
+	GCSBucketName      string // Google Cloud Storage bucket name
+	GCSProjectID       string // Google Cloud project ID (optional; usually inferred from credentials)
+	GCSCredentialsJSON string // Path to a service account JSON key file (optional; falls back to default credentials)
 	// Connection pooling
 	DBMaxOpenConns int
 	DBMaxIdleConns int
@@ -79,13 +77,11 @@ func Load() (Config, error) {
 		SMTPHost:            getenv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:            getenv("SMTP_PORT", "587"),
 		MerchantNotifyEmail: getenv("MERCHANT_NOTIFY_EMAIL", "zoroboro.ynm@gmail.com"),
-		// Image storage configuration
+		// Image storage configuration (Google Cloud Storage)
 		ImageBaseURL:       os.Getenv("IMAGE_BASE_URL"),
-		AzureAccountName:   os.Getenv("AZURE_STORAGE_ACCOUNT_NAME"),
-		AzureAccountKey:    os.Getenv("AZURE_STORAGE_ACCOUNT_KEY"),
-		AzureContainerName: os.Getenv("AZURE_STORAGE_CONTAINER_NAME"),
 		GCSBucketName:      os.Getenv("GCS_BUCKET_NAME"),
 		GCSProjectID:       os.Getenv("GCS_PROJECT_ID"),
+		GCSCredentialsJSON: os.Getenv("GCS_CREDENTIALS_JSON"),
 		// AI Chat configuration
 		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
 		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),

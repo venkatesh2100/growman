@@ -61,6 +61,38 @@ services:
       - growman-network
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: growman-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - growman-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: growman-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - growman-network
+    restart: unless-stopped
+
   # Frontend dockerization commented out for now
   # frontend:
   #   build:
@@ -86,6 +118,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  grafana_data:
 
 networks:
   growman-network:

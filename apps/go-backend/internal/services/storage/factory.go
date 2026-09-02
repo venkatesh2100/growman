@@ -6,27 +6,19 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 )
 
-// NewStorageProvider creates a storage provider based on configuration
-// Currently supports Azure Blob Storage and Google Cloud Storage
-// The provider is determined by which credentials are provided
+// NewStorageProvider creates a storage provider based on configuration.
+// Google Cloud Storage is the only supported provider.
 func NewStorageProvider(cfg config.Config) (StorageProvider, error) {
-	// Check for Azure credentials
-	if cfg.AzureAccountName != "" && cfg.AzureAccountKey != "" && cfg.AzureContainerName != "" {
-		return NewAzureBlobStorage(cfg.AzureAccountName, cfg.AzureAccountKey, cfg.AzureContainerName)
+	if cfg.GCSBucketName == "" {
+		return nil, fmt.Errorf("no storage provider configured: set GCS_BUCKET_NAME")
 	}
 
-	// Check for GCS credentials
-	if cfg.GCSBucketName != "" {
-		// For GCS, credentials can come from:
-		// 1. Service account JSON file path (GCS_CREDENTIALS_JSON env var)
-		// 2. Default credentials (from environment or metadata server)
-		credentialsJSON := "" // You can add GCS_CREDENTIALS_JSON to config if needed
-		return NewGCSStorage(cfg.GCSBucketName, cfg.GCSProjectID, credentialsJSON)
-	}
-
-	// No storage provider configured - return nil (optional, for development)
-	// In production, you might want to return an error
-	return nil, fmt.Errorf("no storage provider configured. Set either Azure or GCS credentials")
+	// Credentials resolution order (handled by NewGCSStorage):
+	// 1. GCS_CREDENTIALS_JSON — path to a service account key file
+	// 2. Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS env var,
+	//    gcloud user credentials, or the GCP metadata server when running on
+	//    Cloud Run/GKE/Compute Engine)
+	return NewGCSStorage(cfg.GCSBucketName, cfg.GCSProjectID, cfg.GCSCredentialsJSON)
 }
 
 // NewImageServiceFromConfig creates an ImageService from configuration
@@ -42,4 +34,3 @@ func NewImageServiceFromConfig(cfg config.Config) (*ImageService, error) {
 
 	return NewImageService(provider, cfg.ImageBaseURL), nil
 }
-

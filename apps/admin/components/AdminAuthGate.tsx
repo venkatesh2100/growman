@@ -21,9 +21,11 @@ export default function AdminAuthGate({
     checkAuth();
   }, [checkAuth]);
 
+  const isPublicPath = pathname === "/login" || pathname === "/forgot-password";
+
   useEffect(() => {
     const verify = async () => {
-      if (pathname === "/login") {
+      if (isPublicPath) {
         setVerifying(false);
         return;
       }
@@ -59,9 +61,9 @@ export default function AdminAuthGate({
     };
 
     verify();
-  }, [pathname, token, router, clearAuth]);
+  }, [isPublicPath, token, router, clearAuth]);
 
-  if (verifying && pathname !== "/login") {
+  if (verifying && !isPublicPath) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <p className="text-sm text-slate-600">Verifying admin session...</p>

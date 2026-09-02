@@ -12,6 +12,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/docs"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/handlers"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/metrics"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 )
 
@@ -22,6 +23,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middlewares.SecurityHeaders)
 	r.Use(middleware.Recoverer)
+	r.Use(middlewares.Prometheus("growman-api"))
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(middleware.Throttle(512))
 	// Level 1 is much cheaper than 5 for small JSON responses.
@@ -44,6 +46,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 	}))
 
 	r.Get("/healthz", h.Health)
+	r.Handle("/metrics", metrics.Handler())
 	docs.Mount(r)
 	r.Post("/webhooks/razorpay", h.RazorpayWebhook)
 

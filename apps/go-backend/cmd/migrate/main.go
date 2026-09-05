@@ -1,3 +1,6 @@
+// Command migrate runs AutoMigrate (schema reconciliation) once and exits —
+// for deploy pipelines that run migrations as a discrete step instead of
+// relying on AUTO_MIGRATE=true at every server boot.
 package main
 
 import (
@@ -45,4 +48,3 @@ func main() {
 
 	log.Println("Migrations completed successfully!")
 }
-

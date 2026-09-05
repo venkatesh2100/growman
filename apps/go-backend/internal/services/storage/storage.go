@@ -1,3 +1,7 @@
+// Package storage abstracts image storage behind a small StorageProvider
+// interface (currently backed only by Google Cloud Storage, gcs.go) and an
+// ImageService that resolves a stored "image key" to a full URL — see
+// internal/docs/07-images-and-storage.md.
 package storage
 
 import (
@@ -11,10 +15,10 @@ type StorageProvider interface {
 	// imageKey: the path/key where the file should be stored (e.g., "products/130239.jpg")
 	// file: the file content to upload
 	Upload(ctx context.Context, imageKey string, file io.Reader, contentType string) error
-	
+
 	// Delete deletes a file from cloud storage
 	Delete(ctx context.Context, imageKey string) error
-	
+
 	// Exists checks if a file exists in cloud storage
 	Exists(ctx context.Context, imageKey string) (bool, error)
 }
@@ -71,4 +75,3 @@ func (s *ImageService) ResolveImageURLs(imageKeys []string) []string {
 	}
 	return urls
 }
-

@@ -25,17 +25,18 @@ func NewGCSStorage(bucketName, projectID, credentialsJSON string) (*GCSStorage, 
 	}
 
 	ctx := context.Background()
-	var client *storage.Client
-	var err error
-
-	// If credentials JSON path is provided, use it
+	var opts []option.ClientOption
 	if credentialsJSON != "" {
-		client, err = storage.NewClient(ctx, option.WithCredentialsFile(credentialsJSON))
-	} else {
-		// Use default credentials (from environment or metadata server)
-		client, err = storage.NewClient(ctx)
+		// Service account key file — the credential-type-specific option
+		// (vs. the deprecated, type-unaware WithCredentialsFile) so an
+		// unexpected credential type in that file is rejected rather than
+		// silently loaded.
+		opts = append(opts, option.WithAuthCredentialsFile(option.ServiceAccount, credentialsJSON))
 	}
-
+	// With no explicit credentials, the client falls back to Application
+	// Default Credentials (env var, gcloud user creds, or the GCP metadata
+	// server on Cloud Run/GKE/Compute Engine).
+	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCS client: %w", err)
 	}
@@ -103,4 +104,3 @@ func (g *GCSStorage) Close() error {
 	}
 	return nil
 }
-

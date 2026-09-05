@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Mail, Phone, MapPin, Edit, Save, X, Navigation, Loader2 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
+import { FormField, FormSelect } from "../../components/ui/Input";
 
 interface UserInfo {
   name: string;
@@ -20,6 +21,31 @@ interface UserInfo {
     pincode: string;
     country: string;
   };
+}
+
+/** A field that shows plain text, or an editable control once `editing` is true. */
+function InfoField({
+  label,
+  icon,
+  editing,
+  value,
+  children,
+}: {
+  label: string;
+  icon?: ReactNode;
+  editing: boolean;
+  value: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {icon}
+        {label}
+      </label>
+      {editing ? children : <p className="text-gray-900">{value}</p>}
+    </div>
+  );
 }
 
 export default function AccountPage() {
@@ -155,7 +181,7 @@ export default function AccountPage() {
     setLocating(true);
     try {
       const locationData = await getCurrentLocation();
-      
+
       // Find matching state from Indian states
       let matchedState = "";
       if (locationData.state) {
@@ -253,85 +279,65 @@ export default function AccountPage() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                Full Name
-              </label>
-              {editing ? (
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.name}</p>
-              )}
-            </div>
+            <InfoField
+              label="Full Name"
+              icon={<User className="w-4 h-4 inline mr-2" />}
+              editing={editing}
+              value={userInfo.name}
+            >
+              <FormField
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </InfoField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Mail className="w-4 h-4 inline mr-2" />
-                Email
-              </label>
-              {editing ? (
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.email}</p>
-              )}
-            </div>
+            <InfoField
+              label="Email"
+              icon={<Mail className="w-4 h-4 inline mr-2" />}
+              editing={editing}
+              value={userInfo.email}
+            >
+              <FormField
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </InfoField>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4 inline mr-2" />
-                  Phone Number
-                </label>
-                {editing ? (
-                  <input
-                    type="tel"
-                    value={formData.phone || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="9876543210"
-                    maxLength={10}
-                  />
-                ) : (
-                  <p className="text-gray-900">{userInfo.phone || "Not provided"}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4 inline mr-2" />
-                  Alternate Phone (Optional)
-                </label>
-                {editing ? (
-                  <input
-                    type="tel"
-                    value={formData.alternatePhone || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, alternatePhone: e.target.value.replace(/\D/g, "").slice(0, 10) })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="9876543210"
-                    maxLength={10}
-                  />
-                ) : (
-                  <p className="text-gray-900">{userInfo.alternatePhone || "Not provided"}</p>
-                )}
-              </div>
+              <InfoField
+                label="Phone Number"
+                icon={<Phone className="w-4 h-4 inline mr-2" />}
+                editing={editing}
+                value={userInfo.phone || "Not provided"}
+              >
+                <FormField
+                  type="tel"
+                  value={formData.phone || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
+                  }
+                  placeholder="9876543210"
+                  maxLength={10}
+                />
+              </InfoField>
+              <InfoField
+                label="Alternate Phone (Optional)"
+                icon={<Phone className="w-4 h-4 inline mr-2" />}
+                editing={editing}
+                value={userInfo.alternatePhone || "Not provided"}
+              >
+                <FormField
+                  type="tel"
+                  value={formData.alternatePhone || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, alternatePhone: e.target.value.replace(/\D/g, "").slice(0, 10) })
+                  }
+                  placeholder="9876543210"
+                  maxLength={10}
+                />
+              </InfoField>
             </div>
           </div>
 
@@ -385,138 +391,102 @@ export default function AccountPage() {
 
           {userInfo.address ? (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country
-                </label>
-                {editing ? (
-                  <select
-                    value={formData.address?.country || "India"}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        address: {
-                          ...formData.address!,
-                          country: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option value="India">India</option>
-                  </select>
-                ) : (
-                  <p className="text-gray-900">{userInfo.address.country || "India"}</p>
-                )}
-              </div>
+              <InfoField
+                label="Country"
+                editing={editing}
+                value={userInfo.address.country || "India"}
+              >
+                <FormSelect
+                  value={formData.address?.country || "India"}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: {
+                        ...formData.address!,
+                        country: e.target.value,
+                      },
+                    })
+                  }
+                >
+                  <option value="India">India</option>
+                </FormSelect>
+              </InfoField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address Line
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
-                    value={formData.address?.line || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        address: {
-                          ...formData.address!,
-                          line: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="House/Flat No., Building Name, Street"
-                  />
-                ) : (
-                  <p className="text-gray-900">{userInfo.address.line}</p>
-                )}
-              </div>
+              <InfoField label="Address Line" editing={editing} value={userInfo.address.line}>
+                <FormField
+                  type="text"
+                  value={formData.address?.line || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: {
+                        ...formData.address!,
+                        line: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="House/Flat No., Building Name, Street"
+                />
+              </InfoField>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State *
-                  </label>
-                  {editing ? (
-                    <select
-                      value={formData.address?.state || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          address: {
-                            ...formData.address!,
-                            state: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    >
-                      <option value="">Select State</option>
-                      {getAllStateNames().map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-gray-900">{userInfo.address.state}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City *
-                  </label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.address?.city || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          address: {
-                            ...formData.address!,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="Enter city name"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{userInfo.address.city}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pincode
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
-                    value={formData.address?.pincode || ""}
+                <InfoField label="State *" editing={editing} value={userInfo.address.state}>
+                  <FormSelect
+                    value={formData.address?.state || ""}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
                         address: {
                           ...formData.address!,
-                          pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                          state: e.target.value,
                         },
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="123456"
-                    maxLength={6}
+                  >
+                    <option value="">Select State</option>
+                    {getAllStateNames().map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </InfoField>
+
+                <InfoField label="City *" editing={editing} value={userInfo.address.city}>
+                  <FormField
+                    type="text"
+                    value={formData.address?.city || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address!,
+                          city: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Enter city name"
                   />
-                ) : (
-                  <p className="text-gray-900">{userInfo.address.pincode}</p>
-                )}
+                </InfoField>
               </div>
+
+              <InfoField label="Pincode" editing={editing} value={userInfo.address.pincode}>
+                <FormField
+                  type="text"
+                  value={formData.address?.pincode || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: {
+                        ...formData.address!,
+                        pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                      },
+                    })
+                  }
+                  placeholder="123456"
+                  maxLength={6}
+                />
+              </InfoField>
             </div>
           ) : (
             <div className="space-y-4">
@@ -526,7 +496,7 @@ export default function AccountPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Country
                     </label>
-                    <select
+                    <FormSelect
                       value={formData.address?.country || "India"}
                       onChange={(e) =>
                         setFormData({
@@ -540,100 +510,79 @@ export default function AccountPage() {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
                       <option value="India">India</option>
-                    </select>
+                    </FormSelect>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Address Line
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.address?.line || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          address: {
-                            ...formData.address!,
-                            line: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="House/Flat No., Building Name, Street"
-                    />
-                  </div>
+                  <FormField
+                    label="Address Line"
+                    type="text"
+                    value={formData.address?.line || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address!,
+                          line: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="House/Flat No., Building Name, Street"
+                  />
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        State *
-                      </label>
-                      <select
-                        value={formData.address?.state || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address!,
-                              state: e.target.value,
-                              city: "",
-                            },
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      >
-                        <option value="">Select State</option>
-                        {getAllStateNames().map((state) => (
-                          <option key={state} value={state}>
-                            {state}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.address?.city || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address!,
-                              city: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        placeholder="Enter city name"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pincode
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.address?.pincode || ""}
+                    <FormSelect
+                      label="State *"
+                      value={formData.address?.state || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
                           address: {
                             ...formData.address!,
-                            pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                            state: e.target.value,
+                            city: "",
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="123456"
-                      maxLength={6}
+                    >
+                      <option value="">Select State</option>
+                      {getAllStateNames().map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </FormSelect>
+                    <FormField
+                      label="City *"
+                      type="text"
+                      value={formData.address?.city || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          address: {
+                            ...formData.address!,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Enter city name"
                     />
                   </div>
+                  <FormField
+                    label="Pincode"
+                    type="text"
+                    value={formData.address?.pincode || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: {
+                          ...formData.address!,
+                          pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                        },
+                      })
+                    }
+                    placeholder="123456"
+                    maxLength={6}
+                  />
                 </>
               ) : (
                 <p className="text-gray-500">No address saved yet. Click Edit to add an address.</p>
@@ -645,4 +594,3 @@ export default function AccountPage() {
     </div>
   );
 }
-

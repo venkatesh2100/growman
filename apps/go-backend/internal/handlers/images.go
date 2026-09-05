@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -46,11 +44,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate unique filename: timestamp-random
-	// timestamp := time.Now().Unix()
-	// random := fmt.Sprintf("%d", time.Now().UnixNano()%1000000)
-	// imageKey := fmt.Sprintf("%s/%d-%s%s", prefix, timestamp, random, ext)
-	//?Generate Humanreadable names
+	// Human-readable key: "<prefix>/<unix-timestamp>-<sanitized-filename>.<ext>"
 	imageKey := GenerateImageKey(prefix, header.Filename)
 	contentType := header.Header.Get("Content-Type")
 	if !allowedImageMIME(contentType) {
@@ -108,15 +102,6 @@ func GenerateImageKey(prefix, filename string) string {
 	timestamp := time.Now().Unix()
 	random := fmt.Sprintf("%d", time.Now().UnixNano()%1000000)
 	return fmt.Sprintf("%s/%d-%s%s", prefix, timestamp, random, ext)
-}
-
-// UploadImageFromReader uploads an image from an io.Reader
-// This is useful when you already have the file data in memory
-func (h *Handler) UploadImageFromReader(ctx context.Context, imageKey string, reader io.Reader, contentType string) error {
-	if h.ImageService == nil {
-		return fmt.Errorf("image service not configured")
-	}
-	return h.ImageService.UploadImage(ctx, imageKey, reader, contentType)
 }
 
 func sanitizeUploadPrefix(prefix string) string {

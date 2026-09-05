@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
+import OptimizedImage from "../ui/OptimizedImage";
 
 interface CategoryCardProps {
   category: {
@@ -37,13 +37,12 @@ export default function CategoryCard({ category }: CategoryCardProps) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md shadow-sm ring-1 ring-emerald-800/10 sm:h-14 sm:w-14">
-            <Image
+            <OptimizedImage
               src={thumb}
               alt=""
               fill
               sizes="56px"
               className="object-cover"
-              unoptimized={!category.image}
             />
           </div>
           <span

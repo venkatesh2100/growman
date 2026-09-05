@@ -13,14 +13,14 @@ import (
 )
 
 const (
-	OTPExpiryMinutes             = 5
-	OTPResendCooldown            = 60 * time.Second
-	OTPCooldownPrefix            = "otp:cooldown:"
-	OTPKeyPrefix                 = "otp:email:"
-	PasswordResetOTPPrefix       = "otp:password-reset:"
+	OTPExpiryMinutes            = 5
+	OTPResendCooldown           = 60 * time.Second
+	OTPCooldownPrefix           = "otp:cooldown:"
+	OTPKeyPrefix                = "otp:email:"
+	PasswordResetOTPPrefix      = "otp:password-reset:"
 	PasswordResetCooldownPrefix = "otp:password-reset:cooldown:"
-	PasswordResetVerifiedPrefix  = "otp:password-reset:verified:"
-	redisOpTimeout               = 800 * time.Millisecond
+	PasswordResetVerifiedPrefix = "otp:password-reset:verified:"
+	redisOpTimeout              = 800 * time.Millisecond
 )
 
 type OTPService struct {
@@ -87,6 +87,9 @@ func (s *OTPService) withRedisTimeout(ctx context.Context) (context.Context, con
 	return context.WithTimeout(ctx, redisOpTimeout)
 }
 
+// setValue writes to the in-memory store (always) and Redis (best-effort,
+// when configured), so a Redis blip never breaks OTP issuance — memory is
+// the fallback of record, not an afterthought.
 func (s *OTPService) setValue(ctx context.Context, key, value string, ttl time.Duration) error {
 	memSet(key, value, ttl)
 	if s.Redis == nil {
@@ -94,11 +97,12 @@ func (s *OTPService) setValue(ctx context.Context, key, value string, ttl time.D
 	}
 	rctx, cancel := s.withRedisTimeout(ctx)
 	defer cancel()
-	if err := s.Redis.Set(rctx, key, value, ttl).Err(); err != nil {
-	}
+	_ = s.Redis.Set(rctx, key, value, ttl).Err() // best-effort; memory already has it
 	return nil
 }
 
+// getValue reads Redis first (shared across instances), falling back to the
+// local memory store when Redis is unset or misses.
 func (s *OTPService) getValue(ctx context.Context, key string) (string, bool, error) {
 	if s.Redis != nil {
 		rctx, cancel := s.withRedisTimeout(ctx)
@@ -106,8 +110,6 @@ func (s *OTPService) getValue(ctx context.Context, key string) (string, bool, er
 		cancel()
 		if err == nil {
 			return val, true, nil
-		}
-		if err != redis.Nil {
 		}
 	}
 	if val, ok := memGet(key); ok {
@@ -123,8 +125,7 @@ func (s *OTPService) delValue(ctx context.Context, key string) {
 	}
 	rctx, cancel := s.withRedisTimeout(ctx)
 	defer cancel()
-	if err := s.Redis.Del(rctx, key).Err(); err != nil {
-	}
+	_ = s.Redis.Del(rctx, key).Err() // best-effort
 }
 
 func (s *OTPService) cooldownTTL(ctx context.Context, key string) (time.Duration, error) {
@@ -134,8 +135,6 @@ func (s *OTPService) cooldownTTL(ctx context.Context, key string) (time.Duration
 		cancel()
 		if err == nil && ttl > 0 {
 			return ttl, nil
-		}
-		if err != nil && err != redis.Nil {
 		}
 	}
 	return memTTL(key), nil
@@ -191,13 +190,6 @@ func (s *OTPService) VerifyOTP(ctx context.Context, email, otp string) (bool, er
 	}
 	s.delValue(ctx, key)
 	return true, nil
-}
-
-// CheckOTPExists checks if an OTP exists for an email
-func (s *OTPService) CheckOTPExists(ctx context.Context, email string) (bool, error) {
-	email = normalizeEmail(email)
-	_, ok, err := s.getValue(ctx, OTPKeyPrefix+email)
-	return ok, err
 }
 
 // GeneratePasswordResetOTP generates a 6-digit OTP for password reset
@@ -258,13 +250,6 @@ func (s *OTPService) ConsumePasswordResetOTP(ctx context.Context, email, otp str
 	s.delValue(ctx, verifiedKey)
 	s.delValue(ctx, otpKey)
 	return true, nil
-}
-
-// CheckPasswordResetOTPExists checks if a password reset OTP exists for an email
-func (s *OTPService) CheckPasswordResetOTPExists(ctx context.Context, email string) (bool, error) {
-	email = normalizeEmail(email)
-	_, ok, err := s.getValue(ctx, PasswordResetOTPPrefix+email)
-	return ok, err
 }
 
 // DeletePasswordResetOTP deletes the password reset OTP after successful password reset

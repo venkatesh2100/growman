@@ -7,6 +7,7 @@ import { useCartStore } from "../../../lib/store/cartStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "../../../lib/toast";
+import { buildCartLine } from "../../../lib/cart";
 
 export default function AddToCart({
   product,
@@ -27,21 +28,10 @@ export default function AddToCart({
       return;
     }
 
-    const imageUrl = selectedSize.images?.[0] || product.imageUrl || '';
     const qty = Math.min(quantity, selectedSize.stock);
 
     // Add to cart store
-    addItem({
-      productId: product.id,
-      productSizeId: selectedSize.id,
-      name: product.name,
-      mrp: product.mrp,
-      price: selectedSize.price,
-      label: selectedSize.label,
-      dimension: selectedSize.dimension,
-      quantity: qty,
-      image: imageUrl,
-    });
+    addItem(buildCartLine(product, selectedSize, qty));
 
     // Show toast notification
     toast(`${product.name} (${selectedSize.label}) added to cart!`);

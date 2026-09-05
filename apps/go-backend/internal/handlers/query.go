@@ -1,3 +1,6 @@
+// Package-level query helpers shared across the product/category handlers —
+// kept together here so the two "shapes" of a product query (full detail vs.
+// lightweight card) and the catalog cache-busting rule live in one place.
 package handlers
 
 import (
@@ -7,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// db scopes a query to the request context (for cancellation/timeouts),
+// tolerating a nil ctx so handlers can call it without a nil check.
 func (h *Handler) db(ctx context.Context) *gorm.DB {
 	if ctx == nil {
 		return h.DB
@@ -14,16 +19,10 @@ func (h *Handler) db(ctx context.Context) *gorm.DB {
 	return h.DB.WithContext(ctx)
 }
 
-func (h *Handler) productListQuery(ctx context.Context) *gorm.DB {
-	return h.db(ctx).
-		Preload("Sizes").
-		Preload("Attributes").
-		Preload("Category").
-		Preload("Subcategory").
-		Preload("Brand")
-}
-
-// productCardQuery is optimized for list/grid/search cards: fewer columns, no attributes.
+// productCardQuery is the query shape for list/grid/search results: a narrow
+// column set and shallow preloads (no Attributes, no Reviews), since a card
+// only ever renders name/price/image/stock. Product *detail* pages instead
+// use loadProductDetail (products.go), which loads associations in parallel.
 func (h *Handler) productCardQuery(ctx context.Context) *gorm.DB {
 	return h.db(ctx).
 		Select(
@@ -42,6 +41,10 @@ func (h *Handler) productCardQuery(ctx context.Context) *gorm.DB {
 		})
 }
 
+// invalidateCatalog drops every cached product/category/brand/tag response.
+// Called after any product, category, or brand mutation — broad but cheap
+// (DeletePattern is a non-blocking Redis SCAN+UNLINK), so it's simpler and
+// safer than tracking exactly which cache keys a given edit could affect.
 func (h *Handler) invalidateCatalog(ctx context.Context) {
 	if h.Cache == nil {
 		return
@@ -49,8 +52,4 @@ func (h *Handler) invalidateCatalog(ctx context.Context) {
 	_ = h.Cache.DeletePattern(ctx, "products:*")
 	_ = h.Cache.DeletePattern(ctx, "categories:*")
 	_ = h.Cache.Delete(ctx, cache.KeyPrefixBrands, cache.KeyPrefixTags, cache.KeyPrefixCatalog)
-}
-
-func publicReviewUser(db *gorm.DB) *gorm.DB {
-	return db.Select("id", "name")
 }

@@ -1,8 +1,9 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
-import Image from 'next/image';
 import type { StaticImageData } from "next/image";
+import OptimizedImage from "../../../components/ui/OptimizedImage";
+
 type ImageProps = string | StaticImageData;
 
 export default function ImageGallery({ images }: { images: ImageProps[] | undefined }) {
@@ -46,43 +47,25 @@ export default function ImageGallery({ images }: { images: ImageProps[] | undefi
     setPosition({ x: 50, y: 50 });
   };
 
-  // For remote images, we need to configure the Next.js Image component
-  const isRemoteImage = (src: ImageProps): src is string => {
-    return typeof src === 'string' && src.startsWith('http');
-  };
-
   return (
     <div className="relative">
       {/* Main Image */}
       <div
-        className="relative aspect-square overflow-hidden rounded-lg mb-4 cursor-pointer "
+        className="relative aspect-square overflow-hidden rounded-lg mb-4 cursor-pointer bg-gray-50"
         onMouseMove={handleMouseMove}
         onClick={toggleZoom}
       >
-        {mainImage && isRemoteImage(mainImage) ? (
-          <Image
+        {mainImage ? (
+          <OptimizedImage
             src={mainImage}
             alt="Main product"
             fill
+            priority
             className="object-contain"
             style={{
               transformOrigin: `${position.x}% ${position.y}%`,
               transform: isZoomed ? 'scale(2)' : 'scale(1)',
-              transition: 'transform 0.2s ease-out'
-            }}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            unoptimized={true} // For remote images not configured in next.config.js
-          />
-        ) : mainImage ? (
-          <Image
-            src={mainImage}
-            alt="Main product"
-            fill
-            className="object-contain"
-            style={{
-              transformOrigin: `${position.x}% ${position.y}%`,
-              transform: isZoomed ? 'scale(2)' : 'scale(1)',
-              transition: 'transform 0.2s ease-out'
+              transition: 'transform 0.2s ease-out, opacity 0.3s ease-out',
             }}
             sizes="(max-width: 768px) 100vw, 50vw"
           />
@@ -127,30 +110,19 @@ export default function ImageGallery({ images }: { images: ImageProps[] | undefi
             <button
               key={idx}
               onClick={() => handleThumbnailClick(idx)}
-              className={`relative aspect-square rounded-lg overflow-hidden transition-all border-2 ${currentIndex === idx
+              className={`relative aspect-square rounded-lg overflow-hidden bg-gray-50 transition-all border-2 ${currentIndex === idx
                 ? 'border-green-500 scale-105'
                 : 'border-transparent opacity-80 hover:opacity-100'
                 }`}
               aria-label={`View image ${idx + 1}`}
             >
-              {isRemoteImage(img) ? (
-                <Image
-                  src={img}
-                  alt={`Thumbnail ${idx}`}
-                  fill
-                  className="object-cover"
-                  sizes="100px"
-                  unoptimized={true}
-                />
-              ) : (
-                <Image
-                  src={img}
-                  alt={`Thumbnail ${idx}`}
-                  fill
-                  className="object-cover"
-                  sizes="100px"
-                />
-              )}
+              <OptimizedImage
+                src={img}
+                alt={`Thumbnail ${idx}`}
+                fill
+                className="object-cover"
+                sizes="100px"
+              />
             </button>
           ))}
         </div>

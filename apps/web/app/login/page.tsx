@@ -14,6 +14,8 @@ import {
   TurnstileGate,
   isTurnstileSiteConfigured,
 } from "../../components/TurnstileGate";
+import { PillField } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
@@ -162,67 +164,56 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
             <p className="text-sm text-emerald-700">Signed in. Redirecting…</p>
           ) : null}
 
-          <div className="flex items-center rounded-2xl border border-emerald-100 bg-white px-4">
-            <Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-            <input
-              id="email"
-              name="email"
-              type="text"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError(null);
-              }}
-              className="w-full bg-transparent py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
-              placeholder="Email or phone number"
-            />
-          </div>
+          <PillField
+            id="email"
+            name="email"
+            type="text"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
+            placeholder="Email or phone number"
+            icon={<Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+          />
 
-          <div className="flex items-center rounded-2xl border border-emerald-100 bg-white px-4">
-            <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null);
-              }}
-              className="w-full bg-transparent py-4 pr-2 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
-              placeholder="Enter your password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
+          <PillField
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError(null);
+            }}
+            placeholder="Enter your password"
+            icon={<Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            }
+          />
 
-          <button
+          <Button
             type="submit"
-            disabled={loading || success || (isTurnstileSiteConfigured() && !humanOk)}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-4 text-base font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="pill-primary"
+            disabled={success || (isTurnstileSiteConfigured() && !humanOk)}
+            loading={loading}
+            loadingText="Signing in..."
+            icon={<LogIn className="h-5 w-5" />}
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                <LogIn className="h-5 w-5" />
-                Sign in
-              </>
-            )}
-          </button>
+            Sign in
+          </Button>
 
           {googleClientId ? (
             <div className="pt-2">

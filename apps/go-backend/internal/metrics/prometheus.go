@@ -1,3 +1,5 @@
+// Package metrics registers the Prometheus collectors served at /metrics
+// and the RecordRequest hook the Prometheus middleware calls per request.
 package metrics
 
 import (

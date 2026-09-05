@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,29 +13,44 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 	paginationpkg "github.com/venkatesh2100/growman/apps/go-backend/pkg/pagination"
+	"gorm.io/gorm"
 )
 
-// ListOrders returns paginated orders for the authenticated user
+// applyOrderFilters applies the status/orderId/search query filters shared
+// by ListOrders' count and data queries, so the two can never drift apart.
+func applyOrderFilters(q *gorm.DB, statusFilter, orderIDFilter, searchFilter string) *gorm.DB {
+	if statusFilter != "" && statusFilter != "all" {
+		q = q.Where("LOWER(status) = ? OR LOWER(payment_status) = ?", statusFilter, statusFilter)
+	}
+	if orderIDFilter != "" {
+		if orderID, err := strconv.ParseUint(orderIDFilter, 10, 64); err == nil {
+			q = q.Where("id = ?", orderID)
+		}
+	}
+	if searchFilter != "" {
+		like := "%" + strings.ToLower(searchFilter) + "%"
+		q = q.Where("LOWER(customer_name) LIKE ? OR LOWER(customer_phone) LIKE ? OR LOWER(customer_email) LIKE ?", like, like, like)
+	}
+	return q
+}
+
+// ListOrders returns paginated orders: a regular user sees only their own,
+// admins see everyone's (unless scope=self is passed). Both the page and
+// its total count are cached separately with a short TTL — see 04-caching.md.
 func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-
 	ctx := r.Context()
 
-	// Parse pagination parameters
 	paginationParams := paginationpkg.ParsePagination(r)
 	statusFilter := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("status")))
 	orderIDFilter := strings.TrimSpace(r.URL.Query().Get("orderId"))
 	searchFilter := strings.TrimSpace(r.URL.Query().Get("search"))
 	scopeFilter := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
 
-	isAdmin := claims.Role == "admin" || claims.Role == "superadmin"
-	if scopeFilter == "self" {
-		isAdmin = false
-	}
+	isAdmin := appauth.IsAdminRole(claims.Role) && scopeFilter != "self"
 	cacheScope := "user:" + strconv.FormatUint(uint64(claims.UserID), 10)
 	if isAdmin {
 		cacheScope = "admin:all"
@@ -46,108 +61,50 @@ func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		":status:" + statusFilter +
 		":orderId:" + orderIDFilter +
 		":search:" + strings.ToLower(searchFilter)
-	cacheHelper := h.Cache
-
-	var orders []models.Order
-	var total int64
-
-	// Try to get from cache (shorter TTL for user-specific data)
-	hit, err := cacheHelper.Get(ctx, cacheKey, &orders)
-	if err != nil {
-		// ignore cache errors; fall through to DB
-	}
-
 	totalCacheKey := "orders:" + cacheScope +
 		":total:status:" + statusFilter +
 		":orderId:" + orderIDFilter +
 		":search:" + strings.ToLower(searchFilter)
-	var cachedTotal int64
-	totalHit, _ := cacheHelper.Get(ctx, totalCacheKey, &cachedTotal)
 
+	var orders []models.Order
+	var total int64
+	hit, _ := h.Cache.Get(ctx, cacheKey, &orders)
+	totalHit, _ := h.Cache.Get(ctx, totalCacheKey, &total)
 	if hit && totalHit {
-		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, cachedTotal)
-		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
-			Data:       orders,
-			Pagination: meta,
-		})
+		meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
+		httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{Data: orders, Pagination: meta})
 		return
 	}
 
-	// Cache miss: fetch from database with pagination
 	countQuery := h.DB.Model(&models.Order{})
-	if !isAdmin {
-		countQuery = countQuery.Where("user_id = ?", claims.UserID)
-	}
-	if statusFilter != "" && statusFilter != "all" {
-		countQuery = countQuery.Where(
-			"LOWER(status) = ? OR LOWER(payment_status) = ?",
-			statusFilter,
-			statusFilter,
-		)
-	}
-	if orderIDFilter != "" {
-		if orderID, err := strconv.ParseUint(orderIDFilter, 10, 64); err == nil {
-			countQuery = countQuery.Where("id = ?", orderID)
-		}
-	}
-	if searchFilter != "" {
-		like := "%" + strings.ToLower(searchFilter) + "%"
-		countQuery = countQuery.Where(
-			"LOWER(customer_name) LIKE ? OR LOWER(customer_phone) LIKE ? OR LOWER(customer_email) LIKE ?",
-			like, like, like,
-		)
-	}
-	if err := countQuery.Count(&total).Error; err != nil {
-		log.Printf("[DB] Error counting orders: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch orders")
-		return
-	}
-
-	// Fetch paginated orders with optimized query (only preload what's needed)
 	dataQuery := h.DB.Preload("Items").Preload("User").Order("created_at DESC")
 	if !isAdmin {
+		countQuery = countQuery.Where("user_id = ?", claims.UserID)
 		dataQuery = dataQuery.Where("user_id = ?", claims.UserID)
 	}
-	if statusFilter != "" && statusFilter != "all" {
-		dataQuery = dataQuery.Where(
-			"LOWER(status) = ? OR LOWER(payment_status) = ?",
-			statusFilter,
-			statusFilter,
-		)
+	countQuery = applyOrderFilters(countQuery, statusFilter, orderIDFilter, searchFilter)
+	dataQuery = applyOrderFilters(dataQuery, statusFilter, orderIDFilter, searchFilter)
+
+	if err := countQuery.Count(&total).Error; err != nil {
+		log.Printf("[DB] count orders: %v", err)
+		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch orders")
+		return
 	}
-	if orderIDFilter != "" {
-		if orderID, err := strconv.ParseUint(orderIDFilter, 10, 64); err == nil {
-			dataQuery = dataQuery.Where("id = ?", orderID)
-		}
-	}
-	if searchFilter != "" {
-		like := "%" + strings.ToLower(searchFilter) + "%"
-		dataQuery = dataQuery.Where(
-			"LOWER(customer_name) LIKE ? OR LOWER(customer_phone) LIKE ? OR LOWER(customer_email) LIKE ?",
-			like, like, like,
-		)
-	}
-	if err := dataQuery.Offset(paginationParams.Offset).
-		Limit(paginationParams.PageSize).
-		Find(&orders).Error; err != nil {
-		log.Printf("[DB] Error fetching orders: %v", err)
+	if err := dataQuery.Offset(paginationParams.Offset).Limit(paginationParams.PageSize).Find(&orders).Error; err != nil {
+		log.Printf("[DB] fetch orders: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch orders")
 		return
 	}
 
-	// Resolve image URLs before caching so hits skip extra work
+	// Resolve image URLs before caching so hits skip the extra work.
 	for i := range orders {
 		h.ResolveOrderItemImageURLsSlice(orders[i].Items)
 	}
-
-	_ = cacheHelper.Set(ctx, cacheKey, orders, 2*time.Minute)
-	_ = cacheHelper.Set(ctx, totalCacheKey, total, 5*time.Minute)
+	_ = h.Cache.Set(ctx, cacheKey, orders, 2*time.Minute)
+	_ = h.Cache.Set(ctx, totalCacheKey, total, 5*time.Minute)
 
 	meta := paginationpkg.BuildPaginationMeta(paginationParams.Page, paginationParams.PageSize, total)
-	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{
-		Data:       orders,
-		Pagination: meta,
-	})
+	httpjson.JSON(w, http.StatusOK, paginationpkg.PaginatedResponse{Data: orders, Pagination: meta})
 }
 
 type UpdateOrderStatusRequest struct {
@@ -158,43 +115,34 @@ type UpdateOrderExpectedDeliveryDateRequest struct {
 	ExpectedDeliveryDate string `json:"expectedDeliveryDate"`
 }
 
-// UpdateOrderStatus allows admin/superadmin to update order status.
+var allowedOrderStatuses = map[string]bool{
+	"pending": true, "confirmed": true, "shipped": true, "out_for_delivery": true,
+	"delivered": true, "cancelled": true, "failed": true, "paid": true,
+}
+
+// UpdateOrderStatus allows admin/superadmin to update order status, keeping
+// payment_status in sync for the transitions where that's implied.
 func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if claims.Role != "admin" && claims.Role != "superadmin" {
+	if !appauth.IsAdminRole(claims.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	orderID, err := strconv.ParseUint(idStr, 10, 64)
+	orderID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		httpjson.Error(w, http.StatusBadRequest, "invalid order id")
 		return
 	}
-
 	var req UpdateOrderStatusRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
-
 	status := strings.ToLower(strings.TrimSpace(req.Status))
-	allowed := map[string]bool{
-		"pending":          true,
-		"confirmed":        true,
-		"shipped":          true,
-		"out_for_delivery": true,
-		"delivered":        true,
-		"cancelled":        true,
-		"failed":           true,
-		"paid":             true,
-	}
-	if !allowed[status] {
+	if !allowedOrderStatuses[status] {
 		httpjson.Error(w, http.StatusBadRequest, "unsupported order status")
 		return
 	}
@@ -205,53 +153,44 @@ func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updates := map[string]interface{}{"status": status}
-	if status == "delivered" || status == "paid" {
+	updates := map[string]any{"status": status}
+	switch status {
+	case "delivered", "paid":
 		updates["payment_status"] = "paid"
-	}
-	if status == "failed" || status == "cancelled" {
+	case "failed", "cancelled":
 		updates["payment_status"] = status
 	}
-
 	if err := h.DB.Model(&order).Updates(updates).Error; err != nil {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to update order status")
 		return
 	}
 
-	cacheHelper := h.Cache
-	ctx := r.Context()
-	_ = cacheHelper.DeletePattern(ctx, "orders:*")
-
-	if err := h.DB.Preload("Items").Preload("User").Where("id = ?", orderID).First(&order).Error; err != nil {
-		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch updated order")
+	order, ok = h.reloadOrderForResponse(w, r.Context(), orderID)
+	if !ok {
 		return
 	}
-	h.ResolveOrderItemImageURLsSlice(order.Items)
 	httpjson.JSON(w, http.StatusOK, order)
 }
 
-// UpdateOrderExpectedDeliveryDate allows admin/superadmin to set expected delivery date.
+// UpdateOrderExpectedDeliveryDate allows admin/superadmin to set (or clear,
+// with an empty string) the order's expected delivery date.
 func (h *Handler) UpdateOrderExpectedDeliveryDate(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if claims.Role != "admin" && claims.Role != "superadmin" {
+	if !appauth.IsAdminRole(claims.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	orderID, err := strconv.ParseUint(idStr, 10, 64)
+	orderID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		httpjson.Error(w, http.StatusBadRequest, "invalid order id")
 		return
 	}
-
 	var req UpdateOrderExpectedDeliveryDateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -261,32 +200,38 @@ func (h *Handler) UpdateOrderExpectedDeliveryDate(w http.ResponseWriter, r *http
 		return
 	}
 
-	updates := map[string]interface{}{}
-	dateString := strings.TrimSpace(req.ExpectedDeliveryDate)
-	if dateString == "" {
-		updates["expected_delivery_date"] = nil
-	} else {
+	var expectedDelivery any
+	if dateString := strings.TrimSpace(req.ExpectedDeliveryDate); dateString != "" {
 		parsed, err := time.Parse("2006-01-02", dateString)
 		if err != nil {
 			httpjson.Error(w, http.StatusBadRequest, "expectedDeliveryDate must be YYYY-MM-DD")
 			return
 		}
-		updates["expected_delivery_date"] = parsed
+		expectedDelivery = parsed
 	}
-
-	if err := h.DB.Model(&order).Updates(updates).Error; err != nil {
+	if err := h.DB.Model(&order).Updates(map[string]any{"expected_delivery_date": expectedDelivery}).Error; err != nil {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to update expected delivery date")
 		return
 	}
 
-	cacheHelper := h.Cache
-	ctx := r.Context()
-	_ = cacheHelper.DeletePattern(ctx, "orders:*")
-
-	if err := h.DB.Preload("Items").Preload("User").Where("id = ?", orderID).First(&order).Error; err != nil {
-		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch updated order")
+	order, ok = h.reloadOrderForResponse(w, r.Context(), orderID)
+	if !ok {
 		return
 	}
-	h.ResolveOrderItemImageURLsSlice(order.Items)
 	httpjson.JSON(w, http.StatusOK, order)
+}
+
+// reloadOrderForResponse invalidates the order-list cache and re-fetches an
+// order with the associations both admin mutation endpoints above return.
+// Writes the HTTP error itself and returns ok=false on failure.
+func (h *Handler) reloadOrderForResponse(w http.ResponseWriter, ctx context.Context, orderID uint64) (models.Order, bool) {
+	_ = h.Cache.DeletePattern(ctx, "orders:*")
+
+	var order models.Order
+	if err := h.DB.Preload("Items").Preload("User").Where("id = ?", orderID).First(&order).Error; err != nil {
+		httpjson.Error(w, http.StatusInternalServerError, "failed to fetch updated order")
+		return models.Order{}, false
+	}
+	h.ResolveOrderItemImageURLsSlice(order.Items)
+	return order, true
 }

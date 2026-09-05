@@ -1,3 +1,7 @@
+// Package cache implements a two-tier (in-process + Redis) response cache
+// with singleflight stampede protection, plus the ServePublic/ServePrivate
+// helpers handlers use to write cached JSON with the right Cache-Control
+// headers. See internal/docs/04-caching.md.
 package cache
 
 import (
@@ -18,10 +22,10 @@ import (
 )
 
 const (
+	// DefaultTTL is the fallback TTL for cache entries with no resource-specific constant below.
 	DefaultTTL = 10 * time.Minute
 
 	FeaturedProductsTTL = 10 * time.Minute
-	AllProductsTTL      = 5 * time.Minute
 	ProductDetailTTL    = 30 * time.Minute
 	RelatedProductsTTL  = 10 * time.Minute
 
@@ -38,7 +42,6 @@ const (
 	redisSetWait = 200 * time.Millisecond
 
 	KeyPrefixFeaturedProducts = "products:featured"
-	KeyPrefixAllProducts      = "products:all"
 	KeyPrefixProductDetail    = "products:detail:"
 	KeyPrefixRelatedProducts  = "products:related:"
 	KeyPrefixProductList      = "products:list:"
@@ -75,7 +78,7 @@ func NewHelper(rdb *redis.Client) *Helper {
 	}
 }
 
-func (c *Helper) Get(ctx context.Context, key string, dest interface{}) (bool, error) {
+func (c *Helper) Get(ctx context.Context, key string, dest any) (bool, error) {
 	raw, ok := c.GetRaw(ctx, key)
 	if !ok {
 		return false, nil
@@ -87,7 +90,7 @@ func (c *Helper) Get(ctx context.Context, key string, dest interface{}) (bool, e
 	return true, nil
 }
 
-func (c *Helper) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+func (c *Helper) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	if c == nil {
 		return nil
 	}
@@ -147,7 +150,7 @@ func (c *Helper) GetOrLoadRaw(ctx context.Context, key string, ttl time.Duration
 	if c == nil {
 		return load()
 	}
-	v, err, _ := c.sf.Do(key, func() (interface{}, error) {
+	v, err, _ := c.sf.Do(key, func() (any, error) {
 		if raw, ok := c.GetRaw(ctx, key); ok {
 			return raw, nil
 		}
@@ -327,130 +330,4 @@ func noneMatch(header, etag string) bool {
 func HashKey(s string) string {
 	sum := sha1.Sum([]byte(strings.ToLower(strings.TrimSpace(s))))
 	return hex.EncodeToString(sum[:8])
-}
-
-// ProductCache provides product-specific caching operations.
-type ProductCache struct {
-	*Helper
-}
-
-func NewProductCache(rdb *redis.Client) *ProductCache {
-	return &ProductCache{Helper: NewHelper(rdb)}
-}
-
-func (pc *ProductCache) GetFeaturedProducts(ctx context.Context, dest interface{}) (bool, error) {
-	return pc.Get(ctx, KeyPrefixFeaturedProducts, dest)
-}
-
-func (pc *ProductCache) SetFeaturedProducts(ctx context.Context, value interface{}) error {
-	return pc.Set(ctx, KeyPrefixFeaturedProducts, value, FeaturedProductsTTL)
-}
-
-func (pc *ProductCache) GetAllProducts(ctx context.Context, dest interface{}) (bool, error) {
-	return pc.Get(ctx, KeyPrefixAllProducts, dest)
-}
-
-func (pc *ProductCache) SetAllProducts(ctx context.Context, value interface{}) error {
-	return pc.Set(ctx, KeyPrefixAllProducts, value, AllProductsTTL)
-}
-
-func (pc *ProductCache) GetProductDetail(ctx context.Context, slug string, dest interface{}) (bool, error) {
-	return pc.Get(ctx, KeyPrefixProductDetail+slug, dest)
-}
-
-func (pc *ProductCache) SetProductDetail(ctx context.Context, slug string, value interface{}) error {
-	return pc.Set(ctx, KeyPrefixProductDetail+slug, value, ProductDetailTTL)
-}
-
-func (pc *ProductCache) GetRelatedProducts(ctx context.Context, slug string, dest interface{}) (bool, error) {
-	return pc.Get(ctx, KeyPrefixRelatedProducts+slug, dest)
-}
-
-func (pc *ProductCache) SetRelatedProducts(ctx context.Context, slug string, value interface{}) error {
-	return pc.Set(ctx, KeyPrefixRelatedProducts+slug, value, RelatedProductsTTL)
-}
-
-func (pc *ProductCache) InvalidateAllProductCaches(ctx context.Context) error {
-	if pc == nil {
-		return nil
-	}
-	patterns := []string{
-		KeyPrefixFeaturedProducts + "*",
-		KeyPrefixAllProducts + "*",
-		KeyPrefixProductDetail + "*",
-		KeyPrefixRelatedProducts + "*",
-		KeyPrefixProductList + "*",
-		KeyPrefixProductSearch + "*",
-		KeyPrefixCatProducts + "*",
-		KeyPrefixSubcatProducts + "*",
-		"products:*",
-		KeyPrefixTags,
-		KeyPrefixCatalog,
-	}
-	for _, pattern := range patterns {
-		if err := pc.DeletePattern(ctx, pattern); err != nil {
-		}
-	}
-	return nil
-}
-
-func (pc *ProductCache) InvalidateProductDetail(ctx context.Context, slug string) error {
-	_ = pc.Delete(ctx,
-		KeyPrefixProductDetail+slug,
-		KeyPrefixRelatedProducts+slug,
-		KeyPrefixFeaturedProducts,
-		KeyPrefixAllProducts,
-		KeyPrefixTags,
-		KeyPrefixCatalog,
-	)
-	_ = pc.DeletePattern(ctx, KeyPrefixProductList+"*")
-	_ = pc.DeletePattern(ctx, "products:featured*")
-	_ = pc.DeletePattern(ctx, KeyPrefixProductSearch+"*")
-	_ = pc.DeletePattern(ctx, KeyPrefixCatProducts+"*")
-	_ = pc.DeletePattern(ctx, KeyPrefixSubcatProducts+"*")
-	return nil
-}
-
-// CategoryCache provides category-specific caching operations.
-type CategoryCache struct {
-	*Helper
-}
-
-func NewCategoryCache(rdb *redis.Client) *CategoryCache {
-	return &CategoryCache{Helper: NewHelper(rdb)}
-}
-
-func (cc *CategoryCache) GetAllCategories(ctx context.Context, dest interface{}) (bool, error) {
-	return cc.Get(ctx, KeyPrefixAllCategories, dest)
-}
-
-func (cc *CategoryCache) SetAllCategories(ctx context.Context, value interface{}) error {
-	return cc.Set(ctx, KeyPrefixAllCategories, value, AllCategoriesTTL)
-}
-
-func (cc *CategoryCache) GetCategoryDetail(ctx context.Context, slug string, dest interface{}) (bool, error) {
-	return cc.Get(ctx, KeyPrefixCategoryDetail+slug, dest)
-}
-
-func (cc *CategoryCache) SetCategoryDetail(ctx context.Context, slug string, value interface{}) error {
-	return cc.Set(ctx, KeyPrefixCategoryDetail+slug, value, CategoryDetailTTL)
-}
-
-func (cc *CategoryCache) InvalidateAllCategoryCaches(ctx context.Context) error {
-	if cc == nil {
-		return nil
-	}
-	patterns := []string{
-		KeyPrefixAllCategories,
-		KeyPrefixCategoryDetail + "*",
-		KeyPrefixSubcategories + "*",
-		KeyPrefixCatalog,
-		KeyPrefixCatProducts + "*",
-		KeyPrefixSubcatProducts + "*",
-	}
-	for _, pattern := range patterns {
-		if err := cc.DeletePattern(ctx, pattern); err != nil {
-		}
-	}
-	return nil
 }

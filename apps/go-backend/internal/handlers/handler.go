@@ -1,3 +1,7 @@
+// Package handlers implements every HTTP endpoint for the API. There is no
+// separate service/repository layer: each handler method on Handler talks
+// to GORM, the cache, and external clients directly — appropriate for this
+// codebase's size. See internal/docs/01-architecture.md for the rationale.
 package handlers
 
 import (

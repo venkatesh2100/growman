@@ -1,3 +1,7 @@
+// Package config loads runtime configuration from environment variables
+// (optionally via a .env file). Every third-party integration's credentials
+// are optional here — the handlers that use them degrade to a 503 rather
+// than the server refusing to start.
 package config
 
 import (
@@ -11,21 +15,21 @@ import (
 
 // Config holds runtime configuration for the API server.
 type Config struct {
-	Port              string
-	DatabaseURL       string // Direct database URL (fallback)
-	HyperdriveURL     string // Cloudflare Hyperdrive connection string
-	JWTSecret         string
-	AllowedOrigins    []string
-	AppEnv            string
-	AutoMigrate       bool
-	REDIS_URL         string
-	SeedOnStartup     bool
-	RazorpayKeyID     string
-	RazorpayKeySecret string
-	SMTPEmail         string
-	SMTPPassword      string
-	SMTPHost          string
-	SMTPPort          string
+	Port                string
+	DatabaseURL         string // Direct database URL (fallback)
+	HyperdriveURL       string // Cloudflare Hyperdrive connection string
+	JWTSecret           string
+	AllowedOrigins      []string
+	AppEnv              string
+	AutoMigrate         bool
+	REDIS_URL           string
+	SeedOnStartup       bool
+	RazorpayKeyID       string
+	RazorpayKeySecret   string
+	SMTPEmail           string
+	SMTPPassword        string
+	SMTPHost            string
+	SMTPPort            string
 	MerchantNotifyEmail string // Internal ops alerts (signups, orders, long browse)
 	// Image storage configuration (Google Cloud Storage)
 	ImageBaseURL       string // Base URL for image storage (e.g., "https://storage.googleapis.com/your-bucket")
@@ -62,16 +66,16 @@ func Load() (Config, error) {
 	_ = godotenv.Load()
 
 	cfg := Config{
-		Port:              getenv("GO_PORT", ":8080"),
-		DatabaseURL:       os.Getenv("DATABASE_URL"),
-		HyperdriveURL:     os.Getenv("HYPERDRIVE_URL"),
-		JWTSecret:         getenv("JWT_SECRET", "dev-secret-change-me"),
-		AppEnv:            getenv("GO_ENV", getenv("APP_ENV", "development")),
-		AutoMigrate:       getenv("AUTO_MIGRATE", "true") == "true",
-		REDIS_URL:         os.Getenv("REDIS_URL"),
-		SeedOnStartup:     getenv("SEED_ON_STARTUP", "false") == "true",
-		RazorpayKeyID:     os.Getenv("RAZORPAY_KEY_ID"),
-		RazorpayKeySecret: os.Getenv("RAZORPAY_KEY_SECRET"),
+		Port:                getenv("GO_PORT", ":8080"),
+		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		HyperdriveURL:       os.Getenv("HYPERDRIVE_URL"),
+		JWTSecret:           getenv("JWT_SECRET", "dev-secret-change-me"),
+		AppEnv:              getenv("GO_ENV", getenv("APP_ENV", "development")),
+		AutoMigrate:         getenv("AUTO_MIGRATE", "true") == "true",
+		REDIS_URL:           os.Getenv("REDIS_URL"),
+		SeedOnStartup:       getenv("SEED_ON_STARTUP", "false") == "true",
+		RazorpayKeyID:       os.Getenv("RAZORPAY_KEY_ID"),
+		RazorpayKeySecret:   os.Getenv("RAZORPAY_KEY_SECRET"),
 		SMTPEmail:           os.Getenv("SMTP_EMAIL"),
 		SMTPPassword:        os.Getenv("SMTP_PASSWORD"),
 		SMTPHost:            getenv("SMTP_HOST", "smtp.gmail.com"),
@@ -118,7 +122,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-// safe parsing := Trimer
+// splitAndTrim splits a comma-separated string into trimmed, non-empty parts.
 func splitAndTrim(input string) []string {
 	parts := strings.Split(input, ",")
 	var out []string
@@ -131,7 +135,7 @@ func splitAndTrim(input string) []string {
 	return out
 }
 
-// safe fallback
+// getenv returns the named env var, or fallback if it's unset/empty.
 func getenv(key, fallback string) string {
 	val := os.Getenv(key)
 	if val == "" {

@@ -1,7 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { apiFetch } from '../../../lib/api';
+
+/** Shared input/select/textarea styling for this form, with an error-highlight state. */
+function fieldClass(hasError?: boolean, extra = '') {
+  return `w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${
+    hasError ? 'border-red-500 bg-red-50' : 'border-green-200'
+  } ${extra}`.trim();
+}
+
+function FieldError({ message }: { message?: string }) {
+  return message ? <p className="text-red-500 text-sm mt-1">{message}</p> : null;
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <label className="block text-green-700 font-medium mb-2 flex items-center">{children}</label>;
+}
 
 export default function AddPlant() {
   const [categories, setCategories] = useState([]);
@@ -95,8 +110,8 @@ export default function AddPlant() {
   const handleSizeChange = (index: number, field: string, value: string) => {
     const newSizes = [...sizes];
     if (newSizes[index]) {
-      newSizes[index] = { 
-        ...newSizes[index], 
+      newSizes[index] = {
+        ...newSizes[index],
         [field]: value,
         imageFiles: newSizes[index].imageFiles || [null],
         imageKeys: newSizes[index].imageKeys || ['']
@@ -111,7 +126,7 @@ export default function AddPlant() {
     if (size) {
       const imageFiles = size.imageFiles || [];
       const imageKeys = size.imageKeys || [];
-      
+
       // Ensure arrays are long enough
       while (imageFiles.length <= imgIndex) {
         imageFiles.push(null);
@@ -119,9 +134,9 @@ export default function AddPlant() {
       while (imageKeys.length <= imgIndex) {
         imageKeys.push('');
       }
-      
+
       imageFiles[imgIndex] = file;
-      
+
       newSizes[sizeIndex] = {
         ...size,
         imageFiles,
@@ -137,10 +152,10 @@ export default function AddPlant() {
     if (size) {
       const imageFiles = size.imageFiles || [];
       const imageKeys = size.imageKeys || [];
-      
+
       imageFiles.push(null);
       imageKeys.push('');
-      
+
       newSizes[sizeIndex] = {
         ...size,
         imageFiles,
@@ -153,7 +168,7 @@ export default function AddPlant() {
   const removeSizeImageField = (sizeIndex: number, imgIndex: number) => {
     const size = sizes[sizeIndex];
     if (!size || !size.imageFiles || size.imageFiles.length <= 1) return;
-    
+
     const newSizes = [...sizes];
     const updatedSize = newSizes[sizeIndex];
     if (updatedSize && updatedSize.imageFiles && updatedSize.imageKeys) {
@@ -304,10 +319,10 @@ export default function AddPlant() {
     }
 
     // Ensure categoryId is valid before proceeding
-    const validCategoryId = formData.categoryId && formData.categoryId !== '' && formData.categoryId !== '0' 
-      ? parseInt(formData.categoryId) 
+    const validCategoryId = formData.categoryId && formData.categoryId !== '' && formData.categoryId !== '0'
+      ? parseInt(formData.categoryId)
       : null;
-    
+
     if (!validCategoryId && !formData.newCategory.trim()) {
       setErrors({ category: 'Category is required' });
       setIsSubmitting(false);
@@ -326,7 +341,7 @@ export default function AddPlant() {
       const sizesWithImageKeys = await Promise.all(
         sizes.map(async (size) => {
           const imageKeys: string[] = [];
-          
+
           // Upload each image file for this size
           if (size.imageFiles && size.imageFiles.length > 0) {
             for (const file of size.imageFiles) {
@@ -380,7 +395,7 @@ export default function AddPlant() {
         newSubcategory: formData.newSubcategory && formData.newSubcategory.trim() ? formData.newSubcategory.trim() : '',
         sizes: sizesWithImageKeys
       };
-      
+
       // console.log(payload);
       const res = await apiFetch('/products', {
         method: 'POST',
@@ -390,7 +405,7 @@ export default function AddPlant() {
 
       // Read response as text first (can only read once)
       const responseText = await res.text();
-      
+
       if (!res.ok) {
         let errorMessage = 'Failed to add plant';
         try {
@@ -487,29 +502,29 @@ export default function AddPlant() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Plant Name *
-            </label>
+            </FieldLabel>
             <input
               name="name"
               placeholder="e.g., Monstera Deliciosa"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors.name ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+              className={fieldClass(!!errors.name)}
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            <FieldError message={errors.name} />
           </div>
 
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Original Price ($)
-            </label>
+            </FieldLabel>
             <input
               name="mrp"
               type="number"
@@ -517,38 +532,38 @@ export default function AddPlant() {
               placeholder="0.00"
               value={formData.mrp}
               onChange={handleChange}
-              className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500"
+              className={fieldClass()}
             />
           </div>
 
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               Tax Information
-            </label>
+            </FieldLabel>
             <input
               name="taxInfo"
               placeholder="e.g., GST 5%"
               value={formData.taxInfo}
               onChange={handleChange}
-              className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500"
+              className={fieldClass()}
             />
           </div>
 
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Brand
-            </label>
+            </FieldLabel>
             <select
               name="brandId"
               value={formData.brandId}
               onChange={handleChange}
-              className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500"
+              className={fieldClass()}
             >
               <option value="">Select brand</option>
               {brands && Array.isArray(brands) && brands.map((brand: any) => (
@@ -562,12 +577,12 @@ export default function AddPlant() {
 
         {/* Main Product Image Upload */}
         <div>
-          <label className="block text-green-700 font-medium mb-2 flex items-center">
+          <FieldLabel>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             Main Product Image (Optional)
-          </label>
+          </FieldLabel>
           <input
             type="file"
             accept="image/*"
@@ -575,7 +590,7 @@ export default function AddPlant() {
               const file = e.target.files?.[0] || null;
               setMainImageFile(file);
             }}
-            className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500"
+            className={fieldClass()}
           />
           {mainImageFile && (
             <p className="text-sm text-green-600 mt-1">
@@ -585,91 +600,84 @@ export default function AddPlant() {
         </div>
 
         <div>
-          <label className="block text-green-700 font-medium mb-2">
-            Short Description *
-          </label>
+          <FieldLabel>Short Description *</FieldLabel>
           <textarea
             name="shortDescription"
             placeholder="Brief description for product listings"
             value={formData.shortDescription}
             onChange={handleChange}
-            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 min-h-[100px] ${errors.shortDescription ? 'border-red-500 bg-red-50' : 'border-green-200'
-              }`}
+            className={fieldClass(!!errors.shortDescription, 'min-h-[100px]')}
           />
-          {errors.shortDescription && <p className="text-red-500 text-sm mt-1">{errors.shortDescription}</p>}
+          <FieldError message={errors.shortDescription} />
         </div>
 
         <div>
-          <label className="block text-green-700 font-medium mb-2">
-            Full Description
-          </label>
+          <FieldLabel>Full Description</FieldLabel>
           <textarea
             name="fullDescription"
             placeholder="Detailed description about the plant"
             value={formData.fullDescription}
             onChange={handleChange}
-            className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 min-h-[120px]"
+            className={fieldClass(false, 'min-h-[120px]')}
           />
         </div>
 
         {/* Bag Sizes Section */}
         <div>
-          <label className="block text-green-700 font-medium mb-2">
-            Bag Sizes *
-          </label>
+          <FieldLabel>Bag Sizes *</FieldLabel>
           {sizes.map((size, sizeIndex) => (
             <div key={sizeIndex} className="border border-green-200 rounded-lg p-4 mb-4 bg-white">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-green-700 font-medium mb-2">Dimension *</label>
+                  <FieldLabel>Dimension *</FieldLabel>
                   <input
                     value={size.dimension}
                     onChange={(e) => handleSizeChange(sizeIndex, 'dimension', e.target.value)}
                     placeholder="e.g., S, M, L or 1kg, 2kg"
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-dimension`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                    className={fieldClass(!!errors[`size-${sizeIndex}-dimension`])}
                   />
-                  {errors[`size-${sizeIndex}-dimension`] && <p className="text-red-500 text-sm mt-1">{errors[`size-${sizeIndex}-dimension`]}</p>}
+                  <FieldError message={errors[`size-${sizeIndex}-dimension`]} />
                 </div>
                 <div>
-                  <label className="block text-green-700 font-medium mb-2">Label *</label>
+                  <FieldLabel>Label *</FieldLabel>
                   <input
                     value={size.label}
                     onChange={(e) => handleSizeChange(sizeIndex, 'label', e.target.value)}
                     placeholder="e.g., Small, Medium, Large"
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-label`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                    className={fieldClass(!!errors[`size-${sizeIndex}-label`])}
                   />
-                  {errors[`size-${sizeIndex}-label`] && <p className="text-red-500 text-sm mt-1">{errors[`size-${sizeIndex}-label`]}</p>}
+                  <FieldError message={errors[`size-${sizeIndex}-label`]} />
                 </div>
                 <div>
-                  <label className="block text-green-700 font-medium mb-2">Price ($) *</label>
+                  <FieldLabel>Price ($) *</FieldLabel>
                   <input
                     type="number"
                     step="0.01"
                     value={size.price}
                     onChange={(e) => handleSizeChange(sizeIndex, 'price', e.target.value)}
                     placeholder="0.00"
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-price`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                    className={fieldClass(!!errors[`size-${sizeIndex}-price`])}
                   />
-                  {errors[`size-${sizeIndex}-price`] && <p className="text-red-500 text-sm mt-1">{errors[`size-${sizeIndex}-price`]}</p>}
+                  <FieldError message={errors[`size-${sizeIndex}-price`]} />
                 </div>
                 <div>
-                  <label className="block text-green-700 font-medium mb-2">Stock *</label>
+                  <FieldLabel>Stock *</FieldLabel>
                   <input
                     type="number"
                     value={size.stock}
                     onChange={(e) => handleSizeChange(sizeIndex, 'stock', e.target.value)}
                     placeholder="0"
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-stock`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                    className={fieldClass(!!errors[`size-${sizeIndex}-stock`])}
                   />
-                  {errors[`size-${sizeIndex}-stock`] && <p className="text-red-500 text-sm mt-1">{errors[`size-${sizeIndex}-stock`]}</p>}
+                  <FieldError message={errors[`size-${sizeIndex}-stock`]} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-green-700 font-medium mb-2">
+                <FieldLabel>
                   Images for this size (Optional)
                   <span className="text-sm text-gray-500 ml-2">Upload image files</span>
-                </label>
+                </FieldLabel>
                 {(size.imageFiles || [null]).map((file, imgIndex) => (
                   <div key={imgIndex} className="flex gap-2 mb-2">
                     <input
@@ -679,7 +687,7 @@ export default function AddPlant() {
                         const selectedFile = e.target.files?.[0] || null;
                         handleSizeImageFileChange(sizeIndex, imgIndex, selectedFile);
                       }}
-                      className={`flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors[`size-${sizeIndex}-images`] ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                      className={fieldClass(!!errors[`size-${sizeIndex}-images`], 'flex-1')}
                     />
                     {file && (
                       <span className="text-sm text-green-600 self-center">
@@ -703,7 +711,7 @@ export default function AddPlant() {
                 >
                   + Add Another Image
                 </button>
-                {errors[`size-${sizeIndex}-images`] && <p className="text-red-500 text-sm mt-1">{errors[`size-${sizeIndex}-images`]}</p>}
+                <FieldError message={errors[`size-${sizeIndex}-images`]} />
               </div>
 
               <div className="mt-4">
@@ -730,17 +738,17 @@ export default function AddPlant() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
               Category *
-            </label>
+            </FieldLabel>
             <select
               name="categoryId"
               value={formData.categoryId}
               onChange={handleChange}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors.category ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+              className={fieldClass(!!errors.category)}
             >
               <option value="">Select existing category</option>
               {categories.map((cat: any) => (
@@ -754,26 +762,25 @@ export default function AddPlant() {
                 placeholder="Create new category"
                 value={formData.newCategory}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${errors.category ? 'border-red-500 bg-red-50' : 'border-green-200'}`}
+                className={fieldClass(!!errors.category)}
               />
             </div>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            <FieldError message={errors.category} />
           </div>
 
           <div>
-            <label className="block text-green-700 font-medium mb-2 flex items-center">
+            <FieldLabel>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
               Subcategory
-            </label>
+            </FieldLabel>
             <select
               name="subcategoryId"
               value={formData.subcategoryId}
               onChange={handleChange}
               disabled={!formData.categoryId}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${!formData.categoryId ? 'bg-gray-100' : ''
-                } border-green-200`}
+              className={fieldClass(false, !formData.categoryId ? 'bg-gray-100' : '')}
             >
               <option value="">Select existing subcategory</option>
               {subcategories.map((sub: any) => (
@@ -787,17 +794,14 @@ export default function AddPlant() {
                 placeholder="Create new subcategory"
                 value={formData.newSubcategory}
                 onChange={handleChange}
-                // disabled={!formData.categoryId}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${!formData.categoryId ? 'bg-gray-100' : ''} border-green-200`}
+                className={fieldClass(false, !formData.categoryId ? 'bg-gray-100' : '')}
               />
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-green-700 font-medium mb-2">
-            Specifications
-          </label>
+          <FieldLabel>Specifications</FieldLabel>
           {specifications.map((spec, index) => (
             <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
               <input
@@ -832,12 +836,12 @@ export default function AddPlant() {
         </div>
 
         <div>
-          <label className="block text-green-700 font-medium mb-2 flex items-center">
+          <FieldLabel>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             Plant Tags
-          </label>
+          </FieldLabel>
           <div className="flex flex-wrap gap-2">
             {allTags.map(tag => (
               <button

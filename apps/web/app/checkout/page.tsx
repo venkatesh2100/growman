@@ -11,6 +11,8 @@ import { useAuthStore } from "../../lib/store/authStore";
 import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
 import { toast } from "../../lib/toast";
+import { FormField, FormSelect } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 // Razorpay types
 interface RazorpayResponse {
@@ -237,51 +239,6 @@ const handleCart = () =>{
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
-
-  // Removed unused validateForm function
-  const _validateForm = async (): Promise<boolean> => {
-    if (!customerInfo.name.trim()) {
-      setError("Please enter your name");
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!customerInfo.email.trim() || !emailRegex.test(customerInfo.email)) {
-      setError("Please enter a valid email address");
-      return false;
-    }
-    const phoneRegex = /^[6-9][0-9]{9}$/;
-    if (!customerInfo.phone.trim() || !phoneRegex.test(customerInfo.phone)) {
-      setError("Please enter a valid 10-digit phone number starting with 6-9");
-      return false;
-    }
-    if (!customerInfo.addressLine.trim()) {
-      setError("Please enter your address line");
-      return false;
-    }
-    if (!customerInfo.city.trim()) {
-      setError("Please select your city");
-      return false;
-    }
-    if (!customerInfo.state.trim()) {
-      setError("Please select your state");
-      return false;
-    }
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
-    if (!customerInfo.pincode.trim() || !pincodeRegex.test(customerInfo.pincode)) {
-      setError("Please enter a valid 6-digit pincode");
-      return false;
-    }
-
-    // Check if user exists (only if not authenticated)
-    if (!isAuthenticated) {
-      const userExists = await checkUserExists(customerInfo.email, customerInfo.phone);
-      if (userExists) {
-        return false;
-      }
-    }
-
-    return true;
   };
 
   const handleSendOTP = async () => {
@@ -604,84 +561,65 @@ const handleCart = () =>{
                 Customer Information
               </h2>
               <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={customerInfo.name}
-                    onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, name: e.target.value })
+                <FormField
+                  size="sm"
+                  label="Full Name *"
+                  type="text"
+                  value={customerInfo.name}
+                  onChange={(e) =>
+                    setCustomerInfo({ ...customerInfo, name: e.target.value })
+                  }
+                  placeholder="John Doe"
+                />
+                <FormField
+                  label="Email Address *"
+                  type="email"
+                  value={customerInfo.email}
+                  onChange={async (e) => {
+                    const email = e.target.value;
+                    setCustomerInfo({ ...customerInfo, email });
+                    // Check if email exists when user finishes typing
+                    if (email.includes("@") && !isAuthenticated) {
+                      await checkUserExists(email, undefined);
                     }
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    value={customerInfo.email}
-                    onChange={async (e) => {
-                      const email = e.target.value;
-                      setCustomerInfo({ ...customerInfo, email });
-                      // Check if email exists when user finishes typing
-                      if (email.includes("@") && !isAuthenticated) {
-                        await checkUserExists(email, undefined);
-                      }
-                    }}
-                    onBlur={async () => {
-                      if (customerInfo.email.includes("@") && !isAuthenticated) {
-                        await checkUserExists(customerInfo.email, undefined);
-                      }
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="john@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerInfo.phone}
-                    onChange={async (e) => {
-                      const phone = e.target.value.replace(/\D/g, "").slice(0, 10);
-                      setCustomerInfo({ ...customerInfo, phone });
-                      // Check if phone exists when user finishes typing
-                      if (phone.length === 10 && !isAuthenticated) {
-                        await checkUserExists(undefined, phone);
-                      }
-                    }}
-                    onBlur={async () => {
-                      if (customerInfo.phone.length === 10 && !isAuthenticated) {
-                        await checkUserExists(undefined, customerInfo.phone);
-                      }
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="9876543210"
-                    maxLength={10}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">10 digits, starting with 6-9</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country
-                  </label>
-                  <select
-                    value={customerInfo.country}
-                    onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, country: e.target.value })
+                  }}
+                  onBlur={async () => {
+                    if (customerInfo.email.includes("@") && !isAuthenticated) {
+                      await checkUserExists(customerInfo.email, undefined);
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option value="India">India</option>
-                  </select>
-                </div>
+                  }}
+                  placeholder="john@example.com"
+                />
+                <FormField
+                  label="Phone Number *"
+                  type="tel"
+                  value={customerInfo.phone}
+                  onChange={async (e) => {
+                    const phone = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setCustomerInfo({ ...customerInfo, phone });
+                    // Check if phone exists when user finishes typing
+                    if (phone.length === 10 && !isAuthenticated) {
+                      await checkUserExists(undefined, phone);
+                    }
+                  }}
+                  onBlur={async () => {
+                    if (customerInfo.phone.length === 10 && !isAuthenticated) {
+                      await checkUserExists(undefined, customerInfo.phone);
+                    }
+                  }}
+                  placeholder="9876543210"
+                  maxLength={10}
+                  hint="10 digits, starting with 6-9"
+                />
+                <FormSelect
+                  label="Country"
+                  value={customerInfo.country}
+                  onChange={(e) =>
+                    setCustomerInfo({ ...customerInfo, country: e.target.value })
+                  }
+                >
+                  <option value="India">India</option>
+                </FormSelect>
                 <div className="flex items-center justify-between">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Address Line * (include Door No, Building Name, Street)
@@ -705,69 +643,55 @@ const handleCart = () =>{
                     )}
                   </button>
                 </div>
-                <input
+                <FormField
                   type="text"
                   value={customerInfo.addressLine}
                   onChange={(e) =>
                     setCustomerInfo({ ...customerInfo, addressLine: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="House/Flat No., Building Name, Street"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      State *
-                    </label>
-                    <select
-                      value={customerInfo.state}
-                      onChange={(e) =>
-                        setCustomerInfo({
-                          ...customerInfo,
-                          state: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-                    >
-                      <option value="">Select State</option>
-                      {getAllStateNames().map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      value={customerInfo.city}
-                      onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, city: e.target.value })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-                      placeholder="Enter city name"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pincode *
-                  </label>
-                  <input
-                    type="text"
-                    value={customerInfo.pincode}
+                  <FormSelect
+                    size="sm"
+                    label="State *"
+                    value={customerInfo.state}
                     onChange={(e) =>
-                      setCustomerInfo({ ...customerInfo, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })
+                      setCustomerInfo({
+                        ...customerInfo,
+                        state: e.target.value,
+                      })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="123456"
-                    maxLength={6}
+                  >
+                    <option value="">Select State</option>
+                    {getAllStateNames().map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </FormSelect>
+                  <FormField
+                    size="sm"
+                    label="City *"
+                    type="text"
+                    value={customerInfo.city}
+                    onChange={(e) =>
+                      setCustomerInfo({ ...customerInfo, city: e.target.value })
+                    }
+                    placeholder="Enter city name"
                   />
-                  <p className="text-xs text-gray-500 mt-1">6 digits, starting with 1-9</p>
                 </div>
+                <FormField
+                  label="Pincode *"
+                  type="text"
+                  value={customerInfo.pincode}
+                  onChange={(e) =>
+                    setCustomerInfo({ ...customerInfo, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })
+                  }
+                  placeholder="123456"
+                  maxLength={6}
+                  hint="6 digits, starting with 1-9"
+                />
               </div>
             </div>
 
@@ -782,52 +706,34 @@ const handleCart = () =>{
                   Verify your email to receive order updates. You can skip this and proceed directly to payment.
                 </p>
                 {!otpSent ? (
-                  <button
+                  <Button
                     onClick={handleSendOTP}
-                    disabled={sendingOtp || !customerInfo.email}
-                    className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                    disabled={!customerInfo.email}
+                    loading={sendingOtp}
+                    loadingText="Sending OTP..."
+                    icon={<Mail className="w-5 h-5" />}
                   >
-                    {sendingOtp ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Sending OTP...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-5 h-5 mr-2" />
-                        Send OTP to {customerInfo.email || "your email"}
-                      </>
-                    )}
-                  </button>
+                    Send OTP to {customerInfo.email || "your email"}
+                  </Button>
                 ) : (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Enter 6-digit OTP
-                      </label>
-                      <input
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-center text-2xl tracking-widest"
-                        placeholder="000000"
-                        maxLength={6}
-                      />
-                    </div>
-                    <button
+                    <FormField
+                      label="Enter 6-digit OTP"
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="text-center text-2xl tracking-widest"
+                      placeholder="000000"
+                      maxLength={6}
+                    />
+                    <Button
                       onClick={handleVerifyOTP}
-                      disabled={verifyingOtp || otp.length !== 6}
-                      className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                      disabled={otp.length !== 6}
+                      loading={verifyingOtp}
+                      loadingText="Verifying..."
                     >
-                      {verifyingOtp ? (
-                        <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          Verifying...
-                        </>
-                      ) : (
-                        "Verify OTP"
-                      )}
-                    </button>
+                      Verify OTP
+                    </Button>
                     <button
                       onClick={() => {
                         setOtpSent(false);
@@ -1003,25 +909,16 @@ const handleCart = () =>{
                 <p className="mb-4 text-sm text-emerald-700">Payment successful. Redirecting…</p>
               ) : null}
 
-              <button
+              <Button
+                variant="solid-sm"
                 onClick={handlePayment}
-                disabled={loading || paymentStatus === "processing" || (!isAuthenticated && !otpVerified)}
-                className="w-full bg-emerald-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base touch-manipulation"
+                disabled={!isAuthenticated && !otpVerified}
+                loading={loading || paymentStatus === "processing"}
+                loadingText="Processing..."
+                icon={!isAuthenticated && !otpVerified ? undefined : <CreditCard className="w-5 h-5" />}
               >
-                {loading || paymentStatus === "processing" ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : !isAuthenticated && !otpVerified ? (
-                  "Verify Email to Pay"
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Pay ₹{total.toFixed(2)}
-                  </>
-                )}
-              </button>
+                {!isAuthenticated && !otpVerified ? "Verify Email to Pay" : `Pay ₹${total.toFixed(2)}`}
+              </Button>
 
               <p className="text-xs text-gray-500 text-center mt-4">
                 Secure payment powered by Razorpay

@@ -1,6 +1,5 @@
 'use client';
 
-// import ProductCard from '@repo/ui/productCard';
 import ProductCard from './ProductCard';
 import type { Product } from '../../lib/types';
 
@@ -8,6 +7,7 @@ interface ProductsDisplayProps {
   products: Product[];
   title?: string;
   showCount?: boolean;
+  countLabel?: string;
   emptyMessage?: string;
 }
 
@@ -15,6 +15,7 @@ export default function ProductsDisplay({
   products,
   title = 'All Plants',
   showCount = true,
+  countLabel,
   emptyMessage = 'No plants found. Please check back later.',
 }: ProductsDisplayProps) {
 
@@ -24,7 +25,8 @@ export default function ProductsDisplay({
         <h2 className="text-2xl font-semibold text-green-800">{title}</h2>
         {showCount && (
           <div className="text-sm text-emerald-600">
-            Showing {products.length} {products.length === 1 ? 'plant' : 'plants'}
+            {countLabel ??
+              `Showing ${products.length} ${products.length === 1 ? "plant" : "plants"}`}
           </div>
         )}
       </div>

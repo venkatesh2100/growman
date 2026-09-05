@@ -19,7 +19,7 @@ export default async function Page({
   }
 
   const product: Product = await response.json();
-
+// console.log(product);
   return (
     <ProductPageClient
       product={product}

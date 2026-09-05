@@ -1,3 +1,5 @@
+// Package truecaller implements the Android OAuth-with-PKCE code exchange
+// used to verify a user's phone number via the Truecaller app.
 package truecaller
 
 import (

@@ -7,7 +7,7 @@ import { apiFetch } from "../../lib/api";
 import { Product } from "../../lib/types";
 import { useAuthStore } from "../../lib/store/authStore";
 import { useRouter } from "next/navigation";
-import ProductCard from "../../components/productspage/ProductCard";
+import ProductGrid from "../../components/productspage/ProductGrid";
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -47,22 +47,24 @@ export default function WishlistPage() {
           <div className="mt-8 flex items-center justify-center text-gray-500">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading wishlist...
           </div>
-        ) : products.length === 0 ? (
-          <div className="mt-8 rounded-xl border border-emerald-100 bg-white p-8 text-center shadow-sm">
-            <Heart className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-3 text-sm text-gray-600">No products in wishlist yet.</p>
-            <Link
-              href="/shop"
-              className="mt-4 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-            >
-              Browse Plants
-            </Link>
-          </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="mt-6">
+            <ProductGrid
+              products={products}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+              emptyState={
+                <div className="rounded-xl border border-emerald-100 bg-white p-8 text-center shadow-sm">
+                  <Heart className="mx-auto h-8 w-8 text-gray-300" />
+                  <p className="mt-3 text-sm text-gray-600">No products in wishlist yet.</p>
+                  <Link
+                    href="/shop"
+                    className="mt-4 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                  >
+                    Browse Plants
+                  </Link>
+                </div>
+              }
+            />
           </div>
         )}
       </div>

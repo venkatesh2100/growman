@@ -11,6 +11,7 @@ import (
 	"time"
 
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/msg91"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/phoneutil"
@@ -40,42 +41,75 @@ type AuthUserSummary struct {
 	Phone string `json:"phone"`
 }
 
-// Login supports email OR phone + password login
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var payload AuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
-		return
-	}
+// errPasswordRequired and errInvalidCredentials are sentinel errors from
+// authenticateUser; their .Error() text is the 401 response message.
+var (
+	errPasswordRequired   = errors.New("password required")
+	errInvalidCredentials = errors.New("invalid credentials")
+)
 
-	if payload.Password == "" {
-		httpjson.Error(w, http.StatusUnauthorized, "password required")
-		return
+// userJSON returns the {id,name,email,phone} fields common to every user
+// response in this file. Callers merge in whatever else their endpoint's
+// contract needs (role, address, emailVerified, ...) — kept as a plain map
+// rather than a struct so each handler can shape its own response exactly.
+func userJSON(user models.User) map[string]any {
+	return map[string]any{
+		"id":    user.ID,
+		"name":  user.Name,
+		"email": user.EmailOrEmpty(),
+		"phone": user.PhoneOrEmpty(),
+	}
+}
+
+// addressJSON returns the address sub-object shared by the profile
+// endpoints (Me, UpdateProfile).
+func addressJSON(user models.User) map[string]any {
+	return map[string]any{
+		"line":      user.AddressLine,
+		"city":      user.City,
+		"state":     user.State,
+		"pincode":   user.Pincode,
+		"country":   user.Country,
+		"latitude":  user.Latitude,
+		"longitude": user.Longitude,
+	}
+}
+
+// authenticateUser looks up a user by email or phone (10-digit/91-prefixed
+// variants) and verifies the password. Shared by Login and AdminLogin.
+func (h *Handler) authenticateUser(identifier, password string) (models.User, error) {
+	if password == "" {
+		return models.User{}, errPasswordRequired
 	}
 
 	var user models.User
-	// Check if identifier is email or phone
-	if strings.Contains(payload.Email, "@") {
-		// Email login
-		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-			return
-		}
+	var err error
+	if strings.Contains(identifier, "@") {
+		err = h.DB.Where("email = ?", identifier).First(&user).Error
 	} else {
-		// Phone login — match 10-digit and 91-prefixed rows
-		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-			return
-		}
+		err = h.DB.Where("phone IN ?", phoneutil.LookupVariants(identifier)).First(&user).Error
+	}
+	if err != nil {
+		return models.User{}, errInvalidCredentials
 	}
 
 	hash := user.PasswordHashOrEmpty()
-	if hash == "" {
-		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+	if hash == "" || bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
+		return models.User{}, errInvalidCredentials
+	}
+	return user, nil
+}
+
+// Login supports email OR phone + password login
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var payload AuthRequest
+	if !httpjson.Decode(w, r, &payload, "invalid payload") {
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(payload.Password)); err != nil {
-		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
+
+	user, err := h.authenticateUser(payload.Email, payload.Password)
+	if err != nil {
+		httpjson.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -95,42 +129,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 }
+
+// AdminLogin is Login plus an admin-role check, kept separate so the token
+// response (and any future admin-only claims) can diverge from Login's.
 func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	var payload AuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+	if !httpjson.Decode(w, r, &payload, "invalid payload") {
 		return
 	}
 
-	if payload.Password == "" {
-		httpjson.Error(w, http.StatusUnauthorized, "password required")
+	user, err := h.authenticateUser(payload.Email, payload.Password)
+	if err != nil {
+		httpjson.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-
-	var user models.User
-	if strings.Contains(payload.Email, "@") {
-		if err := h.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-			return
-		}
-	} else {
-		if err := h.DB.Where("phone IN ?", phoneutil.LookupVariants(payload.Email)).First(&user).Error; err != nil {
-			httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-			return
-		}
-	}
-
-	hash := user.PasswordHashOrEmpty()
-	if hash == "" {
-		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(payload.Password)); err != nil {
-		httpjson.Error(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-
-	if user.Role != "admin" && user.Role != "superadmin" {
+	if !appauth.IsAdminRole(user.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}
@@ -155,8 +168,7 @@ type SignupRequest struct {
 // Signup creates a new user account
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var payload SignupRequest
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+	if !httpjson.Decode(w, r, &payload, "invalid payload") {
 		return
 	}
 
@@ -213,7 +225,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 		return
 	}
-	h.notifyMerchantNewUser(user, "signup", clientIP(r), r.UserAgent())
+	h.notifyMerchantNewUser(user, "signup", middlewares.ClientIP(r), r.UserAgent())
 
 	// Generate token
 	token, err := appauth.GenerateToken(h.Cfg.JWTSecret, user.ID, user.Role, 24*time.Hour)
@@ -250,26 +262,11 @@ func (h *Handler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
 
 	exists := query.First(&user).Error == nil
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"exists": exists,
 		"email":  user.EmailOrEmpty(),
 		"phone":  user.PhoneOrEmpty(),
 	})
-}
-
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return strings.TrimSpace(xri)
-	}
-	host := r.RemoteAddr
-	if i := strings.LastIndex(host, ":"); i >= 0 {
-		return host[:i]
-	}
-	return host
 }
 
 // parseRetryChannel accepts JSON number or string ("12") from channel / retryChannel.
@@ -302,8 +299,7 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 		Channel      json.RawMessage `json:"channel"`      // optional retry: 11 SMS, 4 VOICE, 12 WHATSAPP
 		RetryChannel json.RawMessage `json:"retryChannel"` // alias (MSG91 field name)
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "bad request")
+	if !httpjson.Decode(w, r, &req, "bad request") {
 		return
 	}
 	channel := parseRetryChannel(req.RetryChannel, req.Channel)
@@ -327,7 +323,7 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 
 	throttle := &msg91.Throttle{RDB: h.Redis}
 	isRetry := strings.TrimSpace(req.ReqID) != ""
-	ok, reason, retryAfter, err := throttle.Allow(r.Context(), phone, clientIP(r), isRetry)
+	ok, reason, retryAfter, err := throttle.Allow(r.Context(), phone, middlewares.ClientIP(r), isRetry)
 	if err != nil {
 		log.Printf("[OTP] throttle error: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "Couldn't send the code. Try again.")
@@ -428,8 +424,7 @@ func (h *Handler) VerifyWidgetOTP(w http.ResponseWriter, r *http.Request) {
 		AccessToken string `json:"accessToken"`
 		Identifier  string `json:"identifier"` // optional hint from the widget (e.g. 9198…)
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "bad request")
+	if !httpjson.Decode(w, r, &req, "bad request") {
 		return
 	}
 	accessToken := strings.TrimSpace(req.AccessToken)
@@ -479,8 +474,7 @@ func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
 		OTP   string `json:"otp"`
 		ReqID string `json:"reqId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "bad request")
+	if !httpjson.Decode(w, r, &req, "bad request") {
 		return
 	}
 	ten := phoneutil.TenDigitIN(req.Phone)
@@ -530,8 +524,7 @@ func (h *Handler) VerifyTruecaller(w http.ResponseWriter, r *http.Request) {
 		AuthorizationCode string `json:"authorizationCode"`
 		CodeVerifier      string `json:"codeVerifier"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "bad request")
+	if !httpjson.Decode(w, r, &req, "bad request") {
 		return
 	}
 	code := strings.TrimSpace(req.AuthorizationCode)
@@ -598,17 +591,13 @@ func (h *Handler) respondPhoneAuth(w http.ResponseWriter, user models.User, isNe
 		httpjson.Error(w, http.StatusInternalServerError, "token issue failed")
 		return
 	}
+	u := userJSON(user)
+	u["role"] = user.Role
 	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"token":        token,
 		"isNewUser":    needsProfile,
 		"isNewAccount": isNewAccount,
-		"user": map[string]any{
-			"id":    user.ID,
-			"name":  user.Name,
-			"email": user.EmailOrEmpty(),
-			"phone": user.PhoneOrEmpty(),
-			"role":  user.Role,
-		},
+		"user":         u,
 	})
 }
 
@@ -664,9 +653,8 @@ func (h *Handler) findOrCreateByPhone(tenDigit string, profile ...phoneAuthProfi
 
 // CompletePhoneProfile finalizes a new phone user's name/email and upgrades JWT scope.
 func (h *Handler) CompletePhoneProfile(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	if claims.Scope != appauth.ScopeOnboarding {
@@ -718,23 +706,15 @@ func (h *Handler) CompletePhoneProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]any{
-		"token": token,
-		"user": map[string]any{
-			"id":    user.ID,
-			"name":  user.Name,
-			"email": user.EmailOrEmpty(),
-			"phone": user.PhoneOrEmpty(),
-			"role":  user.Role,
-		},
-	})
+	u := userJSON(user)
+	u["role"] = user.Role
+	httpjson.JSON(w, http.StatusOK, map[string]any{"token": token, "user": u})
 }
 
 // Me returns the authenticated user data
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -746,24 +726,12 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return user data (excluding sensitive fields)
-	httpjson.JSON(w, http.StatusOK, map[string]any{
-		"id":            user.ID,
-		"name":          user.Name,
-		"email":         user.EmailOrEmpty(),
-		"phone":         user.PhoneOrEmpty(),
-		"emailVerified": user.EmailVerified,
-		"role":          user.Role,
-		"address": map[string]any{
-			"line":      user.AddressLine,
-			"city":      user.City,
-			"state":     user.State,
-			"pincode":   user.Pincode,
-			"country":   user.Country,
-			"latitude":  user.Latitude,
-			"longitude": user.Longitude,
-		},
-	})
+	// Return user data (excluding sensitive fields like PasswordHash).
+	resp := userJSON(user)
+	resp["emailVerified"] = user.EmailVerified
+	resp["role"] = user.Role
+	resp["address"] = addressJSON(user)
+	httpjson.JSON(w, http.StatusOK, resp)
 }
 
 // GoogleAuthRequest contains the Google OAuth access token
@@ -783,8 +751,7 @@ type GoogleUserInfo struct {
 // Google handles Google OAuth login/signup
 func (h *Handler) Google(w http.ResponseWriter, r *http.Request) {
 	var payload GoogleAuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+	if !httpjson.Decode(w, r, &payload, "invalid payload") {
 		return
 	}
 
@@ -820,7 +787,7 @@ func (h *Handler) Google(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 			return
 		}
-		h.notifyMerchantNewUser(user, "google", clientIP(r), r.UserAgent())
+		h.notifyMerchantNewUser(user, "google", middlewares.ClientIP(r), r.UserAgent())
 	} else {
 		// User exists, update provider if needed
 		if user.Provider != "google" {
@@ -923,8 +890,7 @@ type PasswordResetRequest struct {
 // SendPasswordResetOTP sends an OTP to user's email for password reset
 func (h *Handler) SendPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 	var req PasswordResetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -939,7 +905,7 @@ func (h *Handler) SendPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 	// Check if user exists — same OK message either way (no account enumeration)
 	var user models.User
 	if err := h.DB.WithContext(ctx).Where("email = ?", req.Email).First(&user).Error; err != nil {
-		httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+		httpjson.JSON(w, http.StatusOK, map[string]any{
 			"message": "If an account exists with this email, a password reset code has been sent",
 		})
 		return
@@ -959,7 +925,7 @@ func (h *Handler) SendPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !canResend {
-		httpjson.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+		httpjson.JSON(w, http.StatusTooManyRequests, map[string]any{
 			"error":       "otp_cooldown",
 			"retry_after": int(ttl.Seconds()),
 		})
@@ -982,7 +948,7 @@ func (h *Handler) SendPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = otpService.SetPasswordResetCooldown(ctx, req.Email)
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"message":  "If an account exists with this email, a password reset code has been sent",
 		"cooldown": 60,
 	})
@@ -997,8 +963,7 @@ type VerifyPasswordResetOTPRequest struct {
 // VerifyPasswordResetOTP verifies the OTP for password reset
 func (h *Handler) VerifyPasswordResetOTP(w http.ResponseWriter, r *http.Request) {
 	var req VerifyPasswordResetOTPRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -1026,7 +991,7 @@ func (h *Handler) VerifyPasswordResetOTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "OTP verified successfully",
 	})
@@ -1043,8 +1008,7 @@ type ResetPasswordRequest struct {
 // ResetPassword resets the user's password after OTP verification
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var req ResetPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -1103,7 +1067,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Password reset successfully",
 	})
@@ -1125,15 +1089,13 @@ type UpdateProfileRequest struct {
 
 // UpdateProfile updates the authenticated user's profile
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	var req UpdateProfileRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -1186,24 +1148,12 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	u := userJSON(user)
+	u["address"] = addressJSON(user)
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Profile updated successfully",
-		"user": map[string]any{
-			"id":    user.ID,
-			"name":  user.Name,
-			"email": user.EmailOrEmpty(),
-			"phone": user.PhoneOrEmpty(),
-			"address": map[string]any{
-				"line":      user.AddressLine,
-				"city":      user.City,
-				"state":     user.State,
-				"pincode":   user.Pincode,
-				"country":   user.Country,
-				"latitude":  user.Latitude,
-				"longitude": user.Longitude,
-			},
-		},
+		"user":    u,
 	})
 }
 
@@ -1220,15 +1170,13 @@ type SaveLocationRequest struct {
 
 // SaveLocation saves location data for the authenticated user
 func (h *Handler) SaveLocation(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	var req SaveLocationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -1261,7 +1209,7 @@ func (h *Handler) SaveLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Location saved successfully",
 	})

@@ -8,8 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { searchProducts } from "../../lib/api";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
-import { LogOut, Package, Settings, ShoppingBag, LogIn, Heart, Mic, ScanSearch } from "lucide-react";
+import { ShoppingBag, Mic, ScanSearch } from "lucide-react";
 import CategoryFilterBar from "./CategoryFilterBar";
+import AccountMenu from "./AccountMenu";
 
 interface Product {
   id: number;
@@ -383,76 +384,7 @@ export default function Navbar() {
   }, [listening]);
 
   if (!isMounted) {
-    return (
-      <div ref={navbarRef}>
-        {/* <header className="fixed w-full z-50 bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3">
-          <div className="container mx-auto px-4 flex justify-between items-center">
-            <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                <FaLeaf className="w-8 h-8 text-emerald-400" />
-              </div>
-              <h1 className="text-2xl font-bold text-green-800">Growman</h1>
-            </Link>
-            <nav className="hidden md:flex space-x-1">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="px-4 py-2 font-medium rounded-lg text-green-800 hover:text-emerald-600 hover:bg-emerald-50">
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="flex items-center space-x-3">
-              <div className="hidden md:flex items-center bg-emerald-50 rounded-full pl-4 pr-2 py-1 shadow-inner">
-                <input type="text" placeholder="Search plants, seeds, tools..." disabled className="bg-transparent outline-none w-58 text-green-800 placeholder-emerald-600/70" />
-                <button className="p-2 text-emerald-700 hover:text-emerald-900 rounded-full" disabled><SearchIcon /></button>
-              </div>
-              <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Search"><SearchIcon /></button>
-              <Link href="/cart" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full relative" aria-label="Cart" data-cart-icon>
-                <CartIcon />
-                {isMounted && totalQuantity > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {totalQuantity > 99 ? '99+' : totalQuantity}
-                  </span>
-                )}
-              </Link>
-              {isLoggedIn ? (
-                <Link href="/account" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Account"><UserIcon /></Link>
-              ) : (
-                <Link href="/login" className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full" aria-label="Login"><UserIcon /></Link>
-              )}
-              <button className="md:hidden p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-2" aria-label="Open menu"><MenuIcon /></button>
-            </div>
-          </div>
-        </header>
-        <div className="fixed top-16 md:top-20 w-full bg-gradient-to-r from-emerald-50 to-green-50 z-40 shadow-sm border-b border-emerald-100">
-          <div className="container mx-auto px-4 py-3">
-            <div className="flex flex-wrap gap-2 md:gap-4 justify-center">
-              {mainCategories.map((category, index) => (
-                <div key={index} className="group relative">
-                  <button className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
-                    {category.icon}
-                    {category.name}
-                    <ChevronDown />
-                  </button>
-                </div>
-              ))}
-              <Link href="/buy-again" prefetch={false} className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Buy Again
-              </Link>
-              <Link href="/gift-options" prefetch={false} className="flex items-center px-3 py-1.5 text-emerald-800 font-medium hover:text-emerald-700 hover:bg-white rounded-lg whitespace-nowrap border border-emerald-200 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                </svg>
-                Gift Options
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="h-28 md:h-32"></div> */}
-      </div>
-    );
+    return <div ref={navbarRef} />;
   }
 
   return (
@@ -472,7 +404,7 @@ export default function Navbar() {
               priority
               className="h-11 w-11 sm:h-14 sm:w-14 object-contain"
             />
-            <h1 className="font-space text-2xl sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
+            <h1 className="font-space text-sm sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
               Growman
             </h1>
           </Link>
@@ -491,6 +423,7 @@ export default function Navbar() {
               </Link>
             ))}
           </nav>
+
 
           <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3">
             <div ref={searchContainerRef} className="hidden md:block relative">
@@ -586,114 +519,14 @@ export default function Navbar() {
                 <UserIcon />
               </button>
 
-              {/* Account Dropdown Menu */}
-              <AnimatePresence>
-                {showAccountMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    onMouseEnter={() => setShowAccountMenu(true)}
-                    onMouseLeave={() => setShowAccountMenu(false)}
-                    className="absolute right-0 mt-2 w-44 sm:w-48 bg-white rounded-lg shadow-xl border border-emerald-100 py-2 z-50"
-                  >
-                    {isLoggedIn ? (
-                      <>
-                        <Link
-                          href="/orders"
-                          prefetch={false}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Package className="w-4 h-4 mr-3 text-emerald-600" />
-                          Orders
-                        </Link>
-                        <Link
-                          href="/cart"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <ShoppingBag className="w-4 h-4 mr-3 text-emerald-600" />
-                          My Cart
-                        </Link>
-                        <Link
-                          href="/wishlist"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Heart className="w-4 h-4 mr-3 text-emerald-600" />
-                          Wishlist
-                        </Link>
-                        <Link
-                          href="/account"
-                          prefetch={false}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Settings className="w-4 h-4 mr-3 text-emerald-600" />
-                          Profile / Settings
-                        </Link>
-                        <div className="border-t border-gray-200 my-1"></div>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 mr-3" />
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/login"
-                          prefetch={false}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Package className="w-4 h-4 mr-3 text-emerald-600" />
-                          Orders
-                        </Link>
-                        <Link
-                          href="/cart"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <ShoppingBag className="w-4 h-4 mr-3 text-emerald-600" />
-                          My Cart
-                        </Link>
-                        <Link
-                          href="/login?redirect=/wishlist"
-                          prefetch={false}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Heart className="w-4 h-4 mr-3 text-emerald-600" />
-                          Wishlist
-                        </Link>
-                        <Link
-                          href="/login"
-                          prefetch={false}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <Settings className="w-4 h-4 mr-3 text-emerald-600" />
-                          Profile / Settings
-                        </Link>
-                        <div className="border-t border-gray-200 my-1"></div>
-                        <Link
-                          href="/login"
-                          prefetch={false}
-                          className="w-full flex items-center px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          <LogIn className="w-4 h-4 mr-3" />
-                          Login / Signup
-                        </Link>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <AccountMenu
+                show={showAccountMenu}
+                isLoggedIn={isLoggedIn}
+                onLogout={handleLogout}
+                onNavigate={() => setShowAccountMenu(false)}
+                onMouseEnter={() => setShowAccountMenu(true)}
+                onMouseLeave={() => setShowAccountMenu(false)}
+              />
             </div>
 
             <button className="md:hidden p-1.5 sm:p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-1 sm:ml-2 touch-manipulation active:scale-95" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>

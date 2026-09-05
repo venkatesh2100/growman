@@ -1,3 +1,7 @@
+// Package phoneutil normalizes Indian mobile numbers. Phone rows in the
+// database are stored in more than one historical format (10-digit,
+// 91-prefixed, +91-prefixed), so every lookup goes through LookupVariants
+// rather than assuming one.
 package phoneutil
 
 import "strings"

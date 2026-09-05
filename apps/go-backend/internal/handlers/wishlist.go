@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -21,9 +20,8 @@ type AddToWishlistRequest struct {
 
 // ListWishlist returns the user's wishlist products
 func (h *Handler) ListWishlist(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -48,15 +46,13 @@ func (h *Handler) ListWishlist(w http.ResponseWriter, r *http.Request) {
 
 // AddToWishlist adds a product to the user's wishlist
 func (h *Handler) AddToWishlist(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	var req AddToWishlistRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -115,9 +111,8 @@ func (h *Handler) AddToWishlist(w http.ResponseWriter, r *http.Request) {
 
 // RemoveFromWishlist removes a product from the user's wishlist
 func (h *Handler) RemoveFromWishlist(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 

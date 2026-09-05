@@ -9,6 +9,7 @@ import (
 	"time"
 
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 )
@@ -150,7 +151,7 @@ func (h *Handler) ReportLongBrowse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.SessionID == "" {
-		req.SessionID = clientIP(r)
+		req.SessionID = middlewares.ClientIP(r)
 	}
 
 	if h.Redis != nil {
@@ -203,7 +204,7 @@ Paths visited:
 `,
 		req.SessionID,
 		req.DurationMin,
-		clientIP(r),
+		middlewares.ClientIP(r),
 		r.UserAgent(),
 		req.Referrer,
 		req.Path,

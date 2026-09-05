@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { ShoppingCart, Zap, Sun, Leaf, TreePine, Flower2 } from "lucide-react";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "../../lib/toast";
+import { buildCartLine } from "../../lib/cart";
+import { formatPrice, getDiscount } from "../../lib/format";
+import OptimizedImage from "../ui/OptimizedImage";
 
 import { Product } from "../../lib/types";
 
@@ -208,25 +210,28 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
     0;
 
   const firstPrice = numericPrices[0] ?? null;
+  const { effectiveMrp, hasDiscount, percent: discountPercent } = getDiscount(firstPrice, product.mrp);
 
-  const numericMrp = Number(product.mrp);
-  const effectiveMrp =
-    Number.isFinite(numericMrp) && numericMrp > 0 ? numericMrp : null;
-
-  const hasDiscount =
-    effectiveMrp !== null &&
-    firstPrice !== null &&
-    firstPrice > 0 &&
-    effectiveMrp > firstPrice;
-
-  const discountPercent = hasDiscount
-    ? Math.round((1 - firstPrice / effectiveMrp) * 100)
-    : 0;
-
-  const isRemoteImage = (src: string) => src.startsWith("http");
   const showGrowmanGuarantee = isGrowmanBrand(product);
 
   const productUrl = `/product/${product?.slug ?? ""}`;
+
+  // Shared by both the mobile and desktop "Add to cart" / "Buy now" buttons.
+  const handleAdd = (mode: "cart" | "buy") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const firstSize = normalizedSizes[0];
+    if (firstSize && totalStock > 0) {
+      addItem(buildCartLine(product, firstSize, 1));
+      if (mode === "cart") {
+        toast(`${product.name} added to cart!`);
+      } else {
+        router.push("/checkout");
+      }
+    } else if (mode === "cart") {
+      toast("This item is out of stock", "error");
+    }
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -240,14 +245,13 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
         >
           <div className="relative w-full aspect-square">
             {allImages.length > 0 && allImages[0] ? (
-              <Image
+              <OptimizedImage
                 src={allImages[0]}
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 50vw, 25vw"
                 className="object-cover"
                 loading="lazy"
-                unoptimized={isRemoteImage(allImages[0])}
                 onError={(e) => {
                   console.error("Image failed to load:", e);
                   e.currentTarget.style.display = "none";
@@ -289,11 +293,11 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             <div className="mb-2">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-semibold text-gray-900">
-                  ₹{firstPrice ? firstPrice.toFixed(0) : "0"}
+                  {formatPrice(firstPrice)}
                 </span>
                 {hasDiscount && effectiveMrp !== null && (
                     <span className="text-xs text-gray-500 line-through">
-                      ₹{effectiveMrp.toFixed(0)}
+                      {formatPrice(effectiveMrp)}
                     </span>
                   )}
               </div>
@@ -310,36 +314,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           {/* Action Buttons - Mobile */}
           <div className="mt-auto flex gap-1.5 pt-2">
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (normalizedSizes.length > 0 && totalStock > 0) {
-                  const firstSize = normalizedSizes[0];
-                  if (firstSize) {
-                    const sizeId = "id" in firstSize ? firstSize.id : undefined;
-                    addItem({
-                      productId:
-                        typeof product.id === "number"
-                          ? product.id
-                          : Number(product.id),
-                      productSizeId: sizeId
-                        ? typeof sizeId === "number"
-                          ? sizeId
-                          : Number(sizeId)
-                        : undefined,
-                      name: product.name,
-                      mrp: product.mrp,
-                      price: firstSize.price,
-                      label: firstSize.label,
-                      quantity: 1,
-                      image: firstSize.images?.[0] || product.imageUrl || "",
-                    });
-                    toast(`${product.name} added to cart!`);
-                  }
-                } else {
-                  toast("This item is out of stock", "error");
-                }
-              }}
+              onClick={handleAdd("cart")}
               disabled={totalStock === 0}
               className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
@@ -351,34 +326,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               <span>Add</span>
             </button>
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (normalizedSizes.length > 0 && totalStock > 0) {
-                  const firstSize = normalizedSizes[0];
-                  if (firstSize) {
-                    const sizeId = "id" in firstSize ? firstSize.id : undefined;
-                    addItem({
-                      productId:
-                        typeof product.id === "number"
-                          ? product.id
-                          : Number(product.id),
-                      productSizeId: sizeId
-                        ? typeof sizeId === "number"
-                          ? sizeId
-                          : Number(sizeId)
-                        : undefined,
-                      name: product.name,
-                      mrp: product.mrp,
-                      price: firstSize.price,
-                      label: firstSize.label,
-                      quantity: 1,
-                      image: firstSize.images?.[0] || product.imageUrl || "",
-                    });
-                    router.push("/checkout");
-                  }
-                }
-              }}
+              onClick={handleAdd("buy")}
               disabled={totalStock === 0}
               className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
@@ -411,16 +359,13 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
 
           <div className="relative aspect-square overflow-hidden bg-gray-50">
             {allImages.length > 0 && allImages[0] ? (
-              <Image
+              <OptimizedImage
                 src={hovered && allImages[1] ? allImages[1] : allImages[0]}
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 className="object-cover transition-transform duration-500 group-hover/card:scale-105 will-change-transform"
                 loading="lazy"
-                unoptimized={isRemoteImage(
-                  hovered && allImages[1] ? allImages[1] : allImages[0]
-                )}
                 onError={(e) => {
                   console.error("Image failed to load:", e);
                   e.currentTarget.style.display = "none";
@@ -464,12 +409,12 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             <div className="mb-2 mt-1.5 sm:mb-3">
               <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-base sm:text-lg font-bold text-gray-900">
-                  ₹{firstPrice ? firstPrice.toFixed(0) : "0"}
+                  {formatPrice(firstPrice)}
                 </span>
                 {hasDiscount && effectiveMrp !== null && (
                     <>
                       <span className="text-xs sm:text-sm text-gray-500 line-through">
-                        ₹{effectiveMrp.toFixed(0)}
+                        {formatPrice(effectiveMrp)}
                       </span>
                       <span className="text-xs sm:text-sm text-green-600 font-medium">
                         {discountPercent}% off
@@ -488,36 +433,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           {/* Action Buttons */}
           <div className="relative z-20 mt-auto flex gap-1.5 sm:gap-2">
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (normalizedSizes.length > 0 && totalStock > 0) {
-                  const firstSize = normalizedSizes[0];
-                  if (firstSize) {
-                    const sizeId = "id" in firstSize ? firstSize.id : undefined;
-                    addItem({
-                      productId:
-                        typeof product.id === "number"
-                          ? product.id
-                          : Number(product.id),
-                      productSizeId: sizeId
-                        ? typeof sizeId === "number"
-                          ? sizeId
-                          : Number(sizeId)
-                        : undefined,
-                      name: product.name,
-                      mrp: product.mrp,
-                      price: firstSize.price,
-                      label: firstSize.label,
-                      quantity: 1,
-                      image: firstSize.images?.[0] || product.imageUrl || "",
-                    });
-                    toast(`${product.name} added to cart!`);
-                  }
-                } else {
-                  toast("This item is out of stock", "error");
-                }
-              }}
+              onClick={handleAdd("cart")}
               disabled={totalStock === 0}
               className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
@@ -530,34 +446,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               <span className="sm:hidden">Add</span>
             </button>
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (normalizedSizes.length > 0 && totalStock > 0) {
-                  const firstSize = normalizedSizes[0];
-                  if (firstSize) {
-                    const sizeId = "id" in firstSize ? firstSize.id : undefined;
-                    addItem({
-                      productId:
-                        typeof product.id === "number"
-                          ? product.id
-                          : Number(product.id),
-                      productSizeId: sizeId
-                        ? typeof sizeId === "number"
-                          ? sizeId
-                          : Number(sizeId)
-                        : undefined,
-                      name: product.name,
-                      mrp: product.mrp,
-                      price: firstSize.price,
-                      label: firstSize.label,
-                      quantity: 1,
-                      image: firstSize.images?.[0] || product.imageUrl || "",
-                    });
-                    router.push("/checkout");
-                  }
-                }
-              }}
+              onClick={handleAdd("buy")}
               disabled={totalStock === 0}
               className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0

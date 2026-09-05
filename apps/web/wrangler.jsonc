@@ -33,12 +33,17 @@
   // Workers Analytics Engine
   "analytics_engine_datasets": [
     { "binding": "WAE", "dataset": "wae_events_v2" }
-  ]
-,"kv_namespaces": [
+  ],
+
+  // Cloudflare Images — powers next/image via OpenNext (/_next/image)
+  "images": {
+    "binding": "IMAGES"
+  },
+
+  "kv_namespaces": [
     {
       "binding": "RATE_LIMIT",
       "id": "7d1c239b89c04e70badd4d156d61e931"
     }
   ]
-
 }

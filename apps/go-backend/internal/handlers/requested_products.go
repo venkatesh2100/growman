@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -22,8 +21,7 @@ type CreateRequestedProductRequest struct {
 
 func (h *Handler) CreateRequestedProduct(w http.ResponseWriter, r *http.Request) {
 	var req CreateRequestedProductRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -64,12 +62,11 @@ func (h *Handler) CreateRequestedProduct(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) ListRequestedProducts(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if claims.Role != "admin" && claims.Role != "superadmin" {
+	if !appauth.IsAdminRole(claims.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}

@@ -204,8 +204,7 @@ type CreateProductRequest struct {
 // CreateProduct creates a new product and invalidates relevant caches.
 func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var req CreateProductRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+	if !httpjson.Decode(w, r, &req, "invalid payload") {
 		return
 	}
 
@@ -310,8 +309,7 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input models.Product
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid payload")
+	if !httpjson.Decode(w, r, &input, "invalid payload") {
 		return
 	}
 
@@ -411,11 +409,6 @@ func (h *Handler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	cache.ServePublic(w, r, raw)
 }
 
-// AllProducts is an alias for ListProducts.
-func (h *Handler) AllProducts(w http.ResponseWriter, r *http.Request) {
-	h.ListProducts(w, r)
-}
-
 // SearchProducts searches products by query string with pagination.
 func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -451,8 +444,8 @@ func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
 				OR EXISTS (SELECT 1 FROM brands WHERE brands.id = products.brand_id AND brands.deleted_at IS NULL AND brands.name ILIKE ?)
 				OR description ILIKE ?
 			)`
-		args := []interface{}{like, like, like, like, like, like}
-		rankArgs := []interface{}{query, prefix, like, like, like}
+		args := []any{like, like, like, like, like, like}
+		rankArgs := []any{query, prefix, like, like, like}
 
 		var total int64
 		var products []models.Product
@@ -516,10 +509,4 @@ func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
 func escapeLike(s string) string {
 	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 	return replacer.Replace(s)
-}
-
-// InvalidateProductCache clears all product-related cache entries.
-func (h *Handler) InvalidateProductCache() error {
-	h.invalidateCatalog(context.Background())
-	return nil
 }

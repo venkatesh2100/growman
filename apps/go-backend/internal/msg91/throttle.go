@@ -18,7 +18,7 @@ type BlockReason string
 
 const (
 	BlockNone     BlockReason = ""
-	BlockCooldown  BlockReason = "cooldown"
+	BlockCooldown BlockReason = "cooldown"
 	BlockDayCap   BlockReason = "daycap"
 	BlockIPCap    BlockReason = "ipcap"
 )
@@ -97,13 +97,4 @@ func (t *Throttle) Allow(ctx context.Context, phone, ip string, isRetry bool) (o
 		return false, BlockNone, 0, err
 	}
 	return true, BlockNone, cooldownTTL, nil
-}
-
-// Blocked is kept for older call sites; prefer Allow.
-func (t *Throttle) Blocked(ctx context.Context, phone, ip string) (bool, error) {
-	ok, _, _, err := t.Allow(ctx, phone, ip, false)
-	if err != nil {
-		return false, err
-	}
-	return !ok, nil
 }

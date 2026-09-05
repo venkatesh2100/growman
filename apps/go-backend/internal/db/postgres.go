@@ -1,3 +1,7 @@
+// Package db owns the two external connections every request may touch:
+// Postgres via GORM (this file) and Redis (redis.go). Both are configured
+// to fail soft where the rest of the app expects that — Redis is optional
+// everywhere; Postgres is not.
 package db
 
 import (

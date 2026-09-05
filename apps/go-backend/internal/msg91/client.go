@@ -1,3 +1,6 @@
+// Package msg91 wraps MSG91's phone-OTP APIs: the widget flow (preferred —
+// no custom DLT template) in this file, template-based REST OTP also here,
+// and send/day/IP throttling in throttle.go.
 package msg91
 
 import (

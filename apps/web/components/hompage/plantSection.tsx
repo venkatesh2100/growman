@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import ProductCard from '@repo/ui/productCard';
 import ProductCard from "../productspage/ProductCard";
 import { ProductCardSkeleton } from "../loading/SkeletonLoader";
 import { useRouter } from "next/navigation";

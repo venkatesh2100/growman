@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -26,14 +24,14 @@ type VerifyOTPRequest struct {
 	OTP   string `json:"otp"`
 }
 
-// SendEmailOTP sends an OTP to the user's email
+// SendEmailOTP emails a one-time code to verify a guest's address before
+// checkout. Refuses if the email already belongs to a registered user —
+// they should log in and use their saved address instead.
 func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 	var req SendOTPRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
-
 	if !services.ValidateEmail(req.Email) {
 		httpjson.Error(w, http.StatusBadRequest, "invalid email format")
 		return
@@ -44,24 +42,23 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusConflict, "user_exists")
 		return
 	}
-
 	if h.Cfg.SMTPEmail == "" || h.Cfg.SMTPPassword == "" {
 		log.Printf("[EMAIL] SMTP credentials not configured")
 		httpjson.Error(w, http.StatusServiceUnavailable, "email_unavailable")
 		return
 	}
 
-	otpService := services.NewOTPService(h.Redis)
 	ctx := r.Context()
+	otpService := services.NewOTPService(h.Redis)
 
 	canResend, ttl, err := otpService.CanResendOTP(ctx, req.Email)
 	if err != nil {
-		log.Printf("[OTP] Cooldown check failed: %v", err)
+		log.Printf("[OTP] cooldown check failed: %v", err)
 		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
 	if !canResend {
-		httpjson.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+		httpjson.JSON(w, http.StatusTooManyRequests, map[string]any{
 			"error":       "otp_cooldown",
 			"retry_after": int(ttl.Seconds()),
 		})
@@ -70,62 +67,54 @@ func (h *Handler) SendEmailOTP(w http.ResponseWriter, r *http.Request) {
 
 	otp, err := otpService.GenerateOTP(ctx, req.Email)
 	if err != nil {
-		log.Printf("[OTP] Error generating OTP: %v", err)
+		log.Printf("[OTP] generate: %v", err)
 		httpjson.Error(w, http.StatusServiceUnavailable, "otp_unavailable")
 		return
 	}
-
-	emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
-	if err := emailService.SendOTPEmail(req.Email, otp); err != nil {
-		log.Printf("[EMAIL] Error sending OTP email: %v", err)
+	if err := h.emailService().SendOTPEmail(req.Email, otp); err != nil {
+		log.Printf("[EMAIL] send OTP: %v", err)
 		httpjson.Error(w, http.StatusBadGateway, "email_send_failed")
 		return
 	}
 
 	_ = otpService.SetResendCooldown(ctx, req.Email)
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"message":  "OTP sent successfully",
 		"cooldown": 60,
 	})
 }
 
-// VerifyEmailOTP verifies the OTP sent to user's email
+// VerifyEmailOTP checks the code sent by SendEmailOTP. Single-use — a
+// successful check deletes the stored OTP.
 func (h *Handler) VerifyEmailOTP(w http.ResponseWriter, r *http.Request) {
 	var req VerifyOTPRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
-
-	// Validate email
 	if !services.ValidateEmail(req.Email) {
 		httpjson.Error(w, http.StatusBadRequest, "invalid email format")
 		return
 	}
 
-	// Verify OTP
 	otpService := services.NewOTPService(h.Redis)
-	ctx := context.Background()
-
-	valid, err := otpService.VerifyOTP(ctx, req.Email, req.OTP)
+	valid, err := otpService.VerifyOTP(context.Background(), req.Email, req.OTP)
 	if err != nil {
-		log.Printf("[OTP] Error verifying OTP: %v", err)
+		log.Printf("[OTP] verify: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to verify OTP")
 		return
 	}
-
 	if !valid {
 		httpjson.Error(w, http.StatusBadRequest, "invalid or expired OTP")
 		return
 	}
 
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "OTP verified successfully",
 	})
 }
 
-// CreateOrderRequest represents the updated request to create a Razorpay order
+// CreateCheckoutOrderRequest is the payload for the OTP-gated checkout flow.
 type CreateCheckoutOrderRequest struct {
 	Amount   float64              `json:"amount"`
 	Currency string               `json:"currency"`
@@ -133,6 +122,8 @@ type CreateCheckoutOrderRequest struct {
 	Customer CustomerCheckoutInfo `json:"customer"`
 }
 
+// CustomerCheckoutInfo is the structured shipping-address shape used by
+// CreateCheckoutOrder (the actively-used checkout endpoint).
 type CustomerCheckoutInfo struct {
 	Name        string `json:"name"`
 	Email       string `json:"email"`
@@ -143,67 +134,63 @@ type CustomerCheckoutInfo struct {
 	Pincode     string `json:"pincode"`
 }
 
-// Validate validates customer checkout info
-func (c *CustomerCheckoutInfo) Validate() (string, bool) {
-	// Validate pincode (6 digits, starting with 1-9)
-	pincodeRegex := regexp.MustCompile(`^[1-9][0-9]{5}$`)
+var (
+	pincodeRegex = regexp.MustCompile(`^[1-9][0-9]{5}$`) // 6 digits, not starting with 0
+	phoneRegex   = regexp.MustCompile(`^[6-9][0-9]{9}$`) // 10-digit Indian mobile
+)
+
+// Validate checks the shipping/contact fields required to place an order.
+func (c *CustomerCheckoutInfo) Validate() (msg string, ok bool) {
 	if !pincodeRegex.MatchString(c.Pincode) {
 		return "invalid pincode format", false
 	}
-
-	// Validate phone (10 digits, starting with 6-9)
-	phoneRegex := regexp.MustCompile(`^[6-9][0-9]{9}$`)
 	if !phoneRegex.MatchString(c.Phone) {
 		return "invalid phone number format", false
 	}
-
-	// Validate email
 	if !services.ValidateEmail(c.Email) {
 		return "invalid email format", false
 	}
-
 	return "", true
 }
 
-// CreateCheckoutOrder creates a Razorpay order after OTP verification
+// CreateCheckoutOrder creates a Razorpay order plus its local Order record.
+// Item/product validation is shared with the legacy CreateRazorpayOrder via
+// buildOrderItems (payments.go); this endpoint additionally validates the
+// full shipping address. The frontend calls send/verify-email-otp first —
+// this endpoint does not itself re-check that the OTP step happened.
 func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	var req CreateCheckoutOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
-
-	// Validate customer info
 	if msg, valid := req.Customer.Validate(); !valid {
 		httpjson.Error(w, http.StatusBadRequest, msg)
 		return
 	}
-
 	if req.Amount <= 0 {
 		httpjson.Error(w, http.StatusBadRequest, "amount must be greater than 0")
 		return
 	}
-
 	if req.Currency == "" {
 		req.Currency = "INR"
 	}
 
-	// Convert amount to paise (Razorpay expects amount in smallest currency unit)
-	amountInPaise := int(req.Amount * 100)
+	items, ok := h.buildOrderItems(w, req.Items)
+	if !ok {
+		return
+	}
 
-	// Create order in Razorpay
-	razorpayOrder, err := h.createRazorpayOrder(amountInPaise, req.Currency)
+	razorpayOrder, err := h.createRazorpayOrder(int(req.Amount*100), req.Currency)
 	if err != nil {
-		log.Printf("[RAZORPAY] Error creating order: %v", err)
+		log.Printf("[RAZORPAY] create order: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to create Razorpay order")
 		return
 	}
 
-	// Create order in database
 	order := models.Order{
 		RazorpayOrderID: razorpayOrder.ID,
 		PaymentStatus:   "created",
-		Status:          "pending", // Legacy field
+		Status:          "pending", // legacy field, kept in sync with PaymentStatus
 		Amount:          req.Amount,
 		Currency:        req.Currency,
 		CustomerName:    req.Customer.Name,
@@ -213,104 +200,15 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		City:            req.Customer.City,
 		State:           req.Customer.State,
 		Pincode:         req.Customer.Pincode,
+		Items:           items,
 	}
-
-	// Batch fetch all products to avoid N+1 queries
-	productIDs := make([]uint, len(req.Items))
-	for i, item := range req.Items {
-		productIDs[i] = item.ProductID
-	}
-
-	var products []models.Product
-	if err := h.DB.Select("id, name, image_key").Where("id IN ?", productIDs).Find(&products).Error; err != nil {
-		log.Printf("[DB] Error fetching products: %v", err)
-		httpjson.Error(w, http.StatusInternalServerError, "failed to validate products")
-		return
-	}
-
-	// Create a map for quick lookup
-	productMap := make(map[uint]models.Product)
-	for _, product := range products {
-		productMap[product.ID] = product
-	}
-
-	// Validate all products exist
-	for _, item := range req.Items {
-		if _, exists := productMap[item.ProductID]; !exists {
-			log.Printf("[DB] Product not found: %d", item.ProductID)
-			httpjson.Error(w, http.StatusBadRequest, fmt.Sprintf("product with ID %d not found", item.ProductID))
-			return
-		}
-	}
-
-	// Batch fetch product sizes if any are provided
-	productSizeIDs := make([]uint, 0)
-	for _, item := range req.Items {
-		if item.ProductSizeID != nil {
-			productSizeIDs = append(productSizeIDs, *item.ProductSizeID)
-		}
-	}
-
-	var productSizes []models.ProductSize
-	if len(productSizeIDs) > 0 {
-		if err := h.DB.Select("id, product_id").Where("id IN ? AND product_id IN ?", productSizeIDs, productIDs).Find(&productSizes).Error; err != nil {
-			log.Printf("[DB] Error fetching product sizes: %v", err)
-			httpjson.Error(w, http.StatusInternalServerError, "failed to validate product sizes")
-			return
-		}
-
-		// Create a map for product size validation
-		sizeMap := make(map[uint]map[uint]bool) // productID -> sizeID -> exists
-		for _, size := range productSizes {
-			if sizeMap[size.ProductID] == nil {
-				sizeMap[size.ProductID] = make(map[uint]bool)
-			}
-			sizeMap[size.ProductID][size.ID] = true
-		}
-
-		// Validate all product sizes
-		for _, item := range req.Items {
-			if item.ProductSizeID != nil {
-				if sizes, exists := sizeMap[item.ProductID]; !exists || !sizes[*item.ProductSizeID] {
-					log.Printf("[DB] Product size not found: %d for product %d", item.ProductSizeID, item.ProductID)
-					httpjson.Error(w, http.StatusBadRequest, fmt.Sprintf("product size with ID %d not found for product %d", item.ProductSizeID, item.ProductID))
-					return
-				}
-			}
-		}
-	}
-
-	// Create order items
-	for _, item := range req.Items {
-		var productSizeID *uint
-		if item.ProductSizeID != nil {
-			productSizeID = item.ProductSizeID
-		}
-
-		product := productMap[item.ProductID]
-		orderItem := models.OrderItem{
-			ProductID:   item.ProductID,
-			ProductSize: productSizeID,
-			Quantity:    item.Quantity,
-			Price:       item.Price,
-			Name:        product.Name,
-			ImageKey:    product.ImageKey,
-		}
-		// Resolve image URL for order item
-		h.ResolveOrderItemImageURL(&orderItem)
-
-		order.Items = append(order.Items, orderItem)
-	}
-
-	// Save order to database
 	if err := h.DB.Create(&order).Error; err != nil {
-		log.Printf("[DB] Error creating order: %v", err)
+		log.Printf("[DB] create order: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "failed to save order")
 		return
 	}
 
-	// Return order details
-	httpjson.JSON(w, http.StatusOK, map[string]interface{}{
+	httpjson.JSON(w, http.StatusOK, map[string]any{
 		"id":       razorpayOrder.ID,
 		"amount":   razorpayOrder.Amount,
 		"currency": razorpayOrder.Currency,
@@ -319,33 +217,29 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// CreateSoftAccount creates a user account after payment success
+// CreateSoftAccount finds or creates a passworded account for a guest
+// checkout, so a payment always ends up attached to a User. The random
+// password is never surfaced — the customer sets a real one via "forgot
+// password" if they want to log in directly.
 func (h *Handler) CreateSoftAccount(email, phone, name string) (*models.User, error) {
-	// Check if user already exists
 	var existingUser models.User
 	err := h.DB.Where("email = ? OR phone = ?", email, phone).First(&existingUser).Error
 	if err == nil {
-		// User exists, return it
 		return &existingUser, nil
 	}
 	if err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 
-	// Generate random password
-	passwordBytes := make([]byte, 16)
-	if _, err := rand.Read(passwordBytes); err != nil {
+	randomPW := make([]byte, 16)
+	if _, err := rand.Read(randomPW); err != nil {
 		return nil, err
 	}
-	randomPassword := hex.EncodeToString(passwordBytes)
-
-	// Hash password
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(randomPassword), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(randomPW)), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create user
 	pw := string(passwordHash)
 	user := models.User{
 		Name:          name,
@@ -356,18 +250,15 @@ func (h *Handler) CreateSoftAccount(email, phone, name string) (*models.User, er
 		Provider:      "local",
 		Role:          "user",
 	}
-
 	if err := h.DB.Create(&user).Error; err != nil {
 		return nil, err
 	}
 	h.notifyMerchantNewUser(user, "checkout-soft-account", "", "")
 
-	// Send account creation email (async, don't fail if it errors)
 	go func() {
-		emailService := services.NewEmailService(h.Cfg.SMTPHost, h.Cfg.SMTPPort, h.Cfg.SMTPEmail, h.Cfg.SMTPPassword)
-		resetLink := "https://yourdomain.com/reset-password" // TODO: Update with actual reset link
-		if err := emailService.SendAccountCreatedEmail(email, name, resetLink); err != nil {
-			log.Printf("[EMAIL] Error sending account creation email: %v", err)
+		const resetLink = "https://yourdomain.com/reset-password" // TODO: point at the real reset page
+		if err := h.emailService().SendAccountCreatedEmail(email, name, resetLink); err != nil {
+			log.Printf("[EMAIL] account created: %v", err)
 		}
 	}()
 

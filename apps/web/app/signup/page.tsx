@@ -9,7 +9,6 @@ import {
   Lock,
   Phone,
   User,
-  Loader2,
   Eye,
   EyeOff,
   ArrowLeft,
@@ -22,6 +21,9 @@ import {
   TurnstileGate,
   isTurnstileSiteConfigured,
 } from "../../components/TurnstileGate";
+import { readApiError } from "../../lib/errors";
+import { PillField, OtpField } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 function mapSignupError(code: string, status: number): string {
   const key = code.toLowerCase();
@@ -59,31 +61,10 @@ function mapSignupError(code: string, status: number): string {
   return code || "Something went wrong. Try again.";
 }
 
-async function parseErrorResponse(
-  res: Response
-): Promise<{ message: string }> {
-  let code = "";
-  try {
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      const data = await res.json();
-      code = String(data.error || data.message || "");
-    } else {
-      code = (await res.text()).trim();
-    }
-  } catch {
-    code = "";
-  }
-
-  return { message: mapSignupError(code, res.status) };
+async function parseErrorResponse(res: Response): Promise<{ message: string }> {
+  const { code, status } = await readApiError(res);
+  return { message: mapSignupError(code, status) };
 }
-
-const fieldClass =
-  "w-full bg-transparent py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none";
-const fieldWrapClass =
-  "flex items-center rounded-2xl border border-emerald-100 bg-white px-4";
-const primaryBtnClass =
-  "flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-4 text-base font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60";
 
 function SignupPageContent({ googleClientId }: { googleClientId: string }) {
   void googleClientId;
@@ -331,102 +312,81 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
 
           {!otpSent ? (
             <>
-              <div className={fieldWrapClass}>
-                <User className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={fieldClass}
-                  placeholder="Full name"
-                />
-              </div>
+              <PillField
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Full name"
+                icon={<User className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+              />
 
-              <div className={fieldWrapClass}>
-                <Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={fieldClass}
-                  placeholder="Email address"
-                />
-              </div>
+              <PillField
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Email address"
+                icon={<Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+              />
 
               <div>
-                <div className={fieldWrapClass}>
-                  <Phone className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className={fieldClass}
-                    placeholder="Phone number"
-                    maxLength={10}
-                  />
-                </div>
+                <PillField
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone number"
+                  maxLength={10}
+                  icon={<Phone className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+                />
                 <p className="mt-1.5 px-1 text-xs text-gray-500">
                   10 digits, starting with 6–9
                 </p>
               </div>
 
-              <div className={fieldWrapClass}>
-                <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`${fieldClass} pr-2`}
-                  placeholder="Password (min. 8 characters)"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSendOTP}
-                disabled={
-                  loading ||
-                  success ||
-                  (isTurnstileSiteConfigured() && !humanOk)
+              <PillField
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Password (min. 8 characters)"
+                icon={<Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
                 }
-                className={primaryBtnClass}
+              />
+
+              <Button
+                type="button"
+                variant="pill-primary"
+                onClick={handleSendOTP}
+                disabled={success || (isTurnstileSiteConfigured() && !humanOk)}
+                loading={loading}
+                loadingText="Sending verification email..."
+                icon={<Mail className="h-5 w-5" />}
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Sending verification email...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-5 w-5" />
-                    Verify email
-                  </>
-                )}
-              </button>
+                Verify email
+              </Button>
             </>
           ) : !emailVerified ? (
             <>
@@ -435,40 +395,26 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
                 <span className="font-medium text-gray-800">{formData.email}</span>
               </p>
 
-              <input
+              <OtpField
                 id="otp"
                 name="otp"
-                type="text"
-                inputMode="numeric"
                 required
                 value={otp}
                 onChange={(e) =>
                   setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
                 }
-                className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-center text-2xl tracking-[0.4em] text-gray-900 placeholder:tracking-[0.4em] placeholder:text-gray-300 focus:outline-none"
-                placeholder="000000"
-                maxLength={6}
               />
 
-              <button
+              <Button
                 type="button"
+                variant="pill-primary"
                 onClick={handleVerifyOTP}
-                disabled={
-                  verifyingOtp ||
-                  otp.length !== 6 ||
-                  (isTurnstileSiteConfigured() && !humanOk)
-                }
-                className={primaryBtnClass}
+                disabled={otp.length !== 6 || (isTurnstileSiteConfigured() && !humanOk)}
+                loading={verifyingOtp}
+                loadingText="Verifying..."
               >
-                {verifyingOtp ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify OTP"
-                )}
-              </button>
+                Verify OTP
+              </Button>
 
               <button
                 disabled={

@@ -41,7 +41,7 @@ export default function Footer() {
                 height={56}
                 className="h-11 w-11 sm:h-14 sm:w-14 rounded-md object-contain"
               />
-              <h2 className="text-4xl font-space font-bold">Growman</h2>
+              <h2 className="text-2xl sm:text-4xl font-space font-bold">Growman</h2>
             </Link>
             <p className="text-green-200 text-sm mb-4">
               Premium plants & gardening solutions for Indian homes

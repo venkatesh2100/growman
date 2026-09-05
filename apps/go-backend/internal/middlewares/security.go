@@ -1,3 +1,6 @@
+// Package middlewares holds this API's chi middleware: security headers and
+// body-size limits (this file), Redis-backed rate limiting (ratelimit.go),
+// client-IP resolution (ip.go), and Prometheus timing (prometheus.go).
 package middlewares
 
 import (
@@ -9,8 +12,8 @@ import (
 	chiware "github.com/go-chi/chi/v5/middleware"
 )
 
-const defaultMaxBody = 1 << 20 // 1 MiB for JSON APIs
-const uploadMaxBody = 11 << 20 // 11 MiB for image routes
+// defaultMaxBody is the fallback cap MaxBytes uses when called with n<=0.
+const defaultMaxBody = 1 << 20 // 1 MiB, generous for a JSON API body
 
 // SecurityHeaders adds conservative defaults for an API.
 func SecurityHeaders(next http.Handler) http.Handler {
@@ -46,14 +49,6 @@ func MaxBytes(n int64) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func MaxJSONBody() func(http.Handler) http.Handler {
-	return MaxBytes(defaultMaxBody)
-}
-
-func MaxUploadBody() func(http.Handler) http.Handler {
-	return MaxBytes(uploadMaxBody)
 }
 
 // QuietLogger logs only server errors (5xx) and slow requests.

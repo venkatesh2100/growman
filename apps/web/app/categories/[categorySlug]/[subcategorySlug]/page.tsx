@@ -1,32 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import ProductCard from "../../../../components/productspage/ProductCard";
+import ProductGrid from "../../../../components/productspage/ProductGrid";
 import Link from "next/link";
 import PlantsLoading from "../../../../components/loading";
 import { apiFetch } from "../../../../lib/api";
-// Simplified Product interface for subcategory pages
-interface SubcategoryProduct {
-  id: string | number;
-  name: string;
-  price: number;
-  image?: string;
-  imageUrl?: string;
-  description?: string;
-  slug: string;
-  mrp?: number;
-  stock?: number;
-  sizes?: Array<{
-    id?: string | number;
-    price: number;
-    stock: number;
-    label: string;
-    images?: string[];
-  }>;
-  category?: {
-    name: string;
-  };
-  [key: string]: unknown;
-}
+import type { Product } from "../../../../lib/types";
 
 export default function SubcategoryPage({
   params,
@@ -37,7 +15,7 @@ export default function SubcategoryPage({
     categorySlug: string;
     subcategorySlug: string;
   } | null>(null);
-  const [products, setProducts] = useState<SubcategoryProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -165,22 +143,19 @@ export default function SubcategoryPage({
               </div>
             </div>
 
-            {products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl p-6 sm:p-8 text-center border border-green-100">
-                <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">
-                  No plants found in this subcategory
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600">
-                  Check back later for new additions to our {subcategoryName} collection
-                </p>
-              </div>
-            )}
+            <ProductGrid
+              products={products}
+              emptyState={
+                <div className="bg-white rounded-xl p-6 sm:p-8 text-center border border-green-100">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">
+                    No plants found in this subcategory
+                  </h3>
+                  <p className="text-sm sm:text-base text-gray-600">
+                    Check back later for new additions to our {subcategoryName} collection
+                  </p>
+                </div>
+              }
+            />
           </section>
         </div>
       </div>

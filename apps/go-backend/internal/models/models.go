@@ -1,3 +1,6 @@
+// Package models defines the GORM models that make up the Postgres schema.
+// Every table is reconciled from these structs via AutoMigrate on boot
+// (internal/handlers/handler.go) — see internal/docs/10-database-and-migrations.md.
 package models
 
 import (
@@ -30,7 +33,7 @@ func (a StringArray) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface
-func (a *StringArray) Scan(value interface{}) error {
+func (a *StringArray) Scan(value any) error {
 	if value == nil {
 		*a = StringArray{}
 		return nil

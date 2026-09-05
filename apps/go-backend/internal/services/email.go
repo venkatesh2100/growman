@@ -1,3 +1,6 @@
+// Package services holds cross-cutting helpers used by multiple handlers:
+// transactional email (this file, over net/smtp) and OTP issuance/storage
+// (otp.go, Redis-backed with an in-memory fallback).
 package services
 
 import (
@@ -178,7 +181,7 @@ func (s *EmailService) SendPasswordResetOTP(to, otp string) error {
 }
 
 // SendOrderConfirmationEmail sends order confirmation email to the customer.
-func (s *EmailService) SendOrderConfirmationEmail(to, name string, orderID uint, amount float64, items []map[string]interface{}) error {
+func (s *EmailService) SendOrderConfirmationEmail(to, name string, orderID uint, amount float64, items []map[string]any) error {
 	subject := fmt.Sprintf("Order #%d confirmed", orderID)
 	safeName := html.EscapeString(name)
 

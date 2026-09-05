@@ -1,3 +1,7 @@
+// Package docs serves the live API reference (Swagger UI, ReDoc, and the
+// raw OpenAPI spec) embedded into the server binary. This is distinct from
+// the narrative *.md files that live alongside it in this same directory —
+// see 11-api-reference-docs.md for how the two relate.
 package docs
 
 import (

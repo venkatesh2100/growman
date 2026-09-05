@@ -1,3 +1,5 @@
+// Package pagination parses page/pageSize query parameters and builds the
+// pagination metadata every paginated list endpoint returns alongside its data.
 package pagination
 
 import (
@@ -14,7 +16,7 @@ type PaginationParams struct {
 
 // PaginatedResponse wraps data with pagination metadata
 type PaginatedResponse struct {
-	Data       interface{} `json:"data"`
+	Data       any            `json:"data"`
 	Pagination PaginationMeta `json:"pagination"`
 }
 
@@ -74,4 +76,3 @@ func BuildPaginationMeta(page, pageSize int, total int64) PaginationMeta {
 		HasPrev:    page > 1,
 	}
 }
-

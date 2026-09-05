@@ -79,11 +79,9 @@ func RateLimiter(config RateLimitConfig) func(next http.Handler) http.Handler {
 	}
 }
 
-// IPRateLimiter creates a named limiter keyed by client IP.
-func IPRateLimiter(redis *redis.Client, limit int, window time.Duration) func(next http.Handler) http.Handler {
-	return NamedIPRateLimiter(redis, "api", limit, window)
-}
-
+// NamedIPRateLimiter builds a client-IP-keyed limiter under its own bucket
+// name, so unrelated route groups (auth, checkout, chat, ...) don't share a
+// budget even for the same caller.
 func NamedIPRateLimiter(rdb *redis.Client, name string, limit int, window time.Duration) func(next http.Handler) http.Handler {
 	return RateLimiter(RateLimitConfig{
 		Redis:  rdb,

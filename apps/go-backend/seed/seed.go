@@ -1,3 +1,6 @@
+// Package seed inserts a small, idempotent sample dataset for local
+// development. Only runs when SEED_ON_STARTUP=true (default false) — see
+// cmd/server/main.go.
 package seed
 
 import (

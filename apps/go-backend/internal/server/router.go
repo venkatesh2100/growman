@@ -1,3 +1,7 @@
+// Package server assembles the chi router: the global middleware chain,
+// per-route-group rate limits and auth, and the full route table. This is
+// the one place that wires handlers to HTTP paths — see
+// internal/docs/08-middleware-and-security.md for the middleware stack.
 package server
 
 import (

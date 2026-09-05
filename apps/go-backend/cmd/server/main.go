@@ -1,3 +1,6 @@
+// Command server is the Growman API's HTTP entrypoint: loads config,
+// connects to Postgres/Redis/image storage, migrates and (optionally)
+// seeds the database, then serves the router until SIGINT/SIGTERM.
 package main
 
 import (

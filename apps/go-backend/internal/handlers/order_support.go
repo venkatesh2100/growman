@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,12 +19,11 @@ type UpdateOrderSupportStatusRequest struct {
 
 // ListOrderSupportRequests returns support tickets for admin review.
 func (h *Handler) ListOrderSupportRequests(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if claims.Role != "admin" && claims.Role != "superadmin" {
+	if !appauth.IsAdminRole(claims.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}
@@ -47,12 +45,11 @@ func (h *Handler) ListOrderSupportRequests(w http.ResponseWriter, r *http.Reques
 
 // UpdateOrderSupportStatus updates ticket status (admin).
 func (h *Handler) UpdateOrderSupportStatus(w http.ResponseWriter, r *http.Request) {
-	claims, ok := appauth.FromContext(r.Context())
+	claims, ok := appauth.Require(w, r)
 	if !ok {
-		httpjson.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if claims.Role != "admin" && claims.Role != "superadmin" {
+	if !appauth.IsAdminRole(claims.Role) {
 		httpjson.Error(w, http.StatusForbidden, "admin access required")
 		return
 	}
@@ -65,8 +62,7 @@ func (h *Handler) UpdateOrderSupportStatus(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req UpdateOrderSupportStatusRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -83,7 +79,7 @@ func (h *Handler) UpdateOrderSupportStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updates := map[string]interface{}{"status": status}
+	updates := map[string]any{"status": status}
 	if notes := strings.TrimSpace(req.AdminNotes); notes != "" {
 		updates["admin_notes"] = notes
 	}

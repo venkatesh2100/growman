@@ -3,21 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
-import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "../../lib/toast";
+import { readApiError } from "../../lib/errors";
+import { PillField, OtpField } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
 
 type Step = "email" | "otp" | "reset";
-
-const fieldClass =
-  "w-full bg-transparent py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none";
-const fieldWrapClass =
-  "flex items-center rounded-2xl border border-emerald-100 bg-white px-4";
-const primaryBtnClass =
-  "flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-4 text-base font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60";
-const secondaryBtnClass =
-  "flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-sm font-semibold text-green-900 transition-colors hover:bg-emerald-50/60";
 
 function mapError(code: string, status: number, fallback: string, retryAfter?: number): string {
   const key = code.toLowerCase();
@@ -54,36 +48,8 @@ function mapError(code: string, status: number, fallback: string, retryAfter?: n
 }
 
 async function readError(res: Response, fallback: string): Promise<string> {
-  try {
-    const contentType = res.headers.get("content-type");
-    if (contentType?.includes("application/json")) {
-      const data = await res.json();
-      const retryAfter = Number(data.retry_after) || undefined;
-      return mapError(
-        String(data.error || data.message || ""),
-        res.status,
-        fallback,
-        retryAfter
-      );
-    }
-    const text = (await res.text()).trim();
-    if (text) {
-      try {
-        const data = JSON.parse(text);
-        return mapError(
-          String(data.error || data.message || text),
-          res.status,
-          fallback,
-          Number(data.retry_after) || undefined
-        );
-      } catch {
-        return mapError(text, res.status, fallback);
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return mapError("", res.status, fallback);
+  const { code, status, retryAfter } = await readApiError(res);
+  return mapError(code, status, fallback, retryAfter);
 }
 
 export default function ForgotPasswordPage() {
@@ -286,69 +252,55 @@ export default function ForgotPasswordPage() {
 
         {step === "email" && (
           <form onSubmit={handleSendOTP} className="space-y-4">
-            <div className={fieldWrapClass}>
-              <Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError(null);
-                }}
-                className={fieldClass}
-                placeholder="Email address"
-              />
-            </div>
+            <PillField
+              id="email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              placeholder="Email address"
+              icon={<Mail className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+            />
 
-            <button type="submit" disabled={sendingOtp || !email.trim()} className={primaryBtnClass}>
-              {sendingOtp ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Sending…
-                </>
-              ) : (
-                "Send code"
-              )}
-            </button>
+            <Button
+              type="submit"
+              variant="pill-primary"
+              disabled={!email.trim()}
+              loading={sendingOtp}
+              loadingText="Sending…"
+            >
+              Send code
+            </Button>
           </form>
         )}
 
         {step === "otp" && (
           <form onSubmit={handleVerifyOTP} className="space-y-4">
-            <input
+            <OtpField
               id="otp"
               name="otp"
-              type="text"
-              inputMode="numeric"
               required
-              maxLength={6}
               value={otp}
               onChange={(e) => {
                 setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
                 setError(null);
               }}
-              className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-4 text-center text-2xl tracking-[0.4em] text-gray-900 placeholder:tracking-[0.4em] placeholder:text-gray-300 focus:outline-none"
-              placeholder="000000"
             />
 
-            <button
+            <Button
               type="submit"
-              disabled={loading || otp.length !== 6}
-              className={primaryBtnClass}
+              variant="pill-primary"
+              disabled={otp.length !== 6}
+              loading={loading}
+              loadingText="Verifying…"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Verifying…
-                </>
-              ) : (
-                "Verify code"
-              )}
-            </button>
+              Verify code
+            </Button>
 
             <button
               type="button"
@@ -366,89 +318,79 @@ export default function ForgotPasswordPage() {
 
         {step === "reset" && (
           <form onSubmit={handleResetPassword} className="space-y-4">
-            <div className={fieldWrapClass}>
-              <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-              <input
-                id="newPassword"
-                name="newPassword"
-                type={showPassword ? "text" : "password"}
-                required
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-                  setError(null);
-                }}
-                className={`${fieldClass} pr-2`}
-                placeholder="New password (min. 8)"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
+            <PillField
+              id="newPassword"
+              name="newPassword"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="New password (min. 8)"
+              icon={<Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              }
+            />
 
-            <div className={fieldWrapClass}>
-              <Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirm ? "text" : "password"}
-                required
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setError(null);
-                }}
-                className={`${fieldClass} pr-2`}
-                placeholder="Confirm password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm((p) => !p)}
-                className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
-                aria-label={showConfirm ? "Hide password" : "Show password"}
-              >
-                {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
+            <PillField
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirm ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="Confirm password"
+              icon={<Lock className="mr-3 h-5 w-5 shrink-0 text-gray-400" />}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((p) => !p)}
+                  className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600"
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                >
+                  {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              }
+            />
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
+                variant="pill-secondary"
                 onClick={() => {
                   setStep("otp");
                   setNewPassword("");
                   setConfirmPassword("");
                   setError(null);
                 }}
-                className={secondaryBtnClass}
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                disabled={
-                  loading ||
-                  newPassword.length < 8 ||
-                  newPassword !== confirmPassword
-                }
-                className={`${primaryBtnClass} flex-[1.4]`}
+                variant="pill-primary"
+                className="flex-[1.4]"
+                disabled={newPassword.length < 8 || newPassword !== confirmPassword}
+                loading={loading}
+                loadingText="Saving…"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  "Save password"
-                )}
-              </button>
+                Save password
+              </Button>
             </div>
           </form>
         )}

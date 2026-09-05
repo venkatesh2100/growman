@@ -1,3 +1,8 @@
+// Package auth issues and validates the JWTs that authenticate API
+// requests, and provides the HTTP middleware (AuthMiddleware, AdminMiddleware,
+// ...) that guards routes on them. Claims carry a Scope ("full" or
+// "onboarding") in addition to the usual user ID/role — see
+// internal/docs/02-auth.md.
 package auth
 
 import (
@@ -55,7 +60,7 @@ func IsAdminRole(role string) bool {
 
 // ParseToken validates a JWT string and returns claims.
 func ParseToken(secret, tokenString string) (*Claims, error) {
-	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

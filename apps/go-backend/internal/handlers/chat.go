@@ -113,8 +113,7 @@ type GeminiResponse struct {
 // Chat handles AI chat requests and product recommendations
 func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	var req ChatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpjson.Error(w, http.StatusBadRequest, "invalid request body")
+	if !httpjson.Decode(w, r, &req) {
 		return
 	}
 
@@ -580,22 +579,6 @@ func (h *Handler) buildWishlistChatResponse(userID uint) (string, []ProductRecom
 	return b.String(), recommendations, true
 }
 
-func formatOrderSummary(o models.Order) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "- **Order #%d** — ₹%.0f · **%s**", o.ID, o.Amount, humanOrderStatus(o.Status))
-	if o.PaymentStatus != "" && !strings.EqualFold(o.PaymentStatus, o.Status) {
-		fmt.Fprintf(&b, " · payment: %s", humanOrderStatus(o.PaymentStatus))
-	}
-	if o.ExpectedDeliveryDate != nil {
-		fmt.Fprintf(&b, " · ETA %s", o.ExpectedDeliveryDate.Format("2 Jan"))
-	}
-	if len(o.Items) > 0 {
-		b.WriteString("\n  ")
-		b.WriteString(formatOrderItems(o.Items))
-	}
-	return b.String()
-}
-
 func formatOrderItems(items []models.OrderItem) string {
 	parts := make([]string, 0, len(items))
 	for _, item := range items {
@@ -617,15 +600,19 @@ func humanOrderStatus(status string) string {
 	if s == "" {
 		return "pending"
 	}
-	s = strings.ReplaceAll(s, "_", " ")
-	return strings.Title(s)
+	return titleCase(strings.ReplaceAll(s, "_", " "))
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
+// titleCase capitalizes the first letter of each space-separated word.
+// Our status strings are always plain ASCII, so this is a small,
+// dependency-free stand-in for the deprecated strings.Title (whose
+// documented issue is Unicode word-boundary handling — not a concern here).
+func titleCase(s string) string {
+	words := strings.Fields(s)
+	for i, w := range words {
+		words[i] = strings.ToUpper(w[:1]) + w[1:]
 	}
-	return b
+	return strings.Join(words, " ")
 }
 
 // buildSystemPrompt creates a focused prompt using products matched to the user's question.
@@ -763,6 +750,12 @@ func (h *Handler) findRelevantProducts(userMessage string, limit int) []models.P
 	return products
 }
 
+// fallback returns the canned reply for the conversation's latest message, in
+// the (string, error) shape every provider call below needs to return.
+func (h *Handler) fallback(messages []ChatMessage) (string, error) {
+	return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+}
+
 // callAI calls the AI API (OpenAI, Gemini, or other providers)
 func (h *Handler) callAI(messages []ChatMessage, systemPrompt string) (string, error) {
 	provider := strings.ToLower(h.Cfg.AIProvider)
@@ -770,12 +763,12 @@ func (h *Handler) callAI(messages []ChatMessage, systemPrompt string) (string, e
 	switch provider {
 	case "gemini":
 		if h.Cfg.GeminiAPIKey == "" {
-			return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+			return h.fallback(messages)
 		}
 		return h.callGeminiAPI(messages, systemPrompt)
 	case "openai":
 		if h.Cfg.OpenAIAPIKey == "" {
-			return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+			return h.fallback(messages)
 		}
 		return h.callOpenAIAPI(messages)
 	default:
@@ -785,74 +778,81 @@ func (h *Handler) callAI(messages []ChatMessage, systemPrompt string) (string, e
 		if h.Cfg.OpenAIAPIKey != "" {
 			return h.callOpenAIAPI(messages)
 		}
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
+}
+
+// postJSON POSTs body as JSON with the given extra headers and returns the
+// raw response. A non-2xx status is not treated as an error — callers decide
+// how to react (typically: fall back). Shared by every AI provider call below.
+func postJSON(url string, body any, headers map[string]string) (status int, respBody []byte, err error) {
+	data, err := json.Marshal(body)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	client := &http.Client{Timeout: 25 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	return resp.StatusCode, respBody, nil
 }
 
 // callOpenAIAPI calls the OpenAI API
 func (h *Handler) callOpenAIAPI(messages []ChatMessage) (string, error) {
 	if h.Cfg.OpenAIAPIKey == "" {
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
 
-	apiURL := "https://api.openai.com/v1/chat/completions"
-
-	requestBody := OpenAIRequest{
+	reqBody := OpenAIRequest{
 		Model:       "gpt-3.5-turbo",
 		Messages:    messages,
 		MaxTokens:   280,
 		Temperature: 0.35,
 	}
-
-	jsonData, err := json.Marshal(requestBody)
+	status, body, err := postJSON("https://api.openai.com/v1/chat/completions", reqBody, map[string]string{
+		"Authorization": "Bearer " + h.Cfg.OpenAIAPIKey,
+	})
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return "", err
+	}
+	if status != http.StatusOK {
+		log.Printf("[CHAT] OpenAI API error: %d", status)
+		return h.fallback(messages)
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.Cfg.OpenAIAPIKey))
-
-	client := &http.Client{Timeout: 25 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[CHAT] OpenAI API error: %d", resp.StatusCode)
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
-	}
-
-	var openAIResp OpenAIResponse
-	if err := json.Unmarshal(body, &openAIResp); err != nil {
+	var resp OpenAIResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-
-	if len(openAIResp.Choices) == 0 {
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+	if len(resp.Choices) == 0 {
+		return h.fallback(messages)
 	}
-
-	return openAIResp.Choices[0].Message.Content, nil
+	return resp.Choices[0].Message.Content, nil
 }
 
 // callGeminiAPI calls the Google Gemini API
 func (h *Handler) callGeminiAPI(messages []ChatMessage, systemPrompt string) (string, error) {
 	if h.Cfg.GeminiAPIKey == "" {
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
 
-	geminiContents := make([]GeminiContent, 0, len(messages))
+	contents := make([]GeminiContent, 0, len(messages))
 	for _, msg := range messages {
 		if msg.Role == "system" {
 			continue
@@ -861,132 +861,56 @@ func (h *Handler) callGeminiAPI(messages []ChatMessage, systemPrompt string) (st
 		if msg.Role == "assistant" {
 			role = "model"
 		}
-		geminiContents = append(geminiContents, GeminiContent{
-			Parts: []GeminiPart{{Text: msg.Content}},
-			Role:  role,
-		})
+		contents = append(contents, GeminiContent{Parts: []GeminiPart{{Text: msg.Content}}, Role: role})
 	}
 
-	requestBody := GeminiRequest{
-		Contents: geminiContents,
-	}
+	reqBody := GeminiRequest{Contents: contents}
 	if systemPrompt != "" {
-		requestBody.SystemInstruction = &GeminiContent{
-			Parts: []GeminiPart{{Text: systemPrompt}},
+		reqBody.SystemInstruction = &GeminiContent{Parts: []GeminiPart{{Text: systemPrompt}}}
+	}
+	reqBody.GenerationConfig.Temperature = 0.35
+	reqBody.GenerationConfig.MaxOutputTokens = 350
+
+	// gemini-flash-latest is the free-tier model.
+	apiURL := "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+	status, body, err := postJSON(apiURL, reqBody, map[string]string{"X-goog-api-key": h.Cfg.GeminiAPIKey})
+	if err != nil {
+		return "", err
+	}
+
+	if status != http.StatusOK {
+		log.Printf("[CHAT] Gemini API error: %d", status)
+		var errResp GeminiResponse
+		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+			log.Printf("[CHAT] Gemini API error details: %s (code: %d)", errResp.Error.Message, errResp.Error.Code)
 		}
-	}
-	requestBody.GenerationConfig.Temperature = 0.35
-	requestBody.GenerationConfig.MaxOutputTokens = 350
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return h.fallback(messages)
 	}
 
-	// Use Gemini 1.5 Flash (free tier) or Gemini Pro
-	model := "gemini-flash-latest"
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent", model)
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-goog-api-key", h.Cfg.GeminiAPIKey)
-
-	client := &http.Client{Timeout: 25 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[CHAT] Gemini API error: %d", resp.StatusCode)
-		// Try to parse error response
-		var geminiResp GeminiResponse
-		if err := json.Unmarshal(body, &geminiResp); err == nil && geminiResp.Error.Message != "" {
-			log.Printf("[CHAT] Gemini API error details: %s (code: %d)", geminiResp.Error.Message, geminiResp.Error.Code)
-		}
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
-	}
-
-	var geminiResp GeminiResponse
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
+	var resp GeminiResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
 		log.Printf("[CHAT] Failed to unmarshal Gemini response: %v", err)
 		return "", fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-
-	// Check for API errors in response
-	if geminiResp.Error.Message != "" {
-		log.Printf("[CHAT] Gemini API error in response: %s (code: %d)", geminiResp.Error.Message, geminiResp.Error.Code)
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+	if resp.Error.Message != "" {
+		log.Printf("[CHAT] Gemini API error in response: %s (code: %d)", resp.Error.Message, resp.Error.Code)
+		return h.fallback(messages)
 	}
-
-	if len(geminiResp.Candidates) == 0 {
+	if len(resp.Candidates) == 0 {
 		log.Printf("[CHAT] Gemini API returned no candidates")
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
-
-	if len(geminiResp.Candidates[0].Content.Parts) == 0 {
+	if len(resp.Candidates[0].Content.Parts) == 0 {
 		log.Printf("[CHAT] Gemini API candidate has no parts")
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
-
-	responseText := geminiResp.Candidates[0].Content.Parts[0].Text
-	if responseText == "" {
+	text := resp.Candidates[0].Content.Parts[0].Text
+	if text == "" {
 		log.Printf("[CHAT] Gemini API returned empty text")
-		return h.getFallbackResponse(messages[len(messages)-1].Content), nil
+		return h.fallback(messages)
 	}
-
-	// Truncate to ~100 words to ensure concise responses
-	// responseText = h.truncateToWordLimit(responseText, 100)
-
-	return responseText, nil
+	return text, nil
 }
-
-// truncateToWordLimit truncates text to approximately the specified word limit
-// It preserves complete sentences and ensures the response doesn't exceed the limit
-// func (h *Handler) truncateToWordLimit(text string, wordLimit int) string {
-// 	words := strings.Fields(text)
-// 	if len(words) <= wordLimit {
-// 		return text
-// 	}
-
-// 	// Take first wordLimit words
-// 	truncatedWords := words[:wordLimit]
-// 	truncated := strings.Join(truncatedWords, " ")
-
-// 	// Try to end at a sentence boundary if possible
-// 	lastPeriod := strings.LastIndex(truncated, ".")
-// 	lastExclamation := strings.LastIndex(truncated, "!")
-// 	lastQuestion := strings.LastIndex(truncated, "?")
-
-// 	lastSentenceEnd := -1
-// 	if lastPeriod > lastSentenceEnd {
-// 		lastSentenceEnd = lastPeriod
-// 	}
-// 	if lastExclamation > lastSentenceEnd {
-// 		lastSentenceEnd = lastExclamation
-// 	}
-// 	if lastQuestion > lastSentenceEnd {
-// 		lastSentenceEnd = lastQuestion
-// 	}
-
-// 	// If we found a sentence end within the last 20% of the text, use it
-// 	if lastSentenceEnd > len(truncated)*4/5 {
-// 		return truncated[:lastSentenceEnd+1]
-// 	}
-
-// 	// Otherwise, just add ellipsis if we truncated
-// 	return truncated + "..."
-// }
 
 // getFallbackResponse provides targeted responses when the AI API is unavailable.
 func (h *Handler) getFallbackResponse(userMessage string) string {

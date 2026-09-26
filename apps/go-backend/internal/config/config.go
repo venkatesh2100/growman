@@ -31,6 +31,7 @@ type Config struct {
 	SMTPHost            string
 	SMTPPort            string
 	MerchantNotifyEmail string // Internal ops alerts (signups, orders, long browse)
+	QuotationEmail      string // Inbox that receives bulk quotation enquiries
 	// Image storage configuration (Google Cloud Storage)
 	ImageBaseURL       string // Base URL for image storage (e.g., "https://storage.googleapis.com/your-bucket")
 	GCSBucketName      string // Google Cloud Storage bucket name
@@ -81,6 +82,7 @@ func Load() (Config, error) {
 		SMTPHost:            getenv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:            getenv("SMTP_PORT", "587"),
 		MerchantNotifyEmail: getenv("MERCHANT_NOTIFY_EMAIL", "zoroboro.ynm@gmail.com"),
+		QuotationEmail:      getenv("QUOTATION_EMAIL", "growman.live@gmail.com"),
 		// Image storage configuration (Google Cloud Storage)
 		ImageBaseURL:       os.Getenv("IMAGE_BASE_URL"),
 		GCSBucketName:      os.Getenv("GCS_BUCKET_NAME"),

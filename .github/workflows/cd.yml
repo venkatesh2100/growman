@@ -1,0 +1,103 @@
+name: Deploy Growman Backend
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: growman
+  REGION: asia-south1
+  REPOSITORY: growman-backend
+  IMAGE: server
+  SERVICE: growman-backend
+
+jobs:
+  deploy:
+    name: Build and Deploy to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+
+      # ----------------------------------------
+      # Checkout
+      # ----------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----------------------------------------
+      # Authenticate to Google Cloud
+      # ----------------------------------------
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # ----------------------------------------
+      # Setup gcloud
+      # ----------------------------------------
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ----------------------------------------
+      # Configure Docker authentication
+      # ----------------------------------------
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker \
+            ${{ env.REGION }}-docker.pkg.dev \
+            --quiet
+
+      # ----------------------------------------
+      # Define image
+      # ----------------------------------------
+      - name: Set image URI
+        run: |
+          echo "IMAGE_URI=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}" >> "$GITHUB_ENV"
+
+      # ----------------------------------------
+      # Build Docker image
+      # ----------------------------------------
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${IMAGE_URI}:${GITHUB_SHA}" \
+            -t "${IMAGE_URI}:latest" \
+            ./apps/go-backend
+
+      # ----------------------------------------
+      # Push image
+      # ----------------------------------------
+      - name: Push Docker image
+        run: |
+          docker push "${IMAGE_URI}:${GITHUB_SHA}"
+          docker push "${IMAGE_URI}:latest"
+
+      # ----------------------------------------
+      # Deploy to Cloud Run
+      # ----------------------------------------
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${SERVICE}" \
+            --image "${IMAGE_URI}:${GITHUB_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --quiet
+
+      # ----------------------------------------
+      # Show deployment
+      # ----------------------------------------
+      - name: Show service
+        run: |
+          gcloud run services describe "${SERVICE}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --format="value(status.url)"

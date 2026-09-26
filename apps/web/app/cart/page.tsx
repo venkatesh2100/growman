@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Plus, Minus, Trash2, ArrowRight } from "lucide-react";
-import { useCartStore, CartItem } from "../../lib/store/cartStore";
+import { useCartStore } from "../../lib/store/cartStore";
+import Thumbnail from "../../components/ui/Thumbnail";
+import StorePickupOption from "../../components/store/StorePickupOption";
 
 export default function CartPage() {
   const router = useRouter();
@@ -58,7 +60,7 @@ export default function CartPage() {
               Your cart is empty
             </h2>
             <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-              Looks like you haven't added any plants to your cart yet.
+              Looks like you haven&apos;t added any plants to your cart yet.
             </p>
             <button
               onClick={() => router.push("/shop")}
@@ -80,9 +82,10 @@ export default function CartPage() {
                   {/* Mobile: Minimal design */}
                   <div className="md:hidden flex-1">
                     <div className="flex gap-3">
-                      <img
+                      <Thumbnail
                         src={item.image}
-                        className="w-20 h-20 rounded object-cover flex-shrink-0"
+                        size={80}
+                        className="w-20 h-20 rounded"
                         alt={item.name}
                       />
                       <div className="flex-1 min-w-0">
@@ -140,9 +143,10 @@ export default function CartPage() {
 
                   {/* Desktop: Original design */}
                   <div className="hidden md:flex md:flex-row md:gap-4 md:items-center md:w-full">
-                  <img
+                  <Thumbnail
                     src={item.image}
-                      className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+                    size={96}
+                    className="w-24 h-24 rounded-lg"
                     alt={item.name}
                   />
 
@@ -252,6 +256,8 @@ export default function CartPage() {
                 <p className="text-[10px] sm:text-xs text-gray-500 text-center mt-3 sm:mt-4">
                   Secure checkout with Razorpay
                 </p>
+
+                <StorePickupOption className="mt-4 sm:mt-5" />
               </div>
             </div>
           </div>

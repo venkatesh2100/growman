@@ -1,7 +1,8 @@
 {
   // Worker identity
   "name": "growman-web",
-  "main": ".open-next/worker.js",
+  // Custom entry that wraps .open-next/worker.js and edge-caches /_next/image
+  "main": "worker.ts",
   "compatibility_date": "2025-12-17",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -45,5 +46,24 @@
       "binding": "RATE_LIMIT",
       "id": "7d1c239b89c04e70badd4d156d61e931"
     }
+  ],
+
+  // OpenNext incremental cache (see open-next.config.ts). Create once with:
+  //   npx wrangler r2 bucket create growman-next-cache
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "growman-next-cache"
+    }
+  ],
+
+  // ISR revalidation queue. DOQueueHandler is re-exported from worker.ts.
+  "durable_objects": {
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }
   ]
 }

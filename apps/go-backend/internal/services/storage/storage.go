@@ -5,8 +5,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"log"
 )
 
 // StorageProvider defines the interface for a cloud storage backend (currently Google Cloud Storage)
@@ -37,9 +40,24 @@ func NewImageService(provider StorageProvider, baseURL string) *ImageService {
 	}
 }
 
-// UploadImage uploads an image to cloud storage and returns the image_key
+// maxUploadBytes bounds how much of an upload is buffered for optimization.
+const maxUploadBytes = 40 << 20
+
+// UploadImage stores an image under imageKey, first downsizing and
+// recompressing large JPEG/PNG originals (see OptimizeImage).
 func (s *ImageService) UploadImage(ctx context.Context, imageKey string, file io.Reader, contentType string) error {
-	return s.provider.Upload(ctx, imageKey, file, contentType)
+	data, err := io.ReadAll(io.LimitReader(file, maxUploadBytes+1))
+	if err != nil {
+		return fmt.Errorf("read image: %w", err)
+	}
+	if len(data) > maxUploadBytes {
+		return fmt.Errorf("image larger than %d MB", maxUploadBytes>>20)
+	}
+	if optimized, ok := OptimizeImage(data, contentType); ok {
+		log.Printf("[IMAGE] optimized %s: %d KB -> %d KB", imageKey, len(data)>>10, len(optimized)>>10)
+		data = optimized
+	}
+	return s.provider.Upload(ctx, imageKey, bytes.NewReader(data), contentType)
 }
 
 // DeleteImage deletes an image from cloud storage

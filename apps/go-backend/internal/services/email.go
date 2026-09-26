@@ -4,8 +4,10 @@
 package services
 
 import (
+	"encoding/base64"
 	"fmt"
 	"html"
+	"mime"
 	"net/smtp"
 	"strings"
 )
@@ -35,6 +37,21 @@ func NewEmailService(host, port, email, password string) *EmailService {
 }
 
 func (s *EmailService) send(to, subject, textBody, htmlBody string) error {
+	return s.sendWithReplyTo(to, "", subject, textBody, htmlBody)
+}
+
+func stripHeaderBreaks(v string) string {
+	return strings.NewReplacer("\r", "", "\n", "").Replace(v)
+}
+
+// Attachment is a file sent alongside an email body.
+type Attachment struct {
+	Filename    string
+	ContentType string
+	Data        []byte
+}
+
+func (s *EmailService) sendWithReplyTo(to, replyTo, subject, textBody, htmlBody string, attachments ...Attachment) error {
 	if s.SMTPEmail == "" || s.SMTPPassword == "" {
 		return fmt.Errorf("SMTP credentials not configured")
 	}
@@ -42,25 +59,50 @@ func (s *EmailService) send(to, subject, textBody, htmlBody string) error {
 		return fmt.Errorf("recipient required")
 	}
 
-	boundary := "growman-mail-boundary"
+	const altBoundary = "growman-mail-boundary"
+	const mixedBoundary = "growman-mail-mixed"
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("From: Growman <%s>\r\n", s.SMTPEmail))
-	msg.WriteString(fmt.Sprintf("To: %s\r\n", to))
-	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	msg.WriteString(fmt.Sprintf("To: %s\r\n", stripHeaderBreaks(to)))
+	if replyTo = stripHeaderBreaks(strings.TrimSpace(replyTo)); replyTo != "" {
+		msg.WriteString(fmt.Sprintf("Reply-To: %s\r\n", replyTo))
+	}
+	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", mime.QEncoding.Encode("utf-8", stripHeaderBreaks(subject))))
 	msg.WriteString("MIME-Version: 1.0\r\n")
-	msg.WriteString(fmt.Sprintf("Content-Type: multipart/alternative; boundary=%q\r\n\r\n", boundary))
+	if len(attachments) > 0 {
+		msg.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%q\r\n\r\n", mixedBoundary))
+		msg.WriteString("--" + mixedBoundary + "\r\n")
+	}
+	msg.WriteString(fmt.Sprintf("Content-Type: multipart/alternative; boundary=%q\r\n\r\n", altBoundary))
 
-	msg.WriteString("--" + boundary + "\r\n")
+	msg.WriteString("--" + altBoundary + "\r\n")
 	msg.WriteString("Content-Type: text/plain; charset=UTF-8\r\n\r\n")
 	msg.WriteString(textBody)
 	msg.WriteString("\r\n")
 
-	msg.WriteString("--" + boundary + "\r\n")
+	msg.WriteString("--" + altBoundary + "\r\n")
 	msg.WriteString("Content-Type: text/html; charset=UTF-8\r\n\r\n")
 	msg.WriteString(htmlBody)
 	msg.WriteString("\r\n")
 
-	msg.WriteString("--" + boundary + "--\r\n")
+	msg.WriteString("--" + altBoundary + "--\r\n")
+
+	for _, a := range attachments {
+		name := stripHeaderBreaks(strings.ReplaceAll(a.Filename, `"`, ""))
+		msg.WriteString("--" + mixedBoundary + "\r\n")
+		msg.WriteString(fmt.Sprintf("Content-Type: %s; name=%q\r\n", stripHeaderBreaks(a.ContentType), name))
+		msg.WriteString(fmt.Sprintf("Content-Disposition: attachment; filename=%q\r\n", name))
+		msg.WriteString("Content-Transfer-Encoding: base64\r\n\r\n")
+		encoded := base64.StdEncoding.EncodeToString(a.Data)
+		for len(encoded) > 76 {
+			msg.WriteString(encoded[:76] + "\r\n")
+			encoded = encoded[76:]
+		}
+		msg.WriteString(encoded + "\r\n")
+	}
+	if len(attachments) > 0 {
+		msg.WriteString("--" + mixedBoundary + "--\r\n")
+	}
 
 	auth := smtp.PlainAuth("", s.SMTPEmail, s.SMTPPassword, s.SMTPHost)
 	addr := fmt.Sprintf("%s:%s", s.SMTPHost, s.SMTPPort)

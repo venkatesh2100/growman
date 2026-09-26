@@ -1,7 +1,7 @@
 {
   "name": "Growman - Plant Store",
   "short_name": "Growman",
-  "description": "Your favorite plant store - shop plants online",
+  "description": "Growman – online plant store and nursery in Hyderabad. Buy plants online across India.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

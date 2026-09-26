@@ -14,11 +14,13 @@ type OptimizedImageProps = ImageProps & {
  */
 export default function OptimizedImage({
   className = "",
-  fadeIn = true,
+  fadeIn,
   onLoad,
   alt,
   ...props
 }: OptimizedImageProps) {
+  // Above-the-fold images should paint as soon as bytes arrive, not after a fade.
+  fadeIn ??= !props.priority;
   const [loaded, setLoaded] = useState(!fadeIn);
 
   return (

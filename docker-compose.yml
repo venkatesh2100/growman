@@ -44,7 +44,7 @@ services:
       # DATABASE_URL - using default values that match postgres service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/growman?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001,http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001,http://localhost:3000,http://localhost:3002}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}

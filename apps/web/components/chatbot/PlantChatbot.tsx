@@ -5,6 +5,8 @@ import { MessageCircle, X, Send, Loader2, Camera, Package, Leaf } from "lucide-r
 import { apiFetch, getApiUrl, resolveAuthToken } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
+import OptimizedImage from "../ui/OptimizedImage";
+import Thumbnail from "../ui/Thumbnail";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { toast } from "../../lib/toast";
 import { useAuthStore } from "../../lib/store/authStore";
@@ -121,8 +123,11 @@ export default function PlantChatbot() {
   }, [isOpen, isMounted]);
 
   useEffect(() => {
+    // Only while open: scrolling during page load makes Chrome discard the
+    // page's Largest Contentful Paint.
+    if (!isOpen) return;
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isOpen]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -394,10 +399,11 @@ export default function PlantChatbot() {
                           >
                             <div className="relative h-[76px] w-[76px] shrink-0 bg-gray-100">
                               {order.imageUrl ? (
-                                <img
+                                <Thumbnail
                                   src={order.imageUrl}
+                                  size={76}
                                   alt=""
-                                  className="h-full w-full object-cover"
+                                  className="h-full w-full"
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-emerald-600">
@@ -452,9 +458,13 @@ export default function PlantChatbot() {
                               className="h-[164px] w-[112px] shrink-0 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/80 transition-opacity active:opacity-90"
                             >
                               {product.imageUrl ? (
-                                <img
+                                <OptimizedImage
                                   src={product.imageUrl}
                                   alt={product.name}
+                                  width={112}
+                                  height={92}
+                                  sizes="112px"
+                                  loading="lazy"
                                   className="h-[92px] w-full bg-gray-100 object-cover"
                                 />
                               ) : (

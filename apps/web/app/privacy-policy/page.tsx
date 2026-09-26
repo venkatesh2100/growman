@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { createPageMetadata } from "../../lib/seo/metadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Privacy Policy",
+  description:
+    "How Growman collects, uses and stores account, order and location information, and how to request deletion of your data.",
+  path: "/privacy-policy",
+});
+
 const FULL_POLICY_URL =
   "https://www.privacypolicies.com/live/a738b4f7-0288-400a-b2d1-1c6af0406ab4";
 const DELETE_ACCOUNT_URL = "https://growman.live/delete-account";

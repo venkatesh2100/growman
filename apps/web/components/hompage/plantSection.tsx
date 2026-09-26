@@ -1,55 +1,40 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import ProductCard from "../productspage/ProductCard";
-import { ProductCardSkeleton } from "../loading/SkeletonLoader";
-import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { Product } from "../../lib/types";
 
-export default function PlantSection() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+/**
+ * Featured products, fetched on the server so the product names, prices and
+ * links are present in the HTML a crawler receives. Previously this ran in a
+ * `useEffect`, which left the homepage with no product content at all for
+ * search engines.
+ */
+async function getFeaturedProducts(): Promise<Product[]> {
+  try {
+    const res = await apiFetch("/products/featured", {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
 
-  useEffect(() => {
-    if (window.location.hash === "#skeletons") {
-      return;
+    const data = (await res.json()) as unknown;
+    if (Array.isArray(data)) return data as Product[];
+    if (data && typeof data === "object") {
+      const payload = data as {
+        data?: Product[];
+        products?: Product[];
+        featured?: Product[];
+      };
+      return payload.data ?? payload.products ?? payload.featured ?? [];
     }
+    return [];
+  } catch (error) {
+    console.warn("Failed to fetch featured products:", error);
+    return [];
+  }
+}
 
-    async function fetchFeatured() {
-      try {
-        const res = await apiFetch("/products/featured");
-        if (!res.ok) {
-          throw new Error("Failed to fetch featured products");
-        }
-        const data = await res.json();
-
-        // Handle different response formats
-        let products = [];
-        if (Array.isArray(data)) {
-          products = data;
-        } else if (data.data && Array.isArray(data.data)) {
-          products = data.data;
-        } else if (data.products && Array.isArray(data.products)) {
-          products = data.products;
-        } else if (data.featured && Array.isArray(data.featured)) {
-          products = data.featured;
-        }
-
-        setFeaturedProducts(products);
-      } catch (err) {
-        console.error("Failed to fetch featured products:", err);
-        setFeaturedProducts([]); // Set empty array on error
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchFeatured();
-  }, []);
-
-  const skeletons = Array(4).fill(0);
+export default async function PlantSection() {
+  const featuredProducts = await getFeaturedProducts();
 
   return (
     <section className="py-8 sm:py-12 md:py-16 bg-emerald-50">
@@ -60,63 +45,49 @@ export default function PlantSection() {
               Featured Plants
             </h2>
             <p className="text-sm sm:text-base text-green-700">
-              Some randomly selected green beauties
+              A selection from our current collection
             </p>
           </div>
-          <button
-            onClick={() => router.push("/categories")}
-            className="mt-4 md:mt-0 px-5 sm:px-6 py-2 border-2 border-emerald-600 text-emerald-600 rounded-full font-medium hover:bg-emerald-600 hover:text-white active:bg-emerald-700 transition duration-300 text-sm sm:text-base touch-manipulation"
+          <Link
+            href="/categories"
+            className="mt-4 md:mt-0 px-5 sm:px-6 py-2 border-2 border-emerald-700 text-emerald-700 rounded-full font-medium hover:bg-emerald-700 hover:text-white active:bg-emerald-700 transition duration-300 text-sm sm:text-base touch-manipulation"
           >
-            View All
-          </button>
+            View all categories
+          </Link>
         </div>
 
-        {/* Cards or Skeletons */}
-        <div
-          className="
+        {featuredProducts.length > 0 ? (
+          <div
+            className="
       flex flex-nowrap gap-4 overflow-x-auto pb-4
       snap-x snap-mandatory scroll-smooth
       scrollbar-hide
-      -mx-3 sm:-mx-4 px-3 sm:px-4
+      -mx-3 sm:-mx-4 px-3 sm:px-4 scroll-px-3 sm:scroll-px-4
   "
-          style={{ scrollBehavior: "smooth" }}
-          aria-busy={loading}
-        >
-          {loading ? (
-            <>
-              <span className="sr-only">Loading featured plants</span>
-              {skeletons.map((_, idx) => (
-                <div
-                  key={idx}
-                  className="
-                     shrink-0
-                     w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
-          snap-start"
-                >
-                  <ProductCardSkeleton />
-                </div>
-              ))}
-            </>
-          ) : Array.isArray(featuredProducts) && featuredProducts.length > 0
-              ? featuredProducts.map((product: Product) => (
-                  <div
-                    key={product.id}
-                    className="
+          >
+            {featuredProducts.map((product: Product) => (
+              <div
+                key={product.id}
+                className="
                  shrink-0
                  w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
                snap-start"
-                  >
-                    <ProductCard key={product.id} product={product} />
-                  </div>
-                ))
-              : !loading && (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-gray-600">
-                      No featured products available at the moment.
-                    </p>
-                  </div>
-                )}
-        </div>
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">
+              No featured plants available at the moment.{" "}
+              <Link href="/shop" className="text-emerald-700 underline">
+                Browse the full collection
+              </Link>
+              .
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

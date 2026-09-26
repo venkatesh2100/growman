@@ -59,7 +59,7 @@ export default function Pagination({
 
   return (
     <nav
-      className="mt-8 flex flex-col items-center gap-3 border-t border-emerald-100 pt-6 sm:flex-row sm:justify-between"
+      className="mt-8 flex flex-col items-center gap-3 border-t border-emerald-100 pt-6"
       aria-label="Product pagination"
     >
       <p className="text-sm text-slate-600">

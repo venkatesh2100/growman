@@ -1,0 +1,23 @@
+# Growman
+
+> Growman (growman.live) is an online plant store and nursery based in Hyderabad, Telangana, India. It sells live indoor, outdoor, flowering, ornamental, fruit and medicinal plants, delivered across India, and supplies bulk orders for landscaping and institutions. Growman is part of Shiridi Sai Nursery and is not affiliated with the Growman email-extractor browser extension or Growman Group.
+
+## Shop
+
+- [Home](https://growman.live/): Featured plants and categories
+- [Shop all plants](https://growman.live/shop): Full catalogue with filters
+- [Categories](https://growman.live/categories): Indoor, outdoor, flowering, fruit, medicinal and more
+- [Bulk orders](https://growman.live/bulk): Quotations for large plant orders
+
+## About
+
+- [About Growman](https://growman.live/about): The nursery, store location and opening hours
+- [Help centre](https://growman.live/help-center): Delivery, returns and plant-care FAQs
+- [Blog](https://growman.live/blog): Plant care guides
+
+## Optional
+
+- [Sitemap](https://growman.live/sitemap.xml): Every product, category and guide
+- [Android app](https://play.google.com/store/apps/details?id=com.venky2100.growman)
+- [Terms](https://growman.live/terms)
+- [Privacy policy](https://growman.live/privacy-policy)

@@ -1,17 +1,19 @@
 module github.com/venkatesh2100/growman/apps/go-backend
 
-go 1.25.0
+go 1.26.0
 
 require (
 	cloud.google.com/go/storage v1.58.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.24.1
 	golang.org/x/crypto v0.54.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/image v0.46.0
+	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.269.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
@@ -65,8 +67,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409 // indirect

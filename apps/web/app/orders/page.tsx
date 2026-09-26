@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from "../../lib/api";
+import Thumbnail from "../../components/ui/Thumbnail";
 
 interface OrderItem {
   id: number;
@@ -348,13 +349,11 @@ export default function OrdersPage() {
                             key={item.id}
                             className="flex items-center gap-3 py-3"
                           >
-                            <img
-                              src={
-                                item.imageUrl ||
-                                "https://via.placeholder.com/48"
-                              }
+                            <Thumbnail
+                              src={item.imageUrl}
+                              size={48}
                               alt={item.name}
-                              className="w-12 h-12 rounded-xl object-cover bg-gray-100 flex-shrink-0"
+                              className="w-12 h-12 rounded-xl"
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">

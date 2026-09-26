@@ -12,7 +12,9 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint --max-warnings 0",
-    "check-types": "next typegen && tsc --noEmit"
+    "check-types": "next typegen && tsc --noEmit",
+    "sync:collection-images": "node scripts/sync-collection-images.mjs",
+    "test": "node --experimental-strip-types --no-warnings --import ./test/register-ts.mjs --test \"lib/**/*.test.ts\""
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.0",

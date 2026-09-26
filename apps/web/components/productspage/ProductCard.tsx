@@ -264,7 +264,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             )}
             {/* Discount badge - minimal */}
             {discountPercent > 0 && (
-              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-semibold">
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-semibold">
                 {discountPercent}% OFF
               </div>
             )}
@@ -283,9 +283,12 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               <CategoryBadge category={product.category} compact />
             )}
 
-            <h2 className="min-h-10 text-sm font-semibold leading-snug text-slate-900">
+            {/* h3: cards always sit under a section's h2 ("Featured Plants",
+                "Indoor Plants" and so on), so this keeps the document
+                outline correct on every listing page. */}
+            <h3 className="min-h-10 text-sm font-semibold leading-snug text-slate-900">
               {product.name}
-            </h2>
+            </h3>
           </Link>
 
           {/* Pricing - clean and minimal */}
@@ -319,7 +322,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white border border-emerald-600 text-emerald-600 active:bg-emerald-50"
+                  : "bg-white border border-emerald-700 text-emerald-700 active:bg-emerald-50"
               }`}
             >
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
@@ -331,7 +334,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-emerald-600 text-white active:bg-emerald-700"
+                  : "bg-emerald-700 text-white active:bg-emerald-800"
               }`}
             >
               <Zap className="w-3.5 h-3.5 shrink-0" />
@@ -390,7 +393,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
             </div>
             {/* Discount badge */}
             {discountPercent > 0 && (
-              <div className="absolute top-2 left-2 z-[2] px-2 py-1 rounded-md bg-red-500 text-white text-[10px] sm:text-xs font-bold shadow-sm">
+              <div className="absolute top-2 left-2 z-[2] px-2 py-1 rounded-md bg-red-600 text-white text-[10px] sm:text-xs font-bold shadow-sm">
                 {discountPercent}% OFF
               </div>
             )}
@@ -400,9 +403,9 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
           <div className="flex flex-1 flex-col p-3 sm:p-4">
             {product.category?.name && <CategoryBadge category={product.category} />}
 
-            <h2 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover/card:text-emerald-800 sm:text-[15px]">
+            <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover/card:text-emerald-800 sm:text-[15px]">
               {product.name}
-            </h2>
+            </h3>
 
           {/* Pricing Display */}
           {firstPrice !== null && firstPrice !== undefined && firstPrice > 0 ? (
@@ -438,7 +441,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100"
+                  : "bg-white border-2 border-emerald-700 text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100"
               }`}
             >
               <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -451,7 +454,7 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
               className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
                 totalStock === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-md active:shadow-sm"
+                  : "bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 shadow-md active:shadow-sm"
               }`}
             >
               <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />

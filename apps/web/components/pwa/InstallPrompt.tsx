@@ -77,7 +77,7 @@ export default function InstallPrompt() {
             <button
               type="button"
               onClick={handleInstall}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 sm:w-auto"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 active:bg-emerald-900 sm:w-auto"
             >
               <Image
                 src="/icons/growman.svg"

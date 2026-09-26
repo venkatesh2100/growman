@@ -1,11 +1,11 @@
 // <define:__IMAGES_DEVICE_SIZES__>
-var define_IMAGES_DEVICE_SIZES_default = [640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+var define_IMAGES_DEVICE_SIZES_default = [384, 640, 828, 1080, 1200, 1600];
 
 // <define:__IMAGES_FORMATS__>
-var define_IMAGES_FORMATS_default = ["image/webp"];
+var define_IMAGES_FORMATS_default = ["image/avif", "image/webp"];
 
 // <define:__IMAGES_IMAGE_SIZES__>
-var define_IMAGES_IMAGE_SIZES_default = [32, 48, 64, 96, 128, 256, 384];
+var define_IMAGES_IMAGE_SIZES_default = [32, 48, 64, 96, 128, 256];
 
 // <define:__IMAGES_LOCAL_PATTERNS__>
 var define_IMAGES_LOCAL_PATTERNS_default = [{ pathname: "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$", search: "" }];
@@ -14,7 +14,7 @@ var define_IMAGES_LOCAL_PATTERNS_default = [{ pathname: "^(?:(?!(?:^|\\/)\\.{1,2
 var define_IMAGES_QUALITIES_default = [75];
 
 // <define:__IMAGES_REMOTE_PATTERNS__>
-var define_IMAGES_REMOTE_PATTERNS_default = [{ protocol: "https", hostname: "^(?:^(?:growman\\.blob\\.core\\.windows\\.net)$)$", pathname: "^(?:\\/growman(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)|$))$" }];
+var define_IMAGES_REMOTE_PATTERNS_default = [{ protocol: "https", hostname: "^(?:^(?:growman\\.blob\\.core\\.windows\\.net)$)$", pathname: "^(?:\\/growman(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)|$))$" }, { protocol: "https", hostname: "^(?:(?!\\.)(?=.)[^/]*?\\.blob\\.core\\.windows\\.net\\/?)$", pathname: "^(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?))$" }, { protocol: "https", hostname: "^(?:^(?:storage\\.googleapis\\.com)$)$", pathname: "^(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?))$" }, { protocol: "https", hostname: "^(?:^(?:images\\.unsplash\\.com)$)$", pathname: "^(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?))$" }, { protocol: "https", hostname: "^(?:^(?:plus\\.unsplash\\.com)$)$", pathname: "^(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?))$" }];
 
 // ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/error.js
 function isOpenNextError(e) {

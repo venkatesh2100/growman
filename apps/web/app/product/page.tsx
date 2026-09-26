@@ -1,8 +1,23 @@
-
+import type { Metadata } from 'next';
 import { FilterSidebar } from '../../components/productspage/FilterSideBar';
 import CategoryCard from '../../components/productspage/categoryCard';
 import ProductsDisplay from '../../components/productspage/ProductsDisplay';
 import { fetchProductsData, filterProducts } from '../../lib/data';
+import { buildCanonicalUrl } from '../../lib/seo/metadata';
+
+/**
+ * This listing duplicates /categories (same heading, same content) and /shop
+ * (same filtering), so it is kept working but excluded from the index and
+ * canonicalised to /categories to avoid competing duplicate pages.
+ *
+ * TODO: redirect /product to /categories permanently once it is confirmed
+ * that nothing links to or bookmarks this URL.
+ */
+export const metadata: Metadata = {
+  title: 'All Plants',
+  robots: { index: false, follow: true },
+  alternates: { canonical: buildCanonicalUrl('/categories') },
+};
 
 export default async function ProductsPage(
   {

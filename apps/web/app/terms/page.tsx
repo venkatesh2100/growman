@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { createPageMetadata } from "../../lib/seo/metadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Terms & Conditions",
+  description:
+    "The terms that apply when ordering plants from Growman, covering orders, fulfilment, pricing and acceptable use of the service.",
+  path: "/terms",
+});
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-5">

@@ -383,9 +383,10 @@ export default function Navbar() {
     recognition.start();
   }, [listening]);
 
-  if (!isMounted) {
-    return <div ref={navbarRef} />;
-  }
+  // The header is server-rendered so it paints with the page and its spacer
+  // reserves space up front. Only values read from persisted client stores
+  // wait for mount, to keep the server and first client render identical.
+  const cartCount = isMounted ? totalQuantity : 0;
 
   return (
     <div ref={navbarRef}>
@@ -398,15 +399,16 @@ export default function Navbar() {
           <Link href="/" className="flex items-center sm:gap-1 group touch-manipulation">
             <Image
               src="/logo.png"
-              alt="Growman"
+              alt=""
               width={56}
               height={56}
               priority
               className="h-11 w-11 sm:h-14 sm:w-14 object-contain"
             />
-            <h1 className="font-space text-sm sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
+            {/* Not an <h1>: each page owns its own H1. */}
+            <span className="font-space text-3xl sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
               Growman
-            </h1>
+            </span>
           </Link>
 
           <nav className="hidden md:flex space-x-1">
@@ -459,10 +461,10 @@ export default function Navbar() {
                     className="p-1.5 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95"
                     aria-label="Clear search"
                   >
-                    {/* <CloseIcon /> */}
+                    <CloseIcon />
                   </button>
                 )}
-                <button type="submit" className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation">
+                <button type="submit" aria-label="Search" className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation">
                   {isSearching ? (
                     <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -496,13 +498,13 @@ export default function Navbar() {
               data-cart-icon
             >
               <CartIcon />
-              {totalQuantity > 0 && (
+              {cartCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-lg"
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-red-600 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-lg"
                 >
-                  {totalQuantity > 99 ? '99+' : totalQuantity}
+                  {cartCount > 99 ? '99+' : cartCount}
                 </motion.span>
               )}
             </Link>
@@ -521,7 +523,7 @@ export default function Navbar() {
 
               <AccountMenu
                 show={showAccountMenu}
-                isLoggedIn={isLoggedIn}
+                isLoggedIn={isMounted && isLoggedIn}
                 onLogout={handleLogout}
                 onNavigate={() => setShowAccountMenu(false)}
                 onMouseEnter={() => setShowAccountMenu(true)}
@@ -577,7 +579,7 @@ export default function Navbar() {
                     <CloseIcon />
                   </button>
                 )}
-                <button type="button" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
+                <button type="button" aria-label="Close search" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
                   <CloseIcon />
                 </button>
               </form>
@@ -623,9 +625,9 @@ export default function Navbar() {
                   </Link>
                   <Link href="/cart" className="relative flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
                     <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><CartIcon /></span>Cart
-                    {totalQuantity > 0 && (
-                      <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {totalQuantity > 99 ? '99+' : totalQuantity}
+                    {cartCount > 0 && (
+                      <span className="ml-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     )}
                   </Link>
@@ -637,7 +639,7 @@ export default function Navbar() {
       </motion.header>
 
       <CategoryFilterBar show={showCategories} />
-      
+
       <div className="h-20 sm:h-24 md:h-28 lg:h-32"></div>
     </div>
   );

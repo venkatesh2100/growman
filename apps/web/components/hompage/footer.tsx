@@ -1,12 +1,10 @@
-"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { PLAY_STORE_URL } from "../../lib/appLinks";
+import { getIndexableCollections } from "../../lib/seo/catalog";
+import { business } from "../../lib/seo/site";
 import {
-  FaFacebookF,
   FaInstagram,
-  FaTwitter,
-  FaLeaf,
   FaMapMarkerAlt,
   FaEnvelope,
   FaPhone,
@@ -14,14 +12,22 @@ import {
   FaSeedling,
   FaShoppingBag,
   FaHeadset,
-  FaAddressBook,
   FaGlobeEurope,
-  FaGlobeAsia,
 } from "react-icons/fa";
 import { GiPlantSeed, GiFlowerPot } from "react-icons/gi";
 
-export default function Footer() {
+/**
+ * Site footer. A server component so its links are in the HTML on every page,
+ * and so the Shop column can be built from the live catalog — previously it
+ * pointed at /seeds, /pots and /faq, none of which exist.
+ */
+export default async function Footer() {
   const currentYear = new Date().getFullYear();
+  const collections = await getIndexableCollections();
+  const shopLinks = collections.slice(0, 5).map(({ category }) => ({
+    href: `/categories/${category.slug}`,
+    label: category.name,
+  }));
 
   return (
     <footer className=" bg-green-800 text-white">
@@ -36,7 +42,7 @@ export default function Footer() {
             >
               <Image
                 src="/growman.png"
-                alt="Growman"
+                alt=""
                 width={56}
                 height={56}
                 className="h-11 w-11 sm:h-14 sm:w-14 rounded-md object-contain"
@@ -47,29 +53,18 @@ export default function Footer() {
               Premium plants & gardening solutions for Indian homes
             </p>
             <div className=" flex gap-3">
+              {/* Only the Instagram profile URL is confirmed, so it is the
+                  single social link here — the previous Facebook and Twitter
+                  icons pointed at the Instagram URL and a malformed handle.
+                  TODO: restore them once the real profile URLs are known. */}
               <a
                 href="https://www.instagram.com/growman.live/"
                 target="_blank"
+                rel="noopener noreferrer"
                 className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-                aria-label="Facebook"
-              >
-                <FaFacebookF className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.instagram.com/growman.live/"
-                target="_blank"
-                className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-                aria-label="Instagram"
+                aria-label="Growman on Instagram"
               >
                 <FaInstagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.twitter.com/growman.live/"
-                className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-                aria-label="Twitter"
-                target="_blank"
-              >
-                <FaTwitter className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -81,44 +76,26 @@ export default function Footer() {
               Shop
             </h3>
             <ul className="space-y-2 text-sm">
+              {shopLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    prefetch={false}
+                    className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                  >
+                    <GiPlantSeed className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <span>{link.label}</span>
+                  </Link>
+                </li>
+              ))}
               <li>
                 <Link
-                  href="/categories/indoor-plants"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
-                >
-                  {/* <FaLeaf className="w-3 h-3 group-hover:scale-110 transition-transform" /> */}
-                  <span>Indoor Plants</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/categories/outdoor-plants"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
-                >
-                  <GiPlantSeed className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                  <span>Outdoor Plants</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/seeds"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
-                >
-                  <FaSeedling className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                  <span>Seeds</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/pots"
+                  href="/categories"
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
                 >
                   <GiFlowerPot className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                  <span>Pots & Planters</span>
+                  <span>All Categories</span>
                 </Link>
               </li>
             </ul>
@@ -133,7 +110,16 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/account"
+                  href="/help-center"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <span>Help Center</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/about"
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
                 >
@@ -142,29 +128,29 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/orders"
+                  href="/blog"
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
                 >
-                  <span>Shipping</span>
+                  <span>Plant Care Guides</span>
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/orders"
+                  href="/terms"
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
                 >
-                  <span>Returns</span>
+                  <span>Terms</span>
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/faq"
+                  href="/privacy-policy"
                   prefetch={false}
                   className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
                 >
-                  <span>FAQ</span>
+                  <span>Privacy Policy</span>
                 </Link>
               </li>
             </ul>
@@ -179,16 +165,40 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-green-300">
               <li className="flex items-start gap-2">
                 <FaMapMarkerAlt className="w-3 h-3 text-emerald-400 mt-0.5 shrink-0" />
-                <span>Kadiam, Andhra Pradesh</span>
+                <a
+                  href={business.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  <address className="not-italic">
+                    Visit our store in {business.address.locality} 
+                  </address>
+                  {/* <span className="block text-xs text-emerald-200 mt-0.5 underline underline-offset-2">
+                    Open in Google Maps
+                  </span> */}
+                </a>
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <FaEnvelope className="text-emerald-400  text-[14px] shrink-0" />
-                <span className="text-[13px]">growman.live@gmail.com</span>
+                <a
+                  href={`mailto:${business.email}`}
+                  className="text-[13px] hover:text-white transition-colors"
+                >
+                  {business.email}
+                </a>
               </li>
 
               <li className="flex items-center gap-2">
                 <FaPhone className="w-3 h-3 text-emerald-400" />
-                <span>+91 95535 70568</span>
+                {/* The number is dialled by the link rather than printed, so it
+                    is not sitting in the page for scrapers to pick up. */}
+                <a
+                  href={`tel:${business.telephone}`}
+                  className="hover:text-white transition-colors"
+                >
+                  Contact us
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <FaClock className="w-3 h-3 text-emerald-400" />
@@ -246,7 +256,17 @@ export default function Footer() {
           </a>
 
           <div className="font-serif italic tracking-wide text-emerald-300 text-xl">
-            <Image src="/404.png" width={140} height={240} alt="404"  className="md:w-50 " />
+            {/* Decorative illustration: square source, so declare it square to
+                avoid a layout shift, and hide it from assistive tech. */}
+            <Image
+              src="/404.png"
+              width={200}
+              height={200}
+              sizes="(max-width: 768px) 140px, 200px"
+              alt=""
+              aria-hidden="true"
+              className="md:w-50 h-auto"
+            />
           </div>
 
           {/* Copyright */}

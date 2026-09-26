@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Thumbnail from "../../../components/ui/Thumbnail";
 
 export default function CartItems({ isOpen, onClose }: {
   isOpen: boolean;
@@ -40,11 +41,7 @@ export default function CartItems({ isOpen, onClose }: {
         <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
           {cart.map((item, idx) => (
             <div key={idx} className="flex items-center gap-4">
-              <img
-                src={item.image}
-                className="w-16 h-16 rounded object-cover"
-                alt=""
-              />
+              <Thumbnail src={item.image} size={64} className="w-16 h-16 rounded" alt="" />
               <div>
                 <p className="text-sm">{item.name}</p>
                 <p className="text-gray-300">

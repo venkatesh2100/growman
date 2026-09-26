@@ -9,6 +9,13 @@ import ServiceWorkerRegistration from "../components/pwa/ServiceWorkerRegistrati
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import PlantChatbot from "../components/chatbot/PlantChatbot";
 import BrowseEngagementBeacon from "../components/BrowseEngagementBeacon";
+import JsonLd from "../components/seo/JsonLd";
+import { siteConfig } from "../lib/seo/site";
+import { absoluteUrl } from "../lib/seo/metadata";
+import {
+  createOrganizationJsonLd,
+  createWebSiteJsonLd,
+} from "../lib/seo/jsonLd";
 
 
 const geist = Geist({ subsets: ["latin"] });
@@ -20,8 +27,56 @@ const spaceGrotesk = Space_Grotesk({
 
 /* ---------------- METADATA ---------------- */
 export const metadata: Metadata = {
-  title: "Growman - Plant Store",
-  description: "Your favorite plant store - shop plants online",
+  // Makes every relative `alternates.canonical` and OG image across the app
+  // resolve to an absolute https://growman.live URL.
+  metadataBase: new URL(siteConfig.url),
+
+  title: {
+    default: siteConfig.title,
+    // Page-level titles supply only their own part; the brand is appended once.
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+
+  // No default `alternates.canonical` here on purpose. Metadata is inherited,
+  // so setting one would make every page that does not override it — including
+  // noindex routes like /search, /login and /checkout — canonicalise to the
+  // homepage. Each indexable page declares its own canonical instead.
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    locale: siteConfig.locale,
+    images: [
+      {
+        url: absoluteUrl(siteConfig.ogImage),
+        alt: `${siteConfig.name} — plants online in India`,
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [absoluteUrl(siteConfig.ogImage)],
+  },
 
   appleWebApp: {
     capable: true,
@@ -30,6 +85,12 @@ export const metadata: Metadata = {
   },
 
   icons: {
+    icon: [
+      // No SVG favicon: /icons/favicon.svg is a ~1 MB embedded PNG that
+      // competed with the hero image for bandwidth on mobile.
+      { url: "/icons/favicon.ico", sizes: "48x48" },
+      { url: "/icons/icon-192x192.png", type: "image/png", sizes: "192x192" },
+    ],
     apple: "/icons/icon-192x192.png",
   },
 
@@ -38,14 +99,24 @@ export const metadata: Metadata = {
   other: {
     "google-play-app": "app-id=com.venky2100.growman",
   },
+
+  // Search Console verification is opt-in via env var so no placeholder token
+  // is ever shipped. See docs/SEO.md for the DNS/HTML alternatives.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
 /* ---------------- VIEWPORT ---------------- */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom is left enabled: locking it fails the WCAG 1.4.4 resize
+  // requirement and is flagged by Lighthouse accessibility audits.
   viewportFit: "cover",
   themeColor: "#059669",
 };
@@ -56,13 +127,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head />
+      {/* Site-wide entities, declared once and referenced by @id elsewhere. */}
+      <JsonLd
+        id="site-jsonld"
+        data={[createOrganizationJsonLd(), createWebSiteJsonLd()]}
+      />
       <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-49FZDEFB2Y"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
       />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

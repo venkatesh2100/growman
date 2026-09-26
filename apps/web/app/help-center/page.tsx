@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "../../components/seo/JsonLd";
+import { createPageMetadata } from "../../lib/seo/metadata";
+import { createFaqJsonLd } from "../../lib/seo/jsonLd";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Help Center",
+  description:
+    "Answers to common Growman questions about order tracking, delivery across India, returns on living plants and plant care support.",
+  path: "/help-center",
+});
 
 const faqs = [
   {
@@ -23,6 +34,8 @@ export default function HelpCenterPage() {
   return (
     <main className="min-h-screen bg-[#F7F8FA] py-10">
       <div className="mx-auto max-w-3xl px-4">
+        {/* Built from the same `faqs` array rendered below. */}
+        <JsonLd id="help-center-faq" data={createFaqJsonLd(faqs)} />
         <h1 className="text-2xl font-bold text-emerald-950">Help Center</h1>
         <p className="mt-1 text-sm text-gray-600">
           Answers to common questions and quick links for support.

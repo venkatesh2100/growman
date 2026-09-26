@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -56,6 +59,7 @@ func (g *GCSStorage) Upload(ctx context.Context, imageKey string, file io.Reader
 	if contentType != "" {
 		writer.ContentType = contentType
 	}
+	writer.CacheControl = ImmutableCacheControl
 
 	if _, err := io.Copy(writer, file); err != nil {
 		writer.Close()
@@ -95,6 +99,98 @@ func (g *GCSStorage) Exists(ctx context.Context, imageKey string) (bool, error) 
 	}
 
 	return true, nil
+}
+
+// OptimizeResult summarises an OptimizeExisting run.
+type OptimizeResult struct {
+	Scanned, Optimized, CacheFixed, Failed int
+	BytesBefore, BytesAfter                int64
+}
+
+// OptimizeExisting rewrites already-stored images under prefix: large
+// JPEG/PNG originals are downsized in place (same key, so no DB change), and
+// every image gets the immutable Cache-Control. With dryRun nothing is written.
+func (g *GCSStorage) OptimizeExisting(ctx context.Context, prefix string, dryRun bool, logf func(string, ...any)) (OptimizeResult, error) {
+	var res OptimizeResult
+	bucket := g.client.Bucket(g.bucketName)
+	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+	for {
+		attrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return res, fmt.Errorf("list objects: %w", err)
+		}
+		ct := strings.ToLower(attrs.ContentType)
+		if !strings.HasPrefix(ct, "image/") {
+			continue
+		}
+		res.Scanned++
+		res.BytesBefore += attrs.Size
+		obj := bucket.Object(attrs.Name).If(storage.Conditions{GenerationMatch: attrs.Generation})
+
+		var optimized []byte
+		if ct == "image/jpeg" || ct == "image/png" {
+			r, err := obj.NewReader(ctx)
+			if err != nil {
+				res.Failed++
+				logf("read %s: %v", attrs.Name, err)
+				res.BytesAfter += attrs.Size
+				continue
+			}
+			data, err := io.ReadAll(r)
+			r.Close()
+			if err != nil {
+				res.Failed++
+				logf("read %s: %v", attrs.Name, err)
+				res.BytesAfter += attrs.Size
+				continue
+			}
+			if out, ok := OptimizeImage(data, ct); ok {
+				optimized = out
+			}
+		}
+
+		switch {
+		case optimized != nil:
+			logf("optimize %s: %d KB -> %d KB", attrs.Name, attrs.Size>>10, len(optimized)>>10)
+			res.BytesAfter += int64(len(optimized))
+			if dryRun {
+				res.Optimized++
+				continue
+			}
+			w := obj.NewWriter(ctx)
+			w.ContentType = attrs.ContentType
+			w.CacheControl = ImmutableCacheControl
+			w.Metadata = attrs.Metadata
+			if _, err := w.Write(optimized); err != nil {
+				w.Close()
+				res.Failed++
+				logf("write %s: %v", attrs.Name, err)
+				continue
+			}
+			if err := w.Close(); err != nil {
+				res.Failed++
+				logf("write %s: %v", attrs.Name, err)
+				continue
+			}
+			res.Optimized++
+		case attrs.CacheControl != ImmutableCacheControl:
+			res.BytesAfter += attrs.Size
+			if !dryRun {
+				if _, err := obj.Update(ctx, storage.ObjectAttrsToUpdate{CacheControl: ImmutableCacheControl}); err != nil {
+					res.Failed++
+					logf("cache-control %s: %v", attrs.Name, err)
+					continue
+				}
+			}
+			res.CacheFixed++
+		default:
+			res.BytesAfter += attrs.Size
+		}
+	}
+	return res, nil
 }
 
 // Close closes the GCS client

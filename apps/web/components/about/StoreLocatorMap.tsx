@@ -1,8 +1,9 @@
 "use client";
 
 import { Store } from "lucide-react";
+import { business } from "../../lib/seo/site";
 
-const HYDERABAD_STORE_URL = "https://maps.app.goo.gl/DUgWr7F8qkq79rDA7";
+const HYDERABAD_STORE_URL = business.mapsUrl;
 
 type StoreCity = { name: string; x: number; y: number; open: boolean };
 

@@ -1,149 +1,144 @@
-'use client';
-
-import { useEffect, useState } from "react";
-import PlantsLoading from "../../../components/loading";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import ProductGrid from "../../../components/productspage/ProductGrid";
 import SubcategoryCard from "../../../components/productspage/SubcategoryCard";
-import { apiFetch } from "../../../lib/api";
-import type { Product } from "../../../lib/types";
+import Breadcrumbs from "../../../components/seo/Breadcrumbs";
+import JsonLd from "../../../components/seo/JsonLd";
+import {
+  getCategoryDetail,
+  getCategoryProducts,
+  getIndexableCollections,
+} from "../../../lib/seo/catalog";
+import { getCategoryIntro } from "../../../lib/seo/collections";
+import {
+  createBreadcrumbs,
+  createCategoryMetadata,
+  getProductImages,
+} from "../../../lib/seo/metadata";
+import {
+  createCollectionPageJsonLd,
+  createItemListJsonLd,
+} from "../../../lib/seo/jsonLd";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  subcategories?: Subcategory[];
+/**
+ * This page is now a server component. It previously fetched the category and
+ * its products in `useEffect`, which meant crawlers received an empty loading
+ * shell and no category page was indexable.
+ */
+// Next.js requires this to be a literal; keep it in step with
+// CATALOG_REVALIDATE in lib/seo/catalog.ts.
+export const revalidate = 600;
+
+/**
+ * Pre-render the categories that exist today; anything added later is rendered
+ * on demand and then cached.
+ */
+export async function generateStaticParams() {
+  const collections = await getIndexableCollections();
+  return collections.map(({ category }) => ({ categorySlug: category.slug }));
 }
 
-interface Subcategory {
-  id: string;
-  name: string;
-  slug: string;
-  _count?: {
-    products: number;
-  };
-  category: {
-    slug: string;
-  };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ categorySlug: string }>;
+}): Promise<Metadata> {
+  const { categorySlug } = await params;
+  const category = await getCategoryDetail(categorySlug);
+
+  if (!category) {
+    return {
+      title: "Category not found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const products = await getCategoryProducts(categorySlug);
+
+  return createCategoryMetadata({
+    name: category.name,
+    path: `/categories/${category.slug}`,
+    description: getCategoryIntro({
+      slug: category.slug,
+      name: category.name,
+      description: category.description,
+    }),
+    productCount: products.length,
+    images: products[0] ? getProductImages(products[0]).slice(0, 1) : undefined,
+  });
 }
 
-export default function CategoryPage({
+export default async function CategoryPage({
   params,
 }: {
   params: Promise<{ categorySlug: string }>;
 }) {
-  const [resolvedParams, setResolvedParams] = useState<{ categorySlug: string } | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { categorySlug } = await params;
+  const category = await getCategoryDetail(categorySlug);
 
-  useEffect(() => {
-    // Resolve the params promise
-    async function resolveParams() {
-      const resolvedParamsValue = await params;
-      setResolvedParams(resolvedParamsValue);
-    }
-
-    resolveParams();
-  }, [params]);
-
-  useEffect(() => {
-    async function fetchData() {
-      if (!resolvedParams) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Fetch category data (which includes subcategories)
-        const categoryRes = await apiFetch(`/categories/${resolvedParams.categorySlug}`);
-        if (!categoryRes.ok) {
-          throw new Error(`Category not found (${categoryRes.status})`);
-        }
-        const categoryData = await categoryRes.json();
-        const categoryInfo = categoryData.category || categoryData;
-
-        setCategory(categoryInfo);
-        setSubcategories(categoryInfo.subcategories || []);
-
-        // Fetch products for this category
-        const productsRes = await apiFetch(`/categories/${resolvedParams.categorySlug}/products`);
-        if (!productsRes.ok) {
-          throw new Error(`Failed to load products (${productsRes.status})`);
-        }
-        const productsData = await productsRes.json();
-        // Handle paginated response
-        if (productsData.data && Array.isArray(productsData.data)) {
-          setProducts(productsData.data);
-        } else if (Array.isArray(productsData)) {
-          setProducts(productsData);
-        } else if (productsData.products && Array.isArray(productsData.products)) {
-          setProducts(productsData.products);
-        } else {
-          setProducts([]);
-        }
-      } catch (err: unknown) {
-        console.error("Error fetching category page data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load category data");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [resolvedParams]);
-  // console.log("Category:", category);
-
-
-  if (loading) {
-    return(
-      <PlantsLoading/>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-red-500 px-4">
-        <div className="text-center max-w-md w-full">
-          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Error</h2>
-          <p className="mb-4 text-sm sm:text-base">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-green-600 text-white px-5 sm:px-6 py-2.5 sm:py-2 rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors text-sm sm:text-base touch-manipulation"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // An unknown category slug is a genuine 404, not a 200 error message.
   if (!category) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-red-500 px-4">
-        <p className="text-sm sm:text-base">Category not found</p>
-      </div>
-    );
+    notFound();
   }
-  // Format subcategories for the SubcategoryCard component
-  const formattedSubcategories = subcategories.map(subcategory => ({
-    ...subcategory,
-    products: subcategory._count?.products || 0,
-    category: {
-      slug: category.slug
-    }
-  }));
+
+  const [products, collections] = await Promise.all([
+    getCategoryProducts(categorySlug),
+    getIndexableCollections(),
+  ]);
+
+  const counts =
+    collections.find((entry) => entry.category.slug === categorySlug)
+      ?.subcategories ?? [];
+  const countsBySubcategoryId = new Map(
+    counts.map((entry) => [entry.subcategory.id, entry.productCount])
+  );
+
+  const subcategories = category.subcategories ?? [];
+  const intro = getCategoryIntro({
+    slug: category.slug,
+    name: category.name,
+    description: category.description,
+  });
+
+  const breadcrumbs = createBreadcrumbs([
+    { name: "Plants", path: "/categories" },
+    { name: category.name, path: `/categories/${category.slug}` },
+  ]);
+
+  // Sibling categories, so every collection page links laterally to the rest.
+  const otherCategories = collections
+    .filter((entry) => entry.category.slug !== categorySlug)
+    .slice(0, 6);
 
   return (
-    <div className="max-w-7xl mx-auto mt-4 sm:mt-6 md:mt-8 px-3 sm:px-4">
-      {/* Header */}
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+      <JsonLd
+        id="category-jsonld"
+        data={[
+          createCollectionPageJsonLd({
+            name: `${category.name} — Growman`,
+            description: intro,
+            path: `/categories/${category.slug}`,
+          }),
+          createItemListJsonLd({
+            name: `${category.name} plants`,
+            path: `/categories/${category.slug}`,
+            items: products.map((product) => ({
+              name: product.name,
+              path: `/product/${product.slug}`,
+            })),
+          }),
+        ]}
+      />
+
       <div className="mb-4 sm:mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-800 mb-1 sm:mb-2">{category.name}</h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Explore our collection of {category.name} plants
-        </p>
+        <Breadcrumbs items={breadcrumbs} className="mb-3 sm:mb-4" />
+
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-800 mb-1 sm:mb-2">
+          {category.name}
+        </h1>
+        <p className="max-w-3xl text-sm sm:text-base text-gray-600">{intro}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
@@ -151,7 +146,9 @@ export default function CategoryPage({
           {/* Subcategories */}
           {subcategories.length > 0 && (
             <section className="mb-8 sm:mb-10 md:mb-12">
-              <h2 className="text-xl sm:text-2xl font-semibold text-green-800 mb-4 sm:mb-6">Browse Subcategories</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-green-800 mb-4 sm:mb-6">
+                Browse {category.name} Subcategories
+              </h2>
               <div
                 className="
                   flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto pb-3
@@ -159,12 +156,20 @@ export default function CategoryPage({
                   -mx-3 sm:-mx-4 px-3 sm:px-4
                 "
               >
-                {formattedSubcategories.map((subcategory) => (
+                {subcategories.map((subcategory) => (
                   <div
                     key={subcategory.id}
                     className="shrink-0 w-[58%] sm:w-[200px] md:w-[220px] snap-start"
                   >
-                    <SubcategoryCard subcategory={subcategory} />
+                    <SubcategoryCard
+                      subcategory={{
+                        id: String(subcategory.id),
+                        name: subcategory.name,
+                        slug: subcategory.slug,
+                        products: countsBySubcategoryId.get(subcategory.id) ?? 0,
+                        category: { slug: category.slug },
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -192,15 +197,35 @@ export default function CategoryPage({
                   <p className="text-sm sm:text-base text-gray-600">
                     {subcategories.length > 0
                       ? "Browse our subcategories to find plants you'll love"
-                      : "Check back later for new additions to our collection"
-                    }
+                      : "Check back later for new additions to our collection"}
                   </p>
                 </div>
               }
             />
           </section>
+
+          {/* Lateral internal links to the other collections */}
+          {otherCategories.length > 0 && (
+            <section className="mt-10 border-t border-emerald-100 pt-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-green-800 mb-3">
+                Other Plant Categories
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {otherCategories.map(({ category: other }) => (
+                  <li key={other.id}>
+                    <Link
+                      href={`/categories/${other.slug}`}
+                      className="inline-block rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+                    >
+                      {other.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

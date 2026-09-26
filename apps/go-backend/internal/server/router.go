@@ -132,6 +132,12 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			}
 			r.Post("/chat", h.Chat)
 		})
+		r.Group(func(r chi.Router) {
+			if h.Redis != nil {
+				r.Use(middlewares.NamedIPRateLimiter(h.Redis, "quotation", 5, 10*time.Minute))
+			}
+			r.Post("/quotations", h.CreateQuotation)
+		})
 		r.Post("/requested-products", h.CreateRequestedProduct)
 		r.Post("/engagement/long-browse", h.ReportLongBrowse)
 

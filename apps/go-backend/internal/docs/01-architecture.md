@@ -7,7 +7,7 @@ apps/go-backend/
 ├── cmd/
 │   ├── server/main.go      # HTTP server entrypoint
 │   └── migrate/main.go     # standalone "run AutoMigrate and exit" binary
-├── internal/
+├── inteernal/
 │   ├── auth/                # JWT issuing/parsing + HTTP auth middleware
 │   ├── cache/                # two-tier (in-process + Redis) cache helper
 │   ├── config/                # env-var configuration loader
@@ -15,7 +15,7 @@ apps/go-backend/
 │   ├── docs/                    # embedded OpenAPI/Swagger/ReDoc + these .md files
 │   ├── handlers/                 # all HTTP handlers (the bulk of business logic)
 │   ├── metrics/                  # Prometheus registration + middleware hook
-│   ├── middlewares/              # security headers, rate limiting, logging, IP
+│   ├── middlewars/              # security headers, rate limiting, logging, IP
 │   ├── models/                   # GORM models (Postgres schema as Go structs)
 │   ├── msg91/                     # MSG91 phone-OTP HTTP client + throttling
 │   ├── phoneutil/                  # Indian phone-number normalization helpers

@@ -3,27 +3,44 @@ import Image from "next/image";
 import Link from "next/link";
 import Footer from "../../components/hompage/footer";
 import StoreLocatorMap from "../../components/about/StoreLocatorMap";
+import Breadcrumbs from "../../components/seo/Breadcrumbs";
+import JsonLd from "../../components/seo/JsonLd";
 import { PLAY_STORE_URL } from "../../lib/appLinks";
+import { createBreadcrumbs, createPageMetadata } from "../../lib/seo/metadata";
+import { createLocalBusinessJsonLd } from "../../lib/seo/jsonLd";
+import { business } from "../../lib/seo/site";
 import {
   FaClock,
   FaEnvelope,
-  FaFacebookF,
   FaInstagram,
   FaMapMarkerAlt,
   FaPhone,
   FaSeedling,
-  FaTwitter,
 } from "react-icons/fa";
 
-export const metadata: Metadata = {
-  title: "About — Growman",
-  description: "Premium plants and gardening for Indian homes. Visit our Hyderabad store.",
-};
+/**
+ * The previous description advertised a "Hyderabad store", which contradicts
+ * the Hyderabad location published on this very page. It now
+ * matches the real business details.
+ */
+export const metadata: Metadata = createPageMetadata({
+  title: "About Growman — Plant Nursery in Hyderabad",
+  description:
+    "Growman sells nursery-grown indoor, outdoor and ornamental plants across India, backed by Shiridi Sai Nursery in Hyderabad. Contact details and opening hours.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#F9FAFB]">
+      {/* Local business details, all of which are published on this page. */}
+      <JsonLd id="about-localbusiness" data={createLocalBusinessJsonLd()} />
+
       <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+        <Breadcrumbs
+          items={createBreadcrumbs([{ name: "About", path: "/about" }])}
+          className="mb-6"
+        />
         <div className="overflow-hidden rounded-3xl bg-linear-to-br from-green-50 to-green-100 px-6 py-10 text-center sm:px-8">
           <Image
             src="/growman.png"
@@ -48,7 +65,7 @@ export default function AboutPage() {
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-gray-600">
             Premium plants and gardening solutions for Indian homes. We ship healthy plants,
-            pots, and seeds across India — backed by Shiridi Sai Nursery in Kadiam, Andhra Pradesh.
+            pots, and seeds across India — backed by Shiridi Sai Nursery in Hyderabad.
           </p>
           <p className="mt-3 flex items-center gap-2 text-sm text-emerald-800">
             <FaSeedling className="h-4 w-4 shrink-0" />
@@ -65,7 +82,7 @@ export default function AboutPage() {
           <ul className="mt-4 space-y-3 text-sm text-gray-600">
             <li className="flex items-start gap-2">
               <FaMapMarkerAlt className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              Kadiam, Andhra Pradesh
+              Hyderabad
             </li>
             <li className="flex items-center gap-2">
               <FaEnvelope className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -75,8 +92,13 @@ export default function AboutPage() {
             </li>
             <li className="flex items-center gap-2">
               <FaPhone className="h-4 w-4 shrink-0 text-emerald-600" />
-              <a href="tel:+919553570568" className="hover:text-emerald-800">
-                +91 95535 70568
+              {/* The number is dialled by the link rather than printed, so it
+                  is not sitting in the page for scrapers to pick up. */}
+              <a
+                href={`tel:${business.telephone}`}
+                className="font-medium text-emerald-700 hover:text-emerald-800"
+              >
+                Contact us
               </a>
             </li>
             <li className="flex items-center gap-2">
@@ -86,32 +108,19 @@ export default function AboutPage() {
           </ul>
 
           <div className="mt-5 flex gap-3">
+            {/* Instagram is the only confirmed profile. The Facebook icon
+                previously linked to Instagram and the Twitter icon to a
+                malformed handle, so both are removed rather than pointing
+                users at broken profiles.
+                TODO: restore once the real profile URLs are known. */}
             <a
               href="https://www.instagram.com/growman.live/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
-              aria-label="Instagram"
+              aria-label="Growman on Instagram"
             >
               <FaInstagram className="h-4 w-4" />
-            </a>
-            <a
-              href="https://www.twitter.com/growman.live/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
-              aria-label="Twitter"
-            >
-              <FaTwitter className="h-4 w-4" />
-            </a>
-            <a
-              href="https://www.instagram.com/growman.live/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
-              aria-label="Facebook"
-            >
-              <FaFacebookF className="h-4 w-4" />
             </a>
           </div>
         </section>

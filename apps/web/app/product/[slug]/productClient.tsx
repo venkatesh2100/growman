@@ -39,11 +39,13 @@ export default function ProductPageClient({
     return [];
   }, [selectedSize?.images, product.imageUrl]);
 
+  // Null when the product has no reviews, so the UI never shows a rating the
+  // product has not actually earned.
   const avgRating =
     product.reviews.length > 0
       ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
         product.reviews.length
-      : 4;
+      : null;
 
   const discountPercent =
     product.mrp && selectedSize && product.mrp > selectedSize.price
@@ -93,36 +95,52 @@ export default function ProductPageClient({
   }, [productSlug]);
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 bg-gradient-to-r from-green-50 to-emerald-50">
-      {/* Breadcrumbs - Mobile optimized */}
-      <div className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2 sm:gap-y-2">
-        <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
-        <span className="text-gray-400">/</span>
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 bg-gradient-to-r from-green-50 to-emerald-50">
+      {/* Breadcrumbs — the trail here must stay in step with the
+          BreadcrumbList JSON-LD emitted by the server page. */}
+      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
+        <ol className="text-xs sm:text-sm text-gray-500 flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2 sm:gap-y-2">
+          <li>
+            <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
+          </li>
+          <li aria-hidden="true" className="text-gray-400">/</li>
 
-        <Link
-          href={`/categories/${product.category.slug}`}
-          className="hover:text-green-600 transition-colors"
-        >
-          {product.category.name}
-        </Link>
-        <span className="text-gray-400">/</span>
+          <li>
+            <Link href="/categories" className="hover:text-green-600 transition-colors">
+              Plants
+            </Link>
+          </li>
+          <li aria-hidden="true" className="text-gray-400">/</li>
 
-        {product.subcategory && (
-          <>
+          <li>
             <Link
-              href={`/categories/${product.category.slug}/${product.subcategory.slug}`}
+              href={`/categories/${product.category.slug}`}
               className="hover:text-green-600 transition-colors"
             >
-              {product.subcategory.name}
+              {product.category.name}
             </Link>
-            <span className="text-gray-400">/</span>
-          </>
-        )}
+          </li>
+          <li aria-hidden="true" className="text-gray-400">/</li>
 
-        <span className="text-gray-900 font-medium truncate max-w-[120px] sm:max-w-[250px]">
-          {product.name}
-        </span>
-      </div>
+          {product.subcategory && (
+            <>
+              <li>
+                <Link
+                  href={`/categories/${product.category.slug}/${product.subcategory.slug}`}
+                  className="hover:text-green-600 transition-colors"
+                >
+                  {product.subcategory.name}
+                </Link>
+              </li>
+              <li aria-hidden="true" className="text-gray-400">/</li>
+            </>
+          )}
+
+          <li aria-current="page" className="text-gray-900 font-medium truncate max-w-[120px] sm:max-w-[250px]">
+            {product.name}
+          </li>
+        </ol>
+      </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
         {/* Image Gallery - Mobile optimized */}
@@ -163,25 +181,33 @@ export default function ProductPageClient({
 
             {/* Ratings + Stock - Mobile compact */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-0 mb-3 sm:mb-4">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    className={
-                      i < Math.floor(avgRating)
-                        ? "text-green-500 fill-green-400"
-                        : "text-gray-300"
-                    }
-                  />
-                ))}
-              </div>
+              {avgRating !== null && (
+                <>
+                  <div
+                    className="flex"
+                    aria-label={`Rated ${avgRating.toFixed(1)} out of 5`}
+                  >
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={16}
+                        className={
+                          i < Math.floor(avgRating)
+                            ? "text-green-500 fill-green-400"
+                            : "text-gray-300"
+                        }
+                      />
+                    ))}
+                  </div>
 
-              <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
-                {product.reviews.length || "" } reviews
-              </span>
+                  <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
+                    {product.reviews.length}{" "}
+                    {product.reviews.length === 1 ? "review" : "reviews"}
+                  </span>
 
-              <span className="hidden sm:inline mx-2 text-gray-300">|</span>
+                  <span className="hidden sm:inline mx-2 text-gray-300">|</span>
+                </>
+              )}
 
               <span
                 className={`text-xs sm:text-sm font-medium ${
@@ -205,8 +231,10 @@ export default function ProductPageClient({
             {product.brand && (
               <div className="mb-3 sm:mb-4">
                 <span className="text-xs sm:text-sm text-gray-600">Brand: </span>
+                {/* There is no /brand route; link to the shop filtered by
+                    brand instead of emitting a 404. */}
                 <Link
-                  href={`/brand/${product.brand.slug}`}
+                  href={`/shop?brand=${product.brand.slug}`}
                   className="text-xs sm:text-sm font-medium text-green-700 hover:underline"
                 >
                   {product.brand.name}
@@ -364,6 +392,6 @@ export default function ProductPageClient({
         <RelatedProducts products={relatedProducts} />
         </div>
       )}
-    </div>
+    </main>
   );
 }

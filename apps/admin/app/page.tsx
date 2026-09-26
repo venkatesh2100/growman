@@ -37,7 +37,7 @@ type Paginated<T> = {
     page?: number;
     pageSize?: number;
     totalPages?: number;
-    hasNext?: boolean;
+  hasNext?: boolean;
     hasPrev?: boolean;
   };
 };

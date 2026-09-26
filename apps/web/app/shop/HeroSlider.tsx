@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function HeroSlider() {
@@ -53,21 +54,29 @@ export default function HeroSlider() {
         className="flex h-full transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {slides.map((slide) => (
+        {slides.map((slide, index) => (
           <div key={slide.id} className="min-w-full h-full relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            {/* Optimised via next/image: this 600px-tall banner is the LCP
+                element on /shop. Only the first slide is eager — the rest are
+                off-screen. */}
+            <Image
               src={slide.image}
               alt={slide.title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              priority={index === 0}
+              loading={index === 0 ? undefined : "lazy"}
+              className="object-cover"
             />
 
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/20 flex items-center">
               <div className="max-w-4xl px-6 md:px-16 text-white">
-                <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-4">
+                {/* Decorative carousel copy, not document structure: it sits
+                    above the page's h1, so it must not be a heading. */}
+                <p className="text-4xl md:text-6xl font-bold leading-tight mb-4">
                   {slide.title}
-                </h2>
+                </p>
                 <p className="text-lg md:text-2xl text-gray-200 mb-8 max-w-2xl">
                   {slide.subtitle}
                 </p>

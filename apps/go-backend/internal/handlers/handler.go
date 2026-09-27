@@ -12,6 +12,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/config"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services/storage"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/shiprocket"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,9 @@ type Handler struct {
 	Redis        *redis.Client
 	Cache        *cache.Helper
 	ImageService *storage.ImageService
+	// Shiprocket is nil when no credentials are configured; delivery
+	// quoting falls back to the static fee bands.
+	Shiprocket *shiprocket.Client
 }
 
 // New constructs a handler bundle.
@@ -32,6 +36,7 @@ func New(db *gorm.DB, cfg config.Config, rdb *redis.Client, imageService *storag
 		Redis:        rdb,
 		Cache:        cache.NewHelper(rdb),
 		ImageService: imageService,
+		Shiprocket:   shiprocket.New(cfg.ShiprocketEmail, cfg.ShiprocketPassword, cfg.ShiprocketToken),
 	}
 }
 

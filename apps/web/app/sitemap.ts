@@ -22,6 +22,7 @@ const STATIC_PATHS: Array<{
   { path: "/shop", priority: 0.9, changeFrequency: "daily" },
   { path: "/categories", priority: 0.8, changeFrequency: "weekly" },
   { path: "/bulk", priority: 0.7, changeFrequency: "weekly" },
+  { path: "/gifting", priority: 0.7, changeFrequency: "monthly" },
   { path: "/blog", priority: 0.6, changeFrequency: "weekly" },
   { path: "/about", priority: 0.5, changeFrequency: "yearly" },
   { path: "/help-center", priority: 0.4, changeFrequency: "yearly" },

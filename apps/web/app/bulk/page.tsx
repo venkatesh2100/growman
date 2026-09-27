@@ -60,6 +60,24 @@ export default async function BulkOrderPage() {
             Hyderabad nursery confirms bulk pricing, availability and delivery
             by phone.
           </p>
+
+          <ol className="mt-5 grid gap-2 sm:grid-cols-3 sm:gap-3">
+            {[
+              "Pick varieties and set quantities",
+              "Send the quotation request",
+              "We call you with bulk pricing",
+            ].map((step, index) => (
+              <li
+                key={step}
+                className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-white px-3 py-2.5 text-sm text-gray-700"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">
+                  {index + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
         </header>
 
         <BulkOrderList items={items} phone={business.telephone} />

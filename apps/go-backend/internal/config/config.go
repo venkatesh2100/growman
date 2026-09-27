@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/fulfillment"
 )
 
 // Config holds runtime configuration for the API server.
@@ -60,6 +61,54 @@ type Config struct {
 	MSG91TokenAuth  string
 	// Truecaller OAuth (Android client id from developer portal)
 	TruecallerClientID string
+	// Fulfillment policy overrides (see internal/fulfillment). Zero values
+	// mean "keep the built-in default", except FreeDeliveryMinSubtotal
+	// where zero legitimately means "no free-delivery threshold".
+	StoreLatitude   float64
+	StoreLongitude  float64
+	StorePincode    string // pickup pincode sent to the courier API
+	CourierProvider string
+	// RetailMaxZone caps self-serve delivery: store_local, near, mid or
+	// far. Past it checkout offers only a store visit or a wholesale
+	// quote. Empty keeps the default (mid, ~30 km).
+	RetailMaxZone string
+	// Shiprocket has no static API key: these are the credentials of a
+	// dedicated API user, exchanged for a 10-day JWT. ShiprocketToken can
+	// be supplied instead to avoid storing a password, at the cost of
+	// manual rotation every 10 days.
+	ShiprocketEmail         string
+	ShiprocketPassword      string
+	ShiprocketToken         string
+	FreeDeliveryMinSubtotal float64
+	OwnVehicleMinSubtotal   float64
+	BulkMinUnits            int
+	BulkMinSubtotal         float64
+}
+
+// FulfillmentPolicy returns the delivery rules with any configured
+// overrides applied on top of the defaults.
+func (c Config) FulfillmentPolicy() fulfillment.Policy {
+	p := fulfillment.DefaultPolicy()
+	if c.StoreLatitude != 0 && c.StoreLongitude != 0 {
+		p.StoreLat, p.StoreLng = c.StoreLatitude, c.StoreLongitude
+	}
+	if c.CourierProvider != "" {
+		p.CourierProvider = c.CourierProvider
+	}
+	if zone, ok := fulfillment.ParseZone(c.RetailMaxZone); ok {
+		p.RetailMaxZone = zone
+	}
+	p.FreeDeliveryMinSubtotal = c.FreeDeliveryMinSubtotal
+	if c.OwnVehicleMinSubtotal > 0 {
+		p.OwnVehicleMinSubtotal = c.OwnVehicleMinSubtotal
+	}
+	if c.BulkMinUnits > 0 {
+		p.BulkMinUnits = c.BulkMinUnits
+	}
+	if c.BulkMinSubtotal > 0 {
+		p.BulkMinSubtotal = c.BulkMinSubtotal
+	}
+	return p
 }
 
 // Load reads environment variables (optionally from a .env file) and applies sane defaults.
@@ -104,9 +153,23 @@ func Load() (Config, error) {
 		MSG91WidgetID:       os.Getenv("MSG91_WIDGET_ID"),
 		MSG91TokenAuth:      os.Getenv("MSG91_TOKEN_AUTH"),
 		TruecallerClientID:  firstNonEmpty(os.Getenv("TRUECALLER_CLIENT_ID"), os.Getenv("TRUECALLER_ANDROID_CLIENT_ID")),
-		DBMaxOpenConns:      getenvInt("DB_MAX_OPEN_CONNS", 40),
-		DBMaxIdleConns:      getenvInt("DB_MAX_IDLE_CONNS", 10),
-		RedisPoolSize:       getenvInt("REDIS_POOL_SIZE", 20),
+		StoreLatitude:       getenvFloat("STORE_LATITUDE", 0),
+		StoreLongitude:      getenvFloat("STORE_LONGITUDE", 0),
+		StorePincode:        strings.TrimSpace(os.Getenv("STORE_PINCODE")),
+		CourierProvider:     getenv("COURIER_PROVIDER", "Shiprocket"),
+		RetailMaxZone:       os.Getenv("RETAIL_MAX_ZONE"),
+		ShiprocketEmail:     os.Getenv("SHIPROCKET_EMAIL"),
+		ShiprocketPassword:  os.Getenv("SHIPROCKET_PASSWORD"),
+		ShiprocketToken:     strings.TrimSpace(os.Getenv("SHIPROCKET_TOKEN")),
+		// Off by default: charge the real cost until there is enough order
+		// data to know what a waiver costs per order.
+		FreeDeliveryMinSubtotal: getenvFloat("FREE_DELIVERY_MIN_SUBTOTAL", 0),
+		OwnVehicleMinSubtotal:   getenvFloat("OWN_VEHICLE_MIN_SUBTOTAL", 0),
+		BulkMinUnits:            getenvInt("BULK_MIN_UNITS", 0),
+		BulkMinSubtotal:         getenvFloat("BULK_MIN_SUBTOTAL", 0),
+		DBMaxOpenConns:          getenvInt("DB_MAX_OPEN_CONNS", 40),
+		DBMaxIdleConns:          getenvInt("DB_MAX_IDLE_CONNS", 10),
+		RedisPoolSize:           getenvInt("REDIS_POOL_SIZE", 20),
 	}
 
 	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
@@ -156,6 +219,18 @@ func getenvInt(key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+func getenvFloat(key string, fallback float64) float64 {
+	val := os.Getenv(key)
+	if val == "" {
+		return fallback
+	}
+	f, err := strconv.ParseFloat(val, 64)
+	if err != nil || f < 0 {
+		return fallback
+	}
+	return f
 }
 
 func isProd(env string) bool {

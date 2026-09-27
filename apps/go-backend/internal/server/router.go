@@ -84,6 +84,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			if h.Redis != nil {
 				r.Use(middlewares.NamedIPRateLimiter(h.Redis, "checkout", 20, time.Minute))
 			}
+			r.Post("/checkout/quote", h.QuoteFulfillment)
 			r.Post("/checkout/send-email-otp", h.SendEmailOTP)
 			r.Post("/checkout/verify-email-otp", h.VerifyEmailOTP)
 			r.Post("/checkout/create-order", h.CreateCheckoutOrder)

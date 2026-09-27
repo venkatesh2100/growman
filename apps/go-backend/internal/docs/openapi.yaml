@@ -1023,10 +1023,49 @@ paths:
         "400":
           $ref: "#/components/responses/Error"
 
+  /api/v1/checkout/quote:
+    post:
+      tags: [Checkout]
+      summary: Quote delivery options for a cart
+      description: >
+        Returns which fulfillment channels are available for a cart and
+        destination, what each costs, and which one to present first.
+        Prices and plant size classes are read from the database, so the
+        fee cannot be influenced by the request. Read-only; safe to call on
+        every cart or address change.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FulfillmentQuoteRequest"
+      responses:
+        "200":
+          description: Available channels and fees
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote:
+                    $ref: "#/components/schemas/FulfillmentQuote"
+                  courierProvider:
+                    type: string
+                    example: Shiprocket
+        "400":
+          $ref: "#/components/responses/Error"
+
   /api/v1/checkout/create-order:
     post:
       tags: [Checkout]
       summary: Create Razorpay checkout order
+      description: >
+        When fulfillmentChannel is supplied, the delivery quote is re-run
+        server-side and the order is refused unless that channel is still
+        available and amount equals subtotal plus the server's delivery fee
+        (within 1 rupee). Omitting fulfillmentChannel accepts the amount
+        as-is, for clients predating the fulfillment rules.
       security: []
       requestBody:
         required: true
@@ -1043,6 +1082,26 @@ paths:
                 $ref: "#/components/schemas/RazorpayCreateResponse"
         "400":
           $ref: "#/components/responses/Error"
+        "409":
+          description: >
+            The chosen channel is no longer available
+            (`channel_unavailable`) or the amount disagrees with the
+            server's (`amount_mismatch`). The current quote is returned so
+            the client can re-present the options.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum: [channel_unavailable, amount_mismatch]
+                  reason:
+                    type: string
+                  expectedAmount:
+                    type: number
+                  quote:
+                    $ref: "#/components/schemas/FulfillmentQuote"
 
   /api/v1/razorpay/order:
     post:
@@ -1957,6 +2016,103 @@ components:
           type: integer
         price:
           type: number
+    Destination:
+      type: object
+      description: >
+        Where the order is going. Coordinates are preferred; the pincode is
+        used when the customer declines geolocation. A half-supplied or
+        out-of-range coordinate pair is ignored in favour of the pincode.
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        pincode:
+          type: string
+    FulfillmentQuoteRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        destination:
+          $ref: "#/components/schemas/Destination"
+    FulfillmentOption:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [store_pickup, courier, own_vehicle, bulk_quote]
+        available:
+          type: boolean
+        label:
+          type: string
+          description: Customer-facing CTA, e.g. "Visit Store"
+        fee:
+          type: number
+        feeWaived:
+          type: boolean
+          description: >
+            True when a fee was zeroed by the free-delivery threshold, as
+            opposed to no fee applying. Distinguishes an absorbed cost from
+            a genuinely free channel when measuring the delivery subsidy.
+        reason:
+          type: string
+          description: >
+            Why the option is unavailable. One of outside_delivery_radius,
+            courier_not_serviceable, item_too_bulky, plant_too_large,
+            too_many_plants, below_minimum_order, bulk_order; or
+            quote_required on the bulk option when a quote is mandatory.
+            store_pickup is never unavailable.
+    FulfillmentQuote:
+      type: object
+      properties:
+        zone:
+          type: string
+          enum: [store_local, near, mid, far, outside, unknown]
+        distanceKm:
+          type: number
+          nullable: true
+        distanceSource:
+          type: string
+          enum: [coordinates, pincode, pincode_prefix, none]
+          description: >
+            How the distance was established. pincode_prefix means only the
+            Hyderabad-city series was recognised, placing the address in the
+            metro but not at a locality.
+        subtotal:
+          type: number
+          description: Goods value from database prices, excluding delivery
+        units:
+          type: integer
+        maxSizeClass:
+          type: string
+          enum: [small, medium, large, xl]
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/FulfillmentOption"
+        recommended:
+          type: string
+          enum: [store_pickup, courier, own_vehicle, bulk_quote]
+        storeVisitSuggested:
+          type: boolean
+        bulkRequired:
+          type: boolean
+          description: Cart is too large or valuable for self-serve checkout
+        amountForFreeDelivery:
+          type: number
+          description: >
+            Extra spend needed to cross the free-delivery threshold. Zero
+            when the waiver is disabled, met, or not offered in this zone.
+        estimatedDeliveryDays:
+          type: integer
+          description: >
+            The courier's own estimate, when a live serviceability lookup
+            returned one. Omitted when unknown. Growman's cost and the
+            carrier that quoted it are deliberately not exposed here.
     CreateCheckoutOrderRequest:
       type: object
       required: [amount, items, customer]
@@ -1966,6 +2122,16 @@ components:
         currency:
           type: string
           example: INR
+        fulfillmentChannel:
+          type: string
+          enum: [store_pickup, courier, own_vehicle]
+          description: >
+            The option the customer picked from /checkout/quote. bulk_quote
+            is rejected here — bulk orders are priced by sales.
+        latitude:
+          type: number
+        longitude:
+          type: number
         items:
           type: array
           items:
@@ -2027,6 +2193,12 @@ components:
         orderId:
           type: integer
           description: Local database order id
+        subtotal:
+          type: number
+        deliveryFee:
+          type: number
+        fulfillmentChannel:
+          type: string
     ChatRequest:
       type: object
       required: [message]

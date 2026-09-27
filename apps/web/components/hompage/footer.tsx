@@ -9,6 +9,7 @@ import {
   FaEnvelope,
   FaPhone,
   FaClock,
+  FaGift,
   FaSeedling,
   FaShoppingBag,
   FaHeadset,
@@ -96,6 +97,16 @@ export default async function Footer() {
                 >
                   <GiFlowerPot className="w-3 h-3 group-hover:scale-110 transition-transform" />
                   <span>All Categories</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/gifting"
+                  prefetch={false}
+                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+                >
+                  <FaGift className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                  <span>Gifting</span>
                 </Link>
               </li>
             </ul>
@@ -192,12 +203,14 @@ export default async function Footer() {
               <li className="flex items-center gap-2">
                 <FaPhone className="w-3 h-3 text-emerald-400" />
                 {/* The number is dialled by the link rather than printed, so it
-                    is not sitting in the page for scrapers to pick up. */}
+                    is not sitting in the page for scrapers to pick up. "Call us"
+                    rather than "Contact us" because the Help column already
+                    links "Contact Us" to the About page. */}
                 <a
                   href={`tel:${business.telephone}`}
                   className="hover:text-white transition-colors"
                 >
-                  Contact us
+                  Call us
                 </a>
               </li>
               <li className="flex items-center gap-2">

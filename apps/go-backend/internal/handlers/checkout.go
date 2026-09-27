@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/fulfillment"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
@@ -120,6 +121,23 @@ type CreateCheckoutOrderRequest struct {
 	Currency string               `json:"currency"`
 	Items    []OrderItemRequest   `json:"items"`
 	Customer CustomerCheckoutInfo `json:"customer"`
+	// FulfillmentChannel is the option the customer picked from
+	// /checkout/quote. When set, the server re-runs the quote and refuses
+	// the order unless that channel is available and Amount matches the
+	// authoritative subtotal plus delivery fee. When empty, the order is
+	// accepted as-is for clients predating the fulfillment rules.
+	FulfillmentChannel string   `json:"fulfillmentChannel"`
+	Latitude           *float64 `json:"latitude"`
+	Longitude          *float64 `json:"longitude"`
+}
+
+// payableChannels are the fulfillment channels a customer can actually pay
+// for at checkout. A bulk quote is sales-assisted: it has no price yet, so
+// it cannot become a Razorpay order here.
+var payableChannels = map[fulfillment.Channel]bool{
+	fulfillment.ChannelStorePickup: true,
+	fulfillment.ChannelCourier:     true,
+	fulfillment.ChannelOwnVehicle:  true,
 }
 
 // CustomerCheckoutInfo is the structured shipping-address shape used by
@@ -180,6 +198,11 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	delivery, ok := h.resolveOrderFulfillment(w, r, &req)
+	if !ok {
+		return
+	}
+
 	razorpayOrder, err := h.createRazorpayOrder(int(req.Amount*100), req.Currency)
 	if err != nil {
 		log.Printf("[RAZORPAY] create order: %v", err)
@@ -201,6 +224,19 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		State:           req.Customer.State,
 		Pincode:         req.Customer.Pincode,
 		Items:           items,
+
+		FulfillmentChannel: delivery.Channel,
+		FulfillmentZone:    delivery.Zone,
+		Subtotal:           delivery.Subtotal,
+		DeliveryFee:        delivery.Fee,
+		DeliveryFeeWaived:  delivery.FeeWaived,
+		DistanceKm:         delivery.DistanceKm,
+		DistanceSource:     delivery.DistanceSource,
+		Latitude:           req.Latitude,
+		Longitude:          req.Longitude,
+		CourierProvider:    delivery.CourierProvider,
+		CourierService:     delivery.CourierService,
+		CourierCost:        delivery.CourierCost,
 	}
 	if err := h.DB.Create(&order).Error; err != nil {
 		log.Printf("[DB] create order: %v", err)
@@ -209,11 +245,14 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpjson.JSON(w, http.StatusOK, map[string]any{
-		"id":       razorpayOrder.ID,
-		"amount":   razorpayOrder.Amount,
-		"currency": razorpayOrder.Currency,
-		"status":   razorpayOrder.Status,
-		"orderId":  order.ID,
+		"id":                 razorpayOrder.ID,
+		"amount":             razorpayOrder.Amount,
+		"currency":           razorpayOrder.Currency,
+		"status":             razorpayOrder.Status,
+		"orderId":            order.ID,
+		"subtotal":           order.Subtotal,
+		"deliveryFee":        order.DeliveryFee,
+		"fulfillmentChannel": order.FulfillmentChannel,
 	})
 }
 

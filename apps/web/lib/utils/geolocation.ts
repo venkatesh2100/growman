@@ -10,48 +10,78 @@ export interface LocationData {
   longitude?: number;
 }
 
+function getPosition(options: PositionOptions): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) =>
+    navigator.geolocation.getCurrentPosition(resolve, reject, options)
+  );
+}
+
 /**
- * Get user's current location using browser geolocation API
+ * Browser messages here are raw plumbing ("Position acquisition timed out,
+ * NetworkError when attempting to fetch resource") that tell a shopper
+ * nothing. Every case ends with the same advice, because typing a pincode
+ * is all checkout actually needs.
+ */
+function positionErrorMessage(error: unknown): string {
+  const code = (error as { code?: number } | null)?.code;
+  if (code === 1) {
+    return "Location is blocked for this site. Allow it in your browser, or just type your pincode.";
+  }
+  if (code === 2) {
+    return "Your browser couldn't work out where you are. Please type your pincode.";
+  }
+  if (code === 3) return "Locating took too long. Please type your pincode.";
+  return "Could not read your location. Please type your pincode.";
+}
+
+function permissionDenied(error: unknown): boolean {
+  return (error as { code?: number } | null)?.code === 1;
+}
+
+/**
+ * Get the shopper's current location, falling back to a coarse fix.
+ *
+ * The high-accuracy pass asks for GPS and refuses cached fixes, which on a
+ * desktop browser with no GPS means waiting on a network lookup that can
+ * simply fail. The second pass accepts a network-level fix up to ten
+ * minutes old — plenty for measuring distance to the store in kilometres.
  */
 export async function getCurrentLocation(): Promise<LocationData> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by your browser"));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        try {
-          // Use reverse geocoding API to get address
-          const addressData = await reverseGeocode(latitude, longitude);
-          // console.log("addressData", addressData);
-          resolve({
-            ...addressData,
-            latitude,
-            longitude,
-          });
-        } catch {
-          // If reverse geocoding fails, return just coordinates
-          resolve({
-            latitude,
-            longitude,
-            country: "India",
-          });
-        }
-      },
-      (error) => {
-        reject(new Error(`Geolocation error: ${error.message}`));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+  if (!navigator.geolocation) {
+    throw new Error(
+      "Your browser can't share location. Please type your pincode."
     );
-  });
+  }
+
+  let position: GeolocationPosition;
+  try {
+    position = await getPosition({
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0,
+    });
+  } catch (first) {
+    if (permissionDenied(first)) throw new Error(positionErrorMessage(first));
+    try {
+      position = await getPosition({
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 600000,
+      });
+    } catch (second) {
+      throw new Error(positionErrorMessage(second));
+    }
+  }
+
+  const { latitude, longitude } = position.coords;
+  try {
+    const addressData = await reverseGeocode(latitude, longitude);
+    return { ...addressData, latitude, longitude };
+  } catch {
+    // Coordinates alone are enough to price delivery, so a blocked or slow
+    // geocoder costs the shopper a filled-in address, not the quote.
+    return { latitude, longitude, country: "India" };
+  }
 }
 
 /**
@@ -65,13 +95,12 @@ async function reverseGeocode(
   try {
     // Using Nominatim (OpenStreetMap) - free but has rate limits
     // Add zoom parameter for better address details
+    // No User-Agent header: browsers forbid setting it, and sending it here
+    // only risks tripping a CORS preflight that Nominatim will not answer.
+    // The abort keeps a slow or blocked geocoder from stalling checkout.
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=en&zoom=18`,
-      {
-        headers: {
-          "User-Agent": "Growman App",
-        },
-      }
+      { signal: AbortSignal.timeout(6000) }
     );
 
     if (!response.ok) {

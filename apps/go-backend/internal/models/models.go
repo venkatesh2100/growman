@@ -206,39 +206,49 @@ type Brand struct {
 
 type Product struct {
 	Base
-	Name           string        `json:"name"`
-	Slug           string        `gorm:"uniqueIndex" json:"slug"`
-	Description    string        `json:"description"`
-	ShortDesc      string        `json:"shortDescription"`
-	FullDesc       string        `json:"fullDescription"`
-	Specifications string        `json:"specifications"`
-	TaxInfo        string        `json:"taxInfo"`
-	Price          float64       `json:"price"` // price in currency units
-	MRP            float64       `json:"mrp"`
-	Currency       string        `json:"currency"`
-	ImageKey       string        `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
-	ImageURL       string        `gorm:"-" json:"imageUrl"`                // Resolved URL (not stored in DB, computed from ImageKey)
-	Status         string        `json:"status"`
-	Featured       bool          `gorm:"index:idx_products_featured" json:"featured"`
-	Tags           StringArray   `gorm:"type:text[]" json:"tags"`
-	Stock          int           `json:"stock"`
-	CategoryID     uint          `gorm:"index:idx_products_category" json:"categoryId"`
-	Category       Category      `json:"category"`
-	SubcategoryID  *uint         `gorm:"index:idx_products_subcategory" json:"subcategoryId"`
-	Subcategory    *Subcategory  `json:"subcategory"`
-	BrandID        *uint         `json:"brandId"`
-	Brand          *Brand        `json:"brand"`
-	Sizes          []ProductSize `json:"sizes"`
-	Attributes     []Attribute   `json:"attributes"`
-	Reviews        []Review      `json:"reviews"`
+	Name           string      `json:"name"`
+	Slug           string      `gorm:"uniqueIndex" json:"slug"`
+	Description    string      `json:"description"`
+	ShortDesc      string      `json:"shortDescription"`
+	FullDesc       string      `json:"fullDescription"`
+	Specifications string      `json:"specifications"`
+	TaxInfo        string      `json:"taxInfo"`
+	Price          float64     `json:"price"` // price in currency units
+	MRP            float64     `json:"mrp"`
+	Currency       string      `json:"currency"`
+	ImageKey       string      `gorm:"column:image_key" json:"imageKey"` // Storage-agnostic image key (e.g., "products/130239.jpg")
+	ImageURL       string      `gorm:"-" json:"imageUrl"`                // Resolved URL (not stored in DB, computed from ImageKey)
+	Status         string      `json:"status"`
+	Featured       bool        `gorm:"index:idx_products_featured" json:"featured"`
+	Tags           StringArray `gorm:"type:text[]" json:"tags"`
+	Stock          int         `json:"stock"`
+	// SizeClass and Bulky drive delivery routing (small/medium go by
+	// courier, large needs the Growman vehicle, xl is quote-only). These
+	// are the product's default; a ProductSize may override them.
+	SizeClass     string        `gorm:"default:'small'" json:"sizeClass"`
+	Bulky         bool          `gorm:"default:false" json:"bulky"`
+	CategoryID    uint          `gorm:"index:idx_products_category" json:"categoryId"`
+	Category      Category      `json:"category"`
+	SubcategoryID *uint         `gorm:"index:idx_products_subcategory" json:"subcategoryId"`
+	Subcategory   *Subcategory  `json:"subcategory"`
+	BrandID       *uint         `json:"brandId"`
+	Brand         *Brand        `json:"brand"`
+	Sizes         []ProductSize `json:"sizes"`
+	Attributes    []Attribute   `json:"attributes"`
+	Reviews       []Review      `json:"reviews"`
 }
 
 type ProductSize struct {
 	Base
-	Label     string      `json:"label"`
-	Price     float64     `json:"price"`
-	Stock     int         `json:"stock"`
-	ProductID uint        `json:"productId"`
+	Label     string  `json:"label"`
+	Price     float64 `json:"price"`
+	Stock     int     `json:"stock"`
+	ProductID uint    `json:"productId"`
+	// Delivery-routing overrides. Nil means "inherit from the product" —
+	// a 14-inch pot of the same plant can need the van while the 6-inch
+	// ships by courier.
+	SizeClass *string     `json:"sizeClass,omitempty"`
+	Bulky     *bool       `json:"bulky,omitempty"`
 	ImageKeys StringArray `gorm:"type:text[];column:image_keys" json:"imageKeys"` // Storage-agnostic image keys
 	Images    StringArray `gorm:"-" json:"images"`                                // Resolved URLs (not stored in DB, computed from ImageKeys)
 }
@@ -295,9 +305,38 @@ type Order struct {
 	City        string `json:"city,omitempty"`
 	State       string `json:"state,omitempty"`
 	Pincode     string `json:"pincode,omitempty"`
+	// Fulfillment and delivery economics. Amount above is what the
+	// customer paid in total; Subtotal and DeliveryFee break that down so
+	// margin per order can be measured once CourierCost is filled in by
+	// ops. See internal/fulfillment for how these are decided.
+	FulfillmentChannel string   `gorm:"index:idx_orders_channel" json:"fulfillmentChannel,omitempty"` // store_pickup, courier, own_vehicle, bulk_quote
+	FulfillmentZone    string   `json:"fulfillmentZone,omitempty"`                                    // store_local, near, mid, far, outside, unknown
+	Subtotal           float64  `json:"subtotal"`
+	DeliveryFee        float64  `json:"deliveryFee"`
+	DeliveryFeeWaived  bool     `gorm:"default:false" json:"deliveryFeeWaived"`
+	DistanceKm         *float64 `json:"distanceKm,omitempty"`
+	DistanceSource     string   `json:"distanceSource,omitempty"` // coordinates, pincode, none
+	Latitude           *float64 `json:"latitude,omitempty"`
+	Longitude          *float64 `json:"longitude,omitempty"`
+	CourierProvider    string   `json:"courierProvider,omitempty"` // aggregator, e.g. Shiprocket
+	CourierService     string   `json:"courierService,omitempty"`  // carrier it picked, e.g. Delhivery
+	// CourierCost is what the courier charges Growman, captured from the
+	// aggregator's rate at checkout. Nil when no live rate was available;
+	// the gap between it and DeliveryFee is the delivery subsidy.
+	CourierCost *float64 `json:"courierCost,omitempty"`
 	// Legacy fields (for backward compatibility)
 	ShippingAddress string `json:"shippingAddress,omitempty"`
 	BillingAddress  string `json:"billingAddress,omitempty"`
+}
+
+// DeliverySubsidy is what Growman absorbed on this order's delivery:
+// positive when the courier cost more than the customer was charged.
+// Returns 0 until the actual courier cost is recorded.
+func (o Order) DeliverySubsidy() float64 {
+	if o.CourierCost == nil {
+		return 0
+	}
+	return *o.CourierCost - o.DeliveryFee
 }
 
 // Payment represents a payment transaction

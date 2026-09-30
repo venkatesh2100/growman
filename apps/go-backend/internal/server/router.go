@@ -139,6 +139,12 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			}
 			r.Post("/quotations", h.CreateQuotation)
 		})
+		r.Group(func(r chi.Router) {
+			if h.Redis != nil {
+				r.Use(middlewares.NamedIPRateLimiter(h.Redis, "waitlist", 5, 10*time.Minute))
+			}
+			r.Post("/dootha-waitlist", h.JoinDoothaWaitlist)
+		})
 		r.Post("/requested-products", h.CreateRequestedProduct)
 		r.Post("/engagement/long-browse", h.ReportLongBrowse)
 
@@ -153,6 +159,7 @@ func NewRouter(h *handlers.Handler, cfg config.Config) http.Handler {
 			pr.Post("/auth/profile/complete", h.CompletePhoneProfile)
 			pr.Get("/dashboard/map", h.DashboardMap)
 			pr.Get("/requested-products", h.ListRequestedProducts)
+			pr.Get("/dootha-waitlist", h.ListDoothaWaitlist)
 			pr.Get("/order-support-requests", h.ListOrderSupportRequests)
 			pr.Patch("/order-support-requests/{id}/status", h.UpdateOrderSupportStatus)
 			pr.Put("/auth/profile", h.UpdateProfile)

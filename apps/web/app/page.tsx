@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import HomeHero from "../components/hompage/homeHero";
-import Footer from "../components/hompage/footer";
 import PlantSection from "../components/hompage/plantSection";
 import CategoryLinksSection from "../components/hompage/CategoryLinksSection";
 import BulkAndPickupSection from "../components/hompage/BulkAndPickupSection";
 import NurserySection from "../components/hompage/NurserySection";
+import DoothaWaitlistPopup from "../components/dootha/DoothaWaitlistPopup";
 import JsonLd from "../components/seo/JsonLd";
 import { createLocalBusinessJsonLd } from "../lib/seo/jsonLd";
 import { siteConfig } from "../lib/seo/site";
@@ -26,7 +26,7 @@ export const revalidate = 600;
 // care-guide links are all in the initial HTML, with no JavaScript required.
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#F9FBF7]">
+    <>
       <JsonLd id="home-localbusiness" data={createLocalBusinessJsonLd()} />
       <main>
         <HomeHero />
@@ -35,7 +35,9 @@ export default function Home() {
         <BulkAndPickupSection />
         <NurserySection />
       </main>
-      <Footer />
-    </div>
+      {/* Client island: renders nothing until a first-time visitor has been on
+          the page a few seconds, so it costs the initial render nothing. */}
+      <DoothaWaitlistPopup />
+    </>
   );
 }

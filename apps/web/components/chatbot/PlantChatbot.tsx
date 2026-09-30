@@ -237,7 +237,7 @@ export default function PlantChatbot() {
       setMessages((prev) => [...prev, doothaMessage]);
     } catch (error) {
       console.error("Chat error:", error);
-      toast("Failed to get response. Please try again.", "error");
+      toast("Couldn't get a reply. Please try again.", "error");
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "dootha",
@@ -276,13 +276,13 @@ export default function PlantChatbot() {
 
       if (name) {
         setInput(`What is ${name} and how do I care for it?`);
-        toast("Plant identified! Edit the message and send.", "success");
+        toast("Plant identified. Review the message, then send it.", "success");
       } else {
         toast("Could not identify plant. Try a clearer photo.", "error");
       }
     } catch (error) {
       console.error("Plant identification error:", error);
-      toast("Identification failed. Please try again.", "error");
+      toast("Couldn't identify the plant. Please try again.", "error");
     } finally {
       setIsScanning(false);
     }

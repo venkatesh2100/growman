@@ -5,19 +5,20 @@ import {
   ReactNode,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
+  useId,
 } from "react";
 
 const fieldBase =
-  "w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
+  "w-full rounded-xl border border-emerald-200 bg-white text-green-900 placeholder:text-gray-400 transition-colors focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 disabled:bg-emerald-50/60 disabled:text-gray-500";
 
 const sizeClass = {
-  md: "px-4 py-2",
-  sm: "px-3 sm:px-4 py-2 text-sm sm:text-base touch-manipulation",
+  md: "px-3.5 py-2.5 text-sm sm:text-[15px]",
+  sm: "px-3 py-2.5 text-sm touch-manipulation",
 } as const;
 
 const labelClass = {
-  md: "block text-sm font-medium text-gray-700 mb-2",
-  sm: "block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2",
+  md: "mb-1.5 block text-sm font-medium text-gray-700",
+  sm: "mb-1.5 block text-xs font-medium text-gray-700 sm:text-sm",
 } as const;
 
 export type FieldSize = keyof typeof sizeClass;
@@ -35,22 +36,27 @@ function FieldShell({
   labelExtra,
   hint,
   size = "md",
+  htmlFor,
   children,
-}: FieldShellProps & { children: ReactNode }) {
+}: FieldShellProps & { htmlFor: string; children: ReactNode }) {
   return (
     <div>
       {label ? (
         labelExtra ? (
           <div className="flex items-center justify-between">
-            <label className={labelClass[size]}>{label}</label>
+            <label htmlFor={htmlFor} className={labelClass[size]}>
+              {label}
+            </label>
             {labelExtra}
           </div>
         ) : (
-          <label className={labelClass[size]}>{label}</label>
+          <label htmlFor={htmlFor} className={labelClass[size]}>
+            {label}
+          </label>
         )
       ) : null}
       {children}
-      {hint ? <p className="text-xs text-gray-500 mt-1">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
     </div>
   );
 }
@@ -60,14 +66,14 @@ type FormFieldProps = FieldShellProps &
 
 /**
  * Label + `<input>` + optional hint, in the "bordered" field skin shared by
- * checkout, account and the product-admin form. Replaces the
- * `w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 ...` markup that
- * used to be retyped at every field.
+ * checkout, account and the product-admin form.
  */
-export function FormField({ label, labelExtra, hint, size = "md", className = "", ...props }: FormFieldProps) {
+export function FormField({ label, labelExtra, hint, size = "md", className = "", id, ...props }: FormFieldProps) {
+  const generatedId = useId();
+  const fieldId = id ?? generatedId;
   return (
-    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size}>
-      <input className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props} />
+    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size} htmlFor={fieldId}>
+      <input id={fieldId} className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props} />
     </FieldShell>
   );
 }
@@ -75,10 +81,12 @@ export function FormField({ label, labelExtra, hint, size = "md", className = ""
 type FormTextareaProps = FieldShellProps &
   Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "size"> & { className?: string };
 
-export function FormTextarea({ label, labelExtra, hint, size = "md", className = "", ...props }: FormTextareaProps) {
+export function FormTextarea({ label, labelExtra, hint, size = "md", className = "", id, ...props }: FormTextareaProps) {
+  const generatedId = useId();
+  const fieldId = id ?? generatedId;
   return (
-    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size}>
-      <textarea className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props} />
+    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size} htmlFor={fieldId}>
+      <textarea id={fieldId} className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props} />
     </FieldShell>
   );
 }
@@ -86,10 +94,12 @@ export function FormTextarea({ label, labelExtra, hint, size = "md", className =
 type FormSelectProps = FieldShellProps &
   Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { className?: string };
 
-export function FormSelect({ label, labelExtra, hint, size = "md", className = "", children, ...props }: FormSelectProps) {
+export function FormSelect({ label, labelExtra, hint, size = "md", className = "", id, children, ...props }: FormSelectProps) {
+  const generatedId = useId();
+  const fieldId = id ?? generatedId;
   return (
-    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size}>
-      <select className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props}>
+    <FieldShell label={label} labelExtra={labelExtra} hint={hint} size={size} htmlFor={fieldId}>
+      <select id={fieldId} className={`${fieldBase} ${sizeClass[size]} ${className}`.trim()} {...props}>
         {children}
       </select>
     </FieldShell>

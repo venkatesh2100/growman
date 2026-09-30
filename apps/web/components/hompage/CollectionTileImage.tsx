@@ -8,6 +8,8 @@ type Props = {
   /** Shown when every candidate fails to load. */
   fallbackLabel: string;
   priority?: boolean;
+  /** Rendered width hint; the default suits the circular category tiles. */
+  sizes?: string;
 };
 
 /**
@@ -25,6 +27,7 @@ export default function CollectionTileImage({
   urls,
   fallbackLabel,
   priority = false,
+  sizes = "(max-width: 640px) 96px, (max-width: 1024px) 112px, 144px",
 }: Props) {
   const [index, setIndex] = useState(0);
   const src = urls[index];
@@ -47,7 +50,7 @@ export default function CollectionTileImage({
       alt=""
       aria-hidden="true"
       fill
-      sizes="(max-width: 640px) 96px, (max-width: 1024px) 112px, 144px"
+      sizes={sizes}
       unoptimized={src.startsWith("/")}
       priority={priority && index === 0}
       className="object-cover transition duration-300 group-hover:scale-105"

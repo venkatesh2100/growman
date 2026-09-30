@@ -2,8 +2,12 @@
 
 import { ButtonHTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { buttonClass } from "./buttonStyles";
 
 const variants = {
+  primary: buttonClass("primary"),
+  secondary: buttonClass("secondary"),
+  ghost: buttonClass("ghost"),
   // Full-width emerald action button used across checkout/account/product forms.
   // (gap-2 replaces the mr-2 each icon used to carry for icon/spinner-to-text spacing.)
   solid:
@@ -53,7 +57,7 @@ export function Button({
     >
       {loading ? (
         <>
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
           {loadingText}
         </>
       ) : (

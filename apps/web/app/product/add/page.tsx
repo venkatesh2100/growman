@@ -6,12 +6,12 @@ import { apiFetch } from '../../../lib/api';
 /** Shared input/select/textarea styling for this form, with an error-highlight state. */
 function fieldClass(hasError?: boolean, extra = '') {
   return `w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-500 ${
-    hasError ? 'border-red-500 bg-red-50' : 'border-green-200'
+    hasError ? 'border-stone-400 bg-stone-50' : 'border-green-200'
   } ${extra}`.trim();
 }
 
 function FieldError({ message }: { message?: string }) {
-  return message ? <p className="text-red-500 text-sm mt-1">{message}</p> : null;
+  return message ? <p className="text-green-950/55 text-sm mt-1">{message}</p> : null;
 }
 
 function FieldLabel({ children }: { children: ReactNode }) {
@@ -434,7 +434,7 @@ export default function AddPlant() {
         throw new Error('Invalid response from server. Please try again.');
       }
 
-      setSuccessMessage('🌿 Plant added successfully!');
+      setSuccessMessage('Plant added.');
       // Reset form
       setFormData({
         name: '',
@@ -455,8 +455,7 @@ export default function AddPlant() {
       setMainImageFile(null);
       setMainImageKey('');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      setErrors({ submit: errorMessage });
+      setErrors({ submit: "Couldn't save the plant. Please check the details and try again." });
       console.error('Error submitting form:', error);
     } finally {
       setIsSubmitting(false);
@@ -485,16 +484,13 @@ export default function AddPlant() {
       )}
 
       {errors.fetch && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+        <div className="mb-4 p-3 bg-stone-50 text-green-950/70 rounded-lg">
           {errors.fetch}
         </div>
       )}
 
       {errors.submit && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
+        <div className="mb-4 p-3 bg-stone-50 text-green-950/70 rounded-lg">
           {errors.submit}
         </div>
       )}

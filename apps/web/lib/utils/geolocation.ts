@@ -1,5 +1,7 @@
 // Geolocation utility functions
 
+import { UserFacingError } from "../errors";
+
 export interface LocationData {
   addressLine?: string;
   city?: string;
@@ -19,19 +21,13 @@ function getPosition(options: PositionOptions): Promise<GeolocationPosition> {
 /**
  * Browser messages here are raw plumbing ("Position acquisition timed out,
  * NetworkError when attempting to fetch resource") that tell a shopper
- * nothing. Every case ends with the same advice, because typing a pincode
- * is all checkout actually needs.
+ * nothing. Typing a pincode is all checkout actually needs, so every case
+ * points there.
  */
 function positionErrorMessage(error: unknown): string {
   const code = (error as { code?: number } | null)?.code;
-  if (code === 1) {
-    return "Location is blocked for this site. Allow it in your browser, or just type your pincode.";
-  }
-  if (code === 2) {
-    return "Your browser couldn't work out where you are. Please type your pincode.";
-  }
-  if (code === 3) return "Locating took too long. Please type your pincode.";
-  return "Could not read your location. Please type your pincode.";
+  if (code === 1) return "Location is turned off. Please enter your pincode.";
+  return "Couldn't find your location. Please enter your pincode.";
 }
 
 function permissionDenied(error: unknown): boolean {
@@ -48,8 +44,8 @@ function permissionDenied(error: unknown): boolean {
  */
 export async function getCurrentLocation(): Promise<LocationData> {
   if (!navigator.geolocation) {
-    throw new Error(
-      "Your browser can't share location. Please type your pincode."
+    throw new UserFacingError(
+      "Couldn't find your location. Please enter your pincode."
     );
   }
 
@@ -61,7 +57,9 @@ export async function getCurrentLocation(): Promise<LocationData> {
       maximumAge: 0,
     });
   } catch (first) {
-    if (permissionDenied(first)) throw new Error(positionErrorMessage(first));
+    if (permissionDenied(first)) {
+      throw new UserFacingError(positionErrorMessage(first));
+    }
     try {
       position = await getPosition({
         enableHighAccuracy: false,
@@ -69,7 +67,7 @@ export async function getCurrentLocation(): Promise<LocationData> {
         maximumAge: 600000,
       });
     } catch (second) {
-      throw new Error(positionErrorMessage(second));
+      throw new UserFacingError(positionErrorMessage(second));
     }
   }
 

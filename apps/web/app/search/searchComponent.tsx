@@ -3,12 +3,17 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Search } from "lucide-react";
 import { apiFetch, searchProducts } from "../../lib/api";
 import type { Product } from "../../lib/types";
 import ProductCard from "../../components/productspage/ProductCard";
 import { ProductCardSkeleton } from "../../components/loading/SkeletonLoader";
+import { buttonClass } from "../../components/ui/buttonStyles";
 import { useAuthStore } from "../../lib/store/authStore";
+
+const GRID = "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5";
+const FIELD =
+  "w-full rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm text-green-900 placeholder:text-gray-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20";
 
 export default function Searchcomponent() {
   const searchParams = useSearchParams();
@@ -130,112 +135,149 @@ export default function Searchcomponent() {
   const showLoading = loading || isPending;
 
   return (
-    <main className="min-h-screen bg-[#F9FAFB] px-4 py-6 md:px-8 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="font-space text-2xl font-bold tracking-tight text-green-900">Search</h1>
-        {query ? (
-          <p className="mt-1 text-sm text-gray-500">
-            {showLoading
-              ? `Searching for “${query}”…`
-              : `${total} result${total === 1 ? "" : "s"} for “${query}”`}
-          </p>
-        ) : (
-          <p className="mt-1 text-sm text-gray-500">Search plants, pots, seeds, and more.</p>
-        )}
+    <div className="mx-auto max-w-7xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:px-8">
+      <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
+        {query ? <>Results for &ldquo;{query}&rdquo;</> : "Search"}
+      </h1>
+      <p className="mt-1.5 text-sm text-gray-600" aria-live="polite">
+        {!query
+          ? "Search by plant name, common name or category."
+          : showLoading
+            ? "Searching…"
+            : `${total} ${total === 1 ? "result" : "results"}`}
+      </p>
 
-        {!query && (
-          <div className="mt-8 rounded-2xl border border-emerald-100/80 bg-white px-5 py-6 text-sm text-gray-500">
-            Type a name in the navbar search to get started.
-          </div>
-        )}
+      {/* key resets the field when the query changes from the header search */}
+      <form action="/search" role="search" className="mt-5 flex max-w-xl gap-2" key={query}>
+        <label htmlFor="search-page-input" className="sr-only">
+          Search plants
+        </label>
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            aria-hidden
+          />
+          <input
+            id="search-page-input"
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder="Money plant, bonsai, hibiscus…"
+            className={`${FIELD} pl-10`}
+          />
+        </div>
+        <button type="submit" className={buttonClass("primary")}>
+          Search
+        </button>
+      </form>
 
-        {query && showLoading && (
-          <div className="mt-6 grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        )}
+      {query && showLoading && (
+        <div className={`mt-8 ${GRID}`}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
 
-        {query && !showLoading && (
-          <div className="mt-6 space-y-8">
-            {products.length > 0 ? (
-              <section>
-                <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              </section>
-            ) : (
-              <section className="rounded-2xl border border-emerald-100/80 bg-white px-5 py-4">
-                <h2 className="text-lg font-semibold text-green-900">No products found</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Try another keyword, or tell us what you need below.
-                </p>
-              </section>
-            )}
-
-            <section className="rounded-2xl border border-emerald-100/80 bg-white p-5 sm:p-6">
-              <div className="max-w-xl">
-                <h3 className="font-space text-lg font-semibold tracking-tight text-green-900">
-                  Can&apos;t find it?
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Ask Dootha or send us the product details.
-                </p>
+      {query && !showLoading && (
+        <div className="mt-8 space-y-10">
+          {products.length > 0 ? (
+            <section aria-label="Search results">
+              <div className={GRID}>
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-emerald-100 bg-white px-5 py-6">
+              <h2 className="text-base font-semibold text-green-900">
+                No plants match &ldquo;{query}&rdquo;
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Check the spelling, try a common name, or{" "}
+                <Link href="/shop" className="font-medium text-emerald-700 hover:text-emerald-900">
+                  browse the full catalog
+                </Link>
+                .
+              </p>
+            </section>
+          )}
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <section
+            aria-labelledby="request-heading"
+            className="rounded-2xl border border-emerald-100 bg-white p-5 sm:p-6"
+          >
+            <div className="max-w-xl">
+              <h2
+                id="request-heading"
+                className="font-space text-lg font-semibold tracking-tight text-green-900"
+              >
+                Looking for something we don&apos;t list?
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Tell us what you need and we&apos;ll check whether the nursery can source it.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="request-name" className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Plant or product
+                </label>
                 <input
+                  id="request-name"
                   value={requestName}
                   onChange={(e) => setRequestName(e.target.value)}
-                  placeholder="Product name"
-                  className="rounded-2xl border border-emerald-100 bg-[#F9FAFB] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-200"
+                  className={FIELD}
                 />
+              </div>
+              <div>
+                <label htmlFor="request-details" className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Details <span className="font-normal text-gray-500">(optional)</span>
+                </label>
                 <input
+                  id="request-details"
                   value={requestDetails}
                   onChange={(e) => setRequestDetails(e.target.value)}
-                  placeholder="Size, brand, notes (optional)"
-                  className="rounded-2xl border border-emerald-100 bg-[#F9FAFB] px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-200"
+                  placeholder="Size, quantity, variety"
+                  className={FIELD}
                 />
               </div>
+            </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
+              {isAuthenticated ? (
                 <button
                   type="button"
-                  onClick={openProductEnquiry}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+                  onClick={submitProductRequest}
+                  disabled={requestSubmitting}
+                  className={buttonClass("primary")}
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  Ask Dootha
+                  {requestSubmitting ? "Sending…" : "Send request"}
                 </button>
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={submitProductRequest}
-                    disabled={requestSubmitting}
-                    className="inline-flex items-center rounded-2xl border border-emerald-100 bg-[#F9FAFB] px-4 py-2.5 text-sm font-semibold text-green-900 transition-colors hover:bg-emerald-50 disabled:opacity-50"
-                  >
-                    {requestSubmitting ? "Sending…" : "Request product"}
-                  </button>
-                ) : (
-                  <Link
-                    href={`/login?redirect=${encodeURIComponent(`/search?q=${query}`)}`}
-                    className="inline-flex items-center rounded-2xl border border-emerald-100 bg-[#F9FAFB] px-4 py-2.5 text-sm font-semibold text-green-900 transition-colors hover:bg-emerald-50"
-                  >
-                    Sign in to request
-                  </Link>
-                )}
-              </div>
+              ) : (
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(`/search?q=${encodeURIComponent(query)}`)}`}
+                  className={buttonClass("primary")}
+                >
+                  Sign in to send a request
+                </Link>
+              )}
+              <button type="button" onClick={openProductEnquiry} className={buttonClass("secondary")}>
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                Ask Dootha
+              </button>
+            </div>
 
-              {requestMessage ? (
-                <p className="mt-3 text-sm text-green-950/55">{requestMessage}</p>
-              ) : null}
-            </section>
-          </div>
-        )}
-      </div>
-    </main>
+            {requestMessage ? (
+              <p className="mt-3 text-sm text-green-950/55" role="status">
+                {requestMessage}
+              </p>
+            ) : null}
+          </section>
+        </div>
+      )}
+    </div>
   );
 }

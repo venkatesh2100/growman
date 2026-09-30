@@ -31,18 +31,6 @@ const nextConfig: NextConfig = {
         hostname: "storage.googleapis.com",
         pathname: "/**",
       },
-      // Stock imagery used by the /shop hero carousel, so those banners can
-      // go through the image optimizer instead of being served full size.
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "plus.unsplash.com",
-        pathname: "/**",
-      },
     ],
   },
   output: "standalone",

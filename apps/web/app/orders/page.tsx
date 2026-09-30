@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Package,
-  CheckCircle,
-  Truck,
-  Clock,
-  XCircle,
-  MapPin,
-  ChevronRight,
-  AlertCircle,
-  RefreshCw,
-  ShoppingBag,
-} from "lucide-react";
-import Link from "next/link";
+import { ChevronRight, MapPin, Package } from "lucide-react";
 import { apiFetch } from "../../lib/api";
+import { useAuthStore } from "../../lib/store/authStore";
+import { formatPrice } from "../../lib/format";
+import { business } from "../../lib/seo/site";
+import AccountShell from "../../components/account/AccountShell";
+import ButtonLink from "../../components/ui/ButtonLink";
 import Thumbnail from "../../components/ui/Thumbnail";
 
 interface OrderItem {
@@ -43,429 +36,278 @@ interface Order {
   items: OrderItem[];
 }
 
-const ORDER_PROGRESS_STEPS = [
-  { key: "confirmed", label: "Order confirmed" },
-  { key: "shipped", label: "Shipped" },
-  { key: "out_for_delivery", label: "Out for delivery" },
-  { key: "delivered", label: "Delivered" },
-];
+const PROGRESS_STEPS = ["Confirmed", "Shipped", "Out for delivery", "Delivered"];
 
-const STATUS_CONFIG: Record<
-  string,
-  {
-    bg: string;
-    text: string;
-    border: string;
-    icon: React.ReactNode;
-    dot: string;
-  }
-> = {
-  paid: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
-    icon: <CheckCircle className="w-3.5 h-3.5" />,
-    dot: "bg-emerald-500",
-  },
-  created: {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    border: "border-amber-200",
-    icon: <RefreshCw className="w-3.5 h-3.5" />,
-    dot: "bg-amber-400",
-  },
-  pending: {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    border: "border-amber-200",
-    icon: <Clock className="w-3.5 h-3.5" />,
-    dot: "bg-amber-400",
-  },
-  failed: {
-    bg: "bg-red-50",
-    text: "text-red-700",
-    border: "border-red-200",
-    icon: <XCircle className="w-3.5 h-3.5" />,
-    dot: "bg-red-500",
-  },
-  cancelled: {
-    bg: "bg-gray-100",
-    text: "text-gray-600",
-    border: "border-gray-200",
-    icon: <XCircle className="w-3.5 h-3.5" />,
-    dot: "bg-gray-400",
-  },
-  shipped: {
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
-    icon: <Truck className="w-3.5 h-3.5" />,
-    dot: "bg-blue-500",
-  },
-  delivered: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
-    icon: <CheckCircle className="w-3.5 h-3.5" />,
-    dot: "bg-emerald-500",
-  },
+type Tone = "green" | "amber" | "stone" | "red";
+
+const TONE_CLASS: Record<Tone, string> = {
+  green: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  amber: "bg-amber-50 text-amber-800 ring-amber-200",
+  stone: "bg-emerald-50 text-gray-600 ring-emerald-100",
+  red: "bg-red-50 text-red-700 ring-red-200",
 };
 
-function getStatusDisplay(status: string, paymentStatus: string): string {
-  if (paymentStatus === "paid" || status === "paid") return "Paid";
-  if (paymentStatus === "failed" || status === "failed") return "Failed";
-  if (paymentStatus === "created") return "Processing";
-  const s = status || paymentStatus || "pending";
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function getStatusKey(status: string, paymentStatus: string): string {
-  if (paymentStatus === "paid" || status === "paid") return "paid";
-  if (paymentStatus === "failed" || status === "failed") return "failed";
-  if (paymentStatus === "created") return "created";
-  return (status || paymentStatus || "pending").toLowerCase();
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatShortDate(date: Date): string {
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function computeDeliveryDate(createdAt: string, expectedDeliveryDate?: string): Date {
-  if (expectedDeliveryDate) {
-    const parsed = new Date(expectedDeliveryDate);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  const d = new Date(createdAt);
-  d.setDate(d.getDate() + 7);
-  return d;
-}
-
-function progressIndex(order: Order): number {
+/** The order's fulfilment stage: a label, a badge tone and a step in PROGRESS_STEPS (-1 when closed). */
+function orderState(order: Order): { label: string; tone: Tone; step: number } {
   const s = (order.status || "").toLowerCase();
   const p = (order.paymentStatus || "").toLowerCase();
-  if (s === "delivered") return 3;
-  if (s === "out_for_delivery") return 2;
-  if (s === "shipped") return 1;
-  if (s === "confirmed" || s === "paid" || p === "paid") return 0;
-  if (s === "cancelled" || s === "failed" || p === "failed") return -1;
-  return 0;
+  if (s === "cancelled") return { label: "Cancelled", tone: "stone", step: -1 };
+  if (s === "failed" || p === "failed") return { label: "Payment failed", tone: "red", step: -1 };
+  if (s === "delivered") return { label: "Delivered", tone: "green", step: 3 };
+  if (s === "out_for_delivery") return { label: "Out for delivery", tone: "amber", step: 2 };
+  if (s === "shipped") return { label: "Shipped", tone: "amber", step: 1 };
+  if (s === "confirmed" || s === "paid" || p === "paid") {
+    return { label: "Confirmed", tone: "green", step: 0 };
+  }
+  return { label: "Processing", tone: "stone", step: 0 };
 }
 
+function formatDate(value: string | Date): string {
+  return new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function parseDate(value?: string): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function askForHelp(orderId: number) {
+  window.dispatchEvent(
+    new CustomEvent("growman:chatbot-prefill", {
+      detail: {
+        message: `My order #${orderId} is past its expected delivery date. Can you check on it?`,
+      },
+    })
+  );
+}
+
+const MAX_VISIBLE_ITEMS = 3;
+
 export default function OrdersPage() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
-    try {
-      const ordersRes = await apiFetch("/orders?page=1&pageSize=20&status=paid&scope=self");
-      if (ordersRes.ok) {
-        const data = await ordersRes.json();
-        setOrders(Array.isArray(data) ? data : data.data || []);
+    if (!isAuthenticated) return;
+    const loadOrders = async () => {
+      try {
+        const res = await apiFetch("/orders?page=1&pageSize=20&status=paid&scope=self");
+        if (res.ok) {
+          const data = await res.json();
+          setOrders(Array.isArray(data) ? data : data.data || []);
+        }
+      } catch (error) {
+        console.error("Error loading orders", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading orders", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    void loadOrders();
+  }, [isAuthenticated]);
 
   const toggleExpand = (orderId: number) => {
-    setExpandedItems((prev) => {
+    setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
       return next;
     });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F7F8FA] py-10">
-        <div className="max-w-2xl mx-auto px-4 space-y-4">
-          {[1, 2, 3].map((i) => (
+  return (
+    <AccountShell
+      title="Orders"
+      description={
+        !loading && orders.length > 0
+          ? `${orders.length} ${orders.length === 1 ? "order" : "orders"}`
+          : "Track deliveries and review past purchases."
+      }
+    >
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse"
-            >
-              <div className="p-5 flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="h-4 w-32 bg-gray-100 rounded" />
-                  <div className="h-3 w-24 bg-gray-100 rounded" />
-                </div>
-                <div className="h-6 w-20 bg-gray-100 rounded-full" />
-              </div>
-              <div className="px-5 pb-4 space-y-3">
-                {[1, 2].map((j) => (
-                  <div key={j} className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-100 rounded-xl" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-3/4 bg-gray-100 rounded" />
-                      <div className="h-3 w-1/2 bg-gray-100 rounded" />
-                    </div>
-                    <div className="h-4 w-14 bg-gray-100 rounded" />
-                  </div>
-                ))}
-              </div>
-              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
-                <div className="h-4 w-16 bg-gray-100 rounded" />
-                <div className="h-5 w-20 bg-gray-100 rounded" />
-              </div>
-            </div>
+              className="h-48 animate-pulse rounded-2xl border border-emerald-100 bg-white"
+            />
           ))}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#F7F8FA] py-10">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-7">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              My Orders
-            </h1>
-            {orders.length > 0 && (
-              <p className="text-sm text-gray-500 mt-0.5">
-                {orders.length} order{orders.length !== 1 ? "s" : ""}
-              </p>
-            )}
-          </div>
-          <Link
-            href="/shop"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Shop
-          </Link>
+      ) : orders.length === 0 ? (
+        <div className="rounded-2xl border border-emerald-100 bg-white px-6 py-12 text-center">
+          <Package className="mx-auto h-9 w-9 text-gray-300" />
+          <h2 className="mt-4 text-base font-semibold text-green-900">No orders yet</h2>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-gray-600">
+            Orders you place while signed in will appear here.
+          </p>
+          <ButtonLink href="/shop" className="mt-6">
+            Browse plants
+          </ButtonLink>
         </div>
+      ) : (
+        <ul className="space-y-4">
+          {orders.map((order) => {
+            const state = orderState(order);
+            const items = order.items ?? [];
+            const isExpanded = expanded.has(order.id);
+            const visibleItems = isExpanded ? items : items.slice(0, MAX_VISIBLE_ITEMS);
+            const hiddenCount = items.length - MAX_VISIBLE_ITEMS;
+            const eta = parseDate(order.expectedDeliveryDate);
+            const open = state.step >= 0 && state.step < 3;
+            const overdue = open && eta !== null && eta.getTime() < Date.now();
+            const address = [order.addressLine, order.city, order.state, order.pincode]
+              .filter(Boolean)
+              .join(", ");
 
-        {orders.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-gray-300" />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1.5">
-              No orders yet
-            </h2>
-            <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-              Your order history will appear here once you make a purchase.
-            </p>
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              Start Shopping
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((order) => {
-              const statusKey = getStatusKey(order.status, order.paymentStatus);
-              const statusDisplay = getStatusDisplay(
-                order.status,
-                order.paymentStatus
-              );
-              const config = STATUS_CONFIG[statusKey] ?? {
-                bg: "bg-gray-100",
-                text: "text-gray-700",
-                border: "border-gray-200",
-                icon: <Clock className="w-3.5 h-3.5" />,
-                dot: "bg-gray-400",
-              };
-              const isExpanded = expandedItems.has(order.id);
-              const visibleItems =
-                isExpanded ? order.items : order.items?.slice(0, 3);
-              const hasMore = (order.items?.length || 0) > 3;
-              const eta = computeDeliveryDate(order.createdAt, order.expectedDeliveryDate);
-              const progress = progressIndex(order);
-              const isCancelled = progress < 0;
-              const etaExpired = !isCancelled && progress < 3 && eta.getTime() < Date.now();
-              const etaText = isCancelled
-                ? `Order ${order.status || order.paymentStatus}`
-                : etaExpired
-                ? "Delivery delayed. Please contact growman.live@gmail.com"
-                : progress >= 3
-                ? `Delivered on ${formatShortDate(eta)}`
-                : `Arriving by ${formatShortDate(eta)}`;
+            let headline: string;
+            if (state.step < 0) headline = state.label;
+            else if (state.step === 3) headline = "Delivered";
+            else if (overdue) headline = "Running late";
+            else if (eta) headline = `Arriving by ${formatDate(eta)}`;
+            else headline = state.label;
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
-                >
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between p-5 pb-4">
+            return (
+              <li
+                key={order.id}
+                className="overflow-hidden rounded-2xl border border-emerald-100 bg-white"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-emerald-50 bg-emerald-50/60 px-5 py-3 text-xs text-gray-500">
+                  <dl className="flex flex-wrap gap-x-6 gap-y-1">
                     <div>
-                      <p className="text-[15px] font-bold text-gray-900">
-                        Order #{order.id}
-                      </p>
-                      {order.razorpayOrderId && (
-                        <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                          {order.razorpayOrderId}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatDate(order.createdAt)}
-                      </p>
+                      <dt>Order placed</dt>
+                      <dd className="font-medium text-gray-800">{formatDate(order.createdAt)}</dd>
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${config.dot}`}
-                      />
-                      {statusDisplay}
-                    </span>
-                  </div>
+                    <div>
+                      <dt>Total</dt>
+                      <dd className="font-medium text-gray-800">{formatPrice(order.amount)}</dd>
+                    </div>
+                    <div>
+                      <dt>Order</dt>
+                      <dd className="font-medium text-gray-800">#{order.id}</dd>
+                    </div>
+                  </dl>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${TONE_CLASS[state.tone]}`}
+                  >
+                    {state.label}
+                  </span>
+                </div>
 
-                  {/* Items */}
-                  {order.items?.length > 0 && (
-                    <div className="px-5 pb-1">
-                      <div className="divide-y divide-gray-50">
-                        {visibleItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3 py-3"
+                <div className="px-5 pt-4">
+                  <p className="text-base font-semibold text-green-900">{headline}</p>
+                  {overdue ? (
+                    <p className="mt-1 text-sm text-gray-600">
+                      This order is past its expected delivery date of {formatDate(eta!)}.{" "}
+                      <button
+                        type="button"
+                        onClick={() => askForHelp(order.id)}
+                        className="font-medium text-emerald-700 underline underline-offset-2"
+                      >
+                        Ask Dootha
+                      </button>{" "}
+                      or{" "}
+                      <a
+                        href={`mailto:${business.email}?subject=${encodeURIComponent(`Order #${order.id}`)}`}
+                        className="font-medium text-emerald-700 underline underline-offset-2"
+                      >
+                        email us
+                      </a>{" "}
+                      and we&apos;ll check on it.
+                    </p>
+                  ) : null}
+
+                  {state.step >= 0 ? (
+                    <ol
+                      className="mt-3 grid grid-cols-4 gap-1.5"
+                      aria-label={`Delivery progress: ${state.label}`}
+                    >
+                      {PROGRESS_STEPS.map((step, index) => (
+                        <li key={step}>
+                          <span
+                            className={`block h-1.5 rounded-full ${
+                              index <= state.step ? "bg-emerald-600" : "bg-emerald-100"
+                            }`}
+                          />
+                          <span
+                            className={`mt-1.5 block text-[11px] leading-tight sm:text-xs ${
+                              index <= state.step ? "font-medium text-green-900" : "text-gray-400"
+                            }`}
                           >
-                            <Thumbnail
-                              src={item.imageUrl}
-                              size={48}
-                              alt={item.name}
-                              className="w-12 h-12 rounded-xl"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {item.name}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                Qty: {item.quantity} &times; ₹
-                                {item.price.toFixed(0)}
-                              </p>
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900 flex-shrink-0">
-                              ₹{(item.price * item.quantity).toFixed(0)}
+                            {step}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : null}
+                </div>
+
+                {items.length > 0 ? (
+                  <div className="px-5 pt-2">
+                    <ul className="divide-y divide-emerald-50">
+                      {visibleItems.map((item) => (
+                        <li key={item.id} className="flex items-center gap-3 py-3">
+                          <Thumbnail
+                            src={item.imageUrl}
+                            size={52}
+                            alt={item.name}
+                            className="h-13 w-13 rounded-xl"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-green-900">
+                              {item.name}
+                            </p>
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              {item.quantity} × {formatPrice(item.price)}
                             </p>
                           </div>
-                        ))}
-                      </div>
-
-                      {hasMore && (
-                        <button
-                          onClick={() => toggleExpand(order.id)}
-                          className="text-xs text-emerald-600 font-medium py-2 hover:text-emerald-700 transition-colors"
-                        >
-                          {isExpanded
-                            ? "Show less"
-                            : `+${order.items.length - 3} more item${order.items.length - 3 !== 1 ? "s" : ""}`}
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="mx-5 mb-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-emerald-900">{etaText}</p>
-                      {etaExpired ? (
-                        <button
-                          onClick={() =>
-                            window.dispatchEvent(
-                              new CustomEvent("growman:chatbot-prefill", {
-                                detail: {
-                                  message: `I need delivery support for order #${order.id}. Please share support contact details and help me escalate this delay.`,
-                                },
-                              }),
-                            )
-                          }
-                          className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline whitespace-nowrap"
-                        >
-                          Ask Dootha
-                        </button>
-                      ) : null}
-                    </div>
-                    {!isCancelled && (
-                      <div className="mt-2 space-y-1.5">
-                        {ORDER_PROGRESS_STEPS.map((step, idx) => {
-                          const done = idx <= progress;
-                          return (
-                            <div key={step.key} className="flex items-center gap-2">
-                              <span
-                                className={`w-2 h-2 rounded-full ${done ? "bg-emerald-600" : "bg-gray-300"}`}
-                              />
-                              <span
-                                className={`text-xs ${done ? "text-emerald-900 font-semibold" : "text-gray-500"}`}
-                              >
-                                {step.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          <p className="shrink-0 text-sm font-medium text-green-900">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                    {hiddenCount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(order.id)}
+                        className="pb-2 text-xs font-medium text-emerald-700 hover:text-emerald-900"
+                      >
+                        {isExpanded
+                          ? "Show fewer items"
+                          : `Show ${hiddenCount} more ${hiddenCount === 1 ? "item" : "items"}`}
+                      </button>
+                    ) : null}
                   </div>
+                ) : null}
 
-                  {/* Delivery Address */}
-                  {(order.addressLine || order.city) && (
-                    <div className="mx-5 mb-3 px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        {[
-                          order.addressLine,
-                          order.city,
-                          order.state,
-                          order.pincode,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-emerald-50 px-5 py-3">
+                  {address ? (
+                    <p className="flex min-w-0 items-start gap-1.5 text-xs text-gray-500">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span className="line-clamp-1">{address}</span>
+                    </p>
+                  ) : (
+                    <span />
                   )}
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between px-5 py-3.5 bg-gray-50 border-t border-gray-100">
-                    <span className="text-sm font-medium text-gray-500">
-                      Total
-                    </span>
-                    <span className="text-lg font-bold text-emerald-600">
-                      ₹{order.amount.toFixed(0)}
-                    </span>
-                  </div>
-
-                  {/* View Details */}
-                  <Link
-                    href={`/order-success?orderId=${order.id}`}
-                    className="flex items-center justify-center gap-1.5 py-3 border-t border-gray-100 text-sm font-medium text-emerald-600 hover:bg-emerald-50 transition-colors group"
+                  <a
+                    href={`mailto:${business.email}?subject=${encodeURIComponent(`Order #${order.id}`)}`}
+                    className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-900"
                   >
-                    View details
-                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
+                    Get help with this order
+                    <ChevronRight className="h-4 w-4" />
+                  </a>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </AccountShell>
   );
 }

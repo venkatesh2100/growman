@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Package, ShieldCheck, Truck, Tag } from "lucide-react";
+import { ChevronRight, CreditCard, Star, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import ImageGallery from "./ImageGallery";
 import ProductTabs from "./ProductTabs";
@@ -11,6 +11,11 @@ import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
 import { ProductCareTips } from "../../../lib/careTips";
+import { formatPrice } from "../../../lib/format";
+import { buildFilterHref, tagLabel } from "../../../lib/shopFilters";
+import { business } from "../../../lib/seo/site";
+
+const LOW_STOCK_THRESHOLD = 5;
 
 export default function ProductPageClient({
   product,
@@ -41,10 +46,10 @@ export default function ProductPageClient({
 
   // Null when the product has no reviews, so the UI never shows a rating the
   // product has not actually earned.
+  const reviews = product.reviews ?? [];
   const avgRating =
-    product.reviews.length > 0
-      ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
-        product.reviews.length
+    reviews.length > 0
+      ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
       : null;
 
   const discountPercent =
@@ -52,10 +57,10 @@ export default function ProductPageClient({
       ? Math.round((1 - selectedSize.price / product.mrp) * 100)
       : 0;
 
-  const totalStock = product.sizes.reduce((sum, size) => sum + size.stock, 0);
+  const stock = selectedSize?.stock ?? 0;
   const productTags = product.tags ?? [];
+  const attributes = product.attributes ?? [];
 
-  // Fetch related products from API
   useEffect(() => {
     async function fetchRelatedProducts() {
       try {
@@ -63,22 +68,9 @@ export default function ProductPageClient({
         const response = await apiFetch(`/products/${productSlug}/related`);
         if (response.ok) {
           const data = await response.json() as Product[] | { products: Product[] };
-          const products = Array.isArray(data) ? data : data.products || [];
-          // console.log("Setting related products:", products);
-          // console.log("First product check:", products[0] ? {
-          //   id: products[0].id,
-          //   name: products[0].name,
-          //   hasSizes: !!products[0].sizes,
-          //   sizesType: typeof products[0].sizes,
-          //   sizesIsArray: Array.isArray(products[0].sizes),
-          //   sizesLength: products[0].sizes?.length,
-          //   sizes: products[0].sizes
-          // } : "No products");
-          setRelatedProducts(products);
-          // console.log("Related products in client", relatedProducts);
+          setRelatedProducts(Array.isArray(data) ? data : data.products || []);
         } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("Failed to fetch related products:", response.status, errorData);
+          console.error("Failed to fetch related products:", response.status);
           setRelatedProducts([]);
         }
       } catch (error) {
@@ -95,302 +87,239 @@ export default function ProductPageClient({
   }, [productSlug]);
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 bg-gradient-to-r from-green-50 to-emerald-50">
+    <main className="mx-auto max-w-7xl px-4 pt-5 pb-16 sm:px-6 sm:pt-8 lg:px-8">
       {/* Breadcrumbs — the trail here must stay in step with the
           BreadcrumbList JSON-LD emitted by the server page. */}
-      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
-        <ol className="text-xs sm:text-sm text-gray-500 flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2 sm:gap-y-2">
+      <nav aria-label="Breadcrumb" className="mb-5">
+        <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 sm:text-sm">
           <li>
-            <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
+            <Link href="/" className="hover:text-green-900">Home</Link>
           </li>
-          <li aria-hidden="true" className="text-gray-400">/</li>
-
+          <li aria-hidden="true"><ChevronRight className="h-3.5 w-3.5 text-gray-400" /></li>
           <li>
-            <Link href="/categories" className="hover:text-green-600 transition-colors">
-              Plants
-            </Link>
+            <Link href="/categories" className="hover:text-green-900">Plants</Link>
           </li>
-          <li aria-hidden="true" className="text-gray-400">/</li>
-
+          <li aria-hidden="true"><ChevronRight className="h-3.5 w-3.5 text-gray-400" /></li>
           <li>
-            <Link
-              href={`/categories/${product.category.slug}`}
-              className="hover:text-green-600 transition-colors"
-            >
+            <Link href={`/categories/${product.category.slug}`} className="hover:text-green-900">
               {product.category.name}
             </Link>
           </li>
-          <li aria-hidden="true" className="text-gray-400">/</li>
-
           {product.subcategory && (
             <>
+              <li aria-hidden="true"><ChevronRight className="h-3.5 w-3.5 text-gray-400" /></li>
               <li>
                 <Link
                   href={`/categories/${product.category.slug}/${product.subcategory.slug}`}
-                  className="hover:text-green-600 transition-colors"
+                  className="hover:text-green-900"
                 >
                   {product.subcategory.name}
                 </Link>
               </li>
-              <li aria-hidden="true" className="text-gray-400">/</li>
             </>
           )}
-
-          <li aria-current="page" className="text-gray-900 font-medium truncate max-w-[120px] sm:max-w-[250px]">
+          <li aria-hidden="true"><ChevronRight className="h-3.5 w-3.5 text-gray-400" /></li>
+          <li aria-current="page" className="max-w-[160px] truncate font-medium text-green-900 sm:max-w-[280px]">
             {product.name}
           </li>
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        {/* Image Gallery - Mobile optimized */}
-        <div className="md:p-4 md:rounded-xl md:border md:border-gray-100">
-          <div className="md:p-4 md:rounded-xl md:shadow md:border md:border-green-100 product-image-gallery">
-            <ImageGallery images={galleryImages} />
-          </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-12">
+        <div className="lg:sticky lg:top-32 lg:self-start">
+          <ImageGallery images={galleryImages} alt={product.name} />
         </div>
 
-        {/* Product Details - Mobile optimized */}
-        <div className="p-0 sm:p-2">
-          <div className="border-b border-gray-200 pb-4 sm:pb-6">
-            {/* Category + tags */}
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Link
-                href={`/categories/${product.category.slug}`}
-                className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 hover:bg-emerald-100"
-              >
-                {product.category.name}
-              </Link>
-              {product.subcategory && (
+        <div>
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <Link
+              href={`/categories/${product.category.slug}`}
+              className="font-semibold tracking-wide text-emerald-700 uppercase hover:text-emerald-900"
+            >
+              {product.category.name}
+            </Link>
+            {product.subcategory && (
+              <>
+                <span className="text-gray-300" aria-hidden="true">·</span>
                 <Link
                   href={`/categories/${product.category.slug}/${product.subcategory.slug}`}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                  className="font-medium text-gray-600 hover:text-green-900"
                 >
                   {product.subcategory.name}
                 </Link>
-              )}
-              {product.featured && (
-                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                  Featured
+              </>
+            )}
+          </div>
+
+          <h1 className="font-space text-2xl leading-tight font-semibold tracking-tight text-green-900 sm:text-3xl">
+            {product.name}
+          </h1>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {avgRating !== null && (
+              <span className="inline-flex items-center gap-1.5" aria-label={`Rated ${avgRating.toFixed(1)} out of 5`}>
+                <span className="flex" aria-hidden="true">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${i < Math.round(avgRating) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                    />
+                  ))}
                 </span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">{product.name}</h1>
-
-            {/* Ratings + Stock - Mobile compact */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-0 mb-3 sm:mb-4">
-              {avgRating !== null && (
-                <>
-                  <div
-                    className="flex"
-                    aria-label={`Rated ${avgRating.toFixed(1)} out of 5`}
-                  >
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={
-                          i < Math.floor(avgRating)
-                            ? "text-green-500 fill-green-400"
-                            : "text-gray-300"
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
-                    {product.reviews.length}{" "}
-                    {product.reviews.length === 1 ? "review" : "reviews"}
-                  </span>
-
-                  <span className="hidden sm:inline mx-2 text-gray-300">|</span>
-                </>
-              )}
-
-              <span
-                className={`text-xs sm:text-sm font-medium ${
-                  (selectedSize?.stock ?? 0) > 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                  >
-                {(selectedSize?.stock ?? 0) > 0 ? "In Stock" : "Out of Stock"}
+                <span className="font-medium text-green-900">{avgRating.toFixed(1)}</span>
+                <span className="text-gray-500">
+                  ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+                </span>
               </span>
-
-              {totalStock > 0 && (
-                <>
-                  <span className="hidden sm:inline mx-2 text-gray-300">|</span>
-                  <span className="text-xs sm:text-sm text-gray-600">
-                    {totalStock} units available
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Brand - Mobile compact */}
+            )}
             {product.brand && (
-              <div className="mb-3 sm:mb-4">
-                <span className="text-xs sm:text-sm text-gray-600">Brand: </span>
+              <span className="text-gray-500">
+                Brand:{" "}
                 {/* There is no /brand route; link to the shop filtered by
                     brand instead of emitting a 404. */}
                 <Link
                   href={`/shop?brand=${product.brand.slug}`}
-                  className="text-xs sm:text-sm font-medium text-green-700 hover:underline"
+                  className="font-medium text-green-900 hover:underline"
                 >
                   {product.brand.name}
                 </Link>
-              </div>
+              </span>
             )}
+          </div>
 
-            {/* Price - Mobile optimized */}
-            <div className="mb-4 sm:mb-6">
-              <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
-                <span className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  ₹{selectedSize?.price.toFixed(0)}
+          {selectedSize && (
+            <div className="mt-5">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="font-space text-3xl font-semibold text-green-900">
+                  {formatPrice(selectedSize.price)}
                 </span>
-
-                {product.mrp && selectedSize && product.mrp > selectedSize.price && (
+                {discountPercent > 0 && product.mrp && (
                   <>
-                    <span className="text-sm sm:text-base text-gray-500 line-through">
-                      ₹{product.mrp.toFixed(0)}
+                    <span className="text-base text-gray-400 line-through">
+                      {formatPrice(product.mrp)}
                     </span>
-
-                    <span className="text-sm sm:text-base text-green-600 font-medium">
+                    <span className="rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-900">
                       {discountPercent}% off
                     </span>
                   </>
                 )}
               </div>
-
               {product.taxInfo && (
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">{product.taxInfo}</p>
+                <p className="mt-1 text-xs text-gray-500">{product.taxInfo}</p>
               )}
-            </div>
-
-            {/* Description */}
-            {(product.shortDescription || product.description) && (
-              <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 leading-relaxed">
-                {product.shortDescription || product.description}
-              </p>
-            )}
-
-            {/* Tags */}
-            {productTags.length > 0 && (
-              <div className="mb-4 sm:mb-6">
-                <div className="mb-2 flex items-center gap-1.5">
-                  <Tag className="h-4 w-4 text-emerald-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 sm:text-base">Tags</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {productTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-md border border-emerald-100 bg-white px-2.5 py-1 text-xs font-medium text-emerald-800"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <ProductCareTips category={product.category} tags={productTags} />
-
-            {/* Size Selector */}
-            <div className="mb-4 sm:mb-6">
-              <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">
-                Available Sizes:
-              </h3>
-
-              {selectedSize && (
-                <SizeSelector
-                  sizes={product.sizes}
-                  selectedSize={selectedSize}
-                  productSlug={product.slug}
-                />
-              )}
-
-              {/* f */}
-            </div>
-
-            {/* Key Features */}
-            {product.attributes.length > 0 && (
-              <div className="mb-4 sm:mb-6">
-                <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">
-                  Key Features:
-                </h3>
-
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                  {product.attributes.map((attr, idx: number) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-green-600 mr-2 mt-1">•</span>
-                      <span className="text-sm sm:text-base text-gray-700">
-                        <span className="font-medium">{attr.name}:</span>{" "}
-                        {attr.value}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Add to Cart - Mobile optimized */}
-            {selectedSize && (
-              <div className="mb-4 sm:mb-0">
-              <AddToCart product={product} selectedSize={selectedSize} />
-              </div>
-            )}
-          </div>
-
-          {/* Benefits - Mobile optimized */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6">
-            {[
-              { icon: Truck, title: "Free Delivery", sub: "Delivery in 2-4 days" },
-              { icon: ShieldCheck, title: "Plant Health ", sub: "Quality checked" },
-              { icon: Package, title: "GG Quality", sub: "Growman Garuntee" },
-            ].map(({ icon: Icon, title, sub }, i) => (
-              <div
-                key={i}
-                className={`flex
-                       ${i === 2 ? "hidden sm:flex" : ""}
-                       items-center p-2.5 sm:p-3 rounded-lg border border-gray-100`}
+              <p
+                className={`mt-2 text-sm font-medium ${
+                  stock === 0
+                    ? "text-red-700"
+                    : stock <= LOW_STOCK_THRESHOLD
+                      ? "text-amber-700"
+                      : "text-emerald-700"
+                }`}
               >
-                <div className="bg-green-50 p-1.5 sm:p-2 rounded-full mr-2 sm:mr-3">
-                  <Icon className="text-green-600" size={18} />
-                </div>
+                {stock === 0
+                  ? "Out of stock in this size"
+                  : stock <= LOW_STOCK_THRESHOLD
+                    ? `Only ${stock} left in stock`
+                    : "In stock"}
+              </p>
+            </div>
+          )}
 
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">{title}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">{sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {(product.shortDescription || product.description) && (
+            <p className="mt-4 text-[15px] leading-relaxed text-gray-700">
+              {product.shortDescription || product.description}
+            </p>
+          )}
+
+          {selectedSize && product.sizes.length > 0 && (
+            <div className="mt-6">
+              <h2 className="mb-2.5 text-sm font-semibold text-green-900">
+                Size: <span className="font-normal text-gray-600">{selectedSize.label}</span>
+              </h2>
+              <SizeSelector
+                sizes={product.sizes}
+                selectedSize={selectedSize}
+                productSlug={product.slug}
+              />
+            </div>
+          )}
+
+          {selectedSize && (
+            <div className="mt-6">
+              <AddToCart product={product} selectedSize={selectedSize} />
+            </div>
+          )}
+
+          <ul className="mt-6 divide-y divide-emerald-50 rounded-2xl border border-emerald-100 bg-white text-sm">
+            <li className="flex items-start gap-3 px-4 py-3">
+              <Truck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+              <p>
+                <span className="font-medium text-green-900">Delivery across India.</span>{" "}
+                <span className="text-gray-600">The fee for your address is shown at checkout.</span>
+              </p>
+            </li>
+            <li className="flex items-start gap-3 px-4 py-3">
+              <Store className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+              <p>
+                <span className="font-medium text-green-900">Pick up in {business.address.locality}.</span>{" "}
+                <span className="text-gray-600">Reserve from your cart and collect at the nursery.</span>
+              </p>
+            </li>
+            <li className="flex items-start gap-3 px-4 py-3">
+              <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+              <p>
+                <span className="font-medium text-green-900">Secure payment.</span>{" "}
+                <span className="text-gray-600">UPI, cards, netbanking and wallets through Razorpay.</span>
+              </p>
+            </li>
+          </ul>
+
+          <ProductCareTips category={product.category} tags={productTags} />
+
+          {attributes.length > 0 && (
+            <div className="mt-6">
+              <h2 className="mb-2.5 text-sm font-semibold text-green-900">Details</h2>
+              <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                {attributes.map((attr, idx) => (
+                  <div key={idx} className="flex gap-3 border-b border-emerald-50 py-2 text-sm">
+                    <dt className="w-2/5 shrink-0 text-gray-500">{attr.name}</dt>
+                    <dd className="text-green-900">{attr.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
+          {productTags.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {productTags.map((tag) => (
+                <Link
+                  key={tag}
+                  href={buildFilterHref({ type: "tag", value: tag })}
+                  className="rounded-full border border-emerald-100 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:border-emerald-200 hover:text-green-900"
+                >
+                  {tagLabel(tag)}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-
-      {/* Tabs - Mobile optimized */}
-      <div className="mt-6 sm:mt-8">
       <ProductTabs
-        fullDescription={product.fullDescription || product.description || ''}
+        fullDescription={product.fullDescription || product.description || ""}
         specifications={product.specifications}
-        reviews={product.reviews}
+        reviews={reviews}
       />
-      </div>
 
-      {/* Related Products - Mobile optimized */}
       {loadingRelated ? (
-        <div className="mt-6 sm:mt-10">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 px-2 sm:px-0">
-            Related Products
-          </h2>
-          <p className="text-sm sm:text-base text-gray-500">Loading related products...</p>
+        <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-white" />
+          ))}
         </div>
       ) : (
-        <div className="mt-6 sm:mt-10">
         <RelatedProducts products={relatedProducts} />
-        </div>
       )}
     </main>
   );

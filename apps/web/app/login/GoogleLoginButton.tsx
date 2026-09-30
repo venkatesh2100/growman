@@ -30,17 +30,17 @@ export default function GoogleLoginButton() {
 
         const data = await res.json();
         setToken(data.token);
-        toast("Welcome back!", "success");
+        toast("Signed in", "success");
         router.push("/");
       } catch (error) {
         console.error("Google login error:", error);
-        toast("An error occurred. Please try again.", "error");
+        toast("Couldn't sign you in. Please try again.", "error");
       } finally {
         setLoading(false);
       }
     },
     onError: () => {
-      toast("Google authentication failed. Please try again.", "error");
+      toast("Google sign-in didn't work. Please try again.", "error");
     },
   });
 

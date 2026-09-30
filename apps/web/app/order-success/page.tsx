@@ -1,146 +1,189 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Package, Home, ShoppingBag, Loader2 } from "lucide-react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
+import { formatPrice } from "../../lib/format";
+import { business } from "../../lib/seo/site";
+import { useAuthStore } from "../../lib/store/authStore";
+import ButtonLink from "../../components/ui/ButtonLink";
+import Thumbnail from "../../components/ui/Thumbnail";
+
+interface OrderItem {
+  id: number;
+  name: string;
+  quantity: number;
+  price: number;
+  imageUrl?: string;
+}
 
 interface Order {
   id: string | number;
   amount: number;
+  subtotal?: number;
+  deliveryFee?: number;
   status?: string;
   paymentStatus?: string;
-  razorpayPaymentId?: string;
+  customerEmail?: string;
+  addressLine?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  items?: OrderItem[];
 }
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const orderId = searchParams.get("orderId");
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchOrder = useCallback(async () => {
-    if (!orderId) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await apiFetch(`/order?id=${orderId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setOrder(data);
-      }
-    } catch (error) {
-      console.error("Error fetching order:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [orderId]);
+  const [loading, setLoading] = useState(Boolean(orderId));
 
   useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+    if (!orderId) return;
+    const fetchOrder = async () => {
+      try {
+        const res = await apiFetch(`/order?id=${encodeURIComponent(orderId)}`);
+        if (res.ok) setOrder(await res.json());
+      } catch (error) {
+        console.error("Error fetching order:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchOrder();
+  }, [orderId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
-      </div>
-    );
-  }
+  if (loading) return <OrderSuccessFallback />;
+
+  const paid =
+    !order || order.paymentStatus === "paid" || order.status === "paid" || order.status === "confirmed";
+  const items = order?.items ?? [];
+  const address = order
+    ? [order.addressLine, order.city, order.state, order.pincode].filter(Boolean).join(", ")
+    : "";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-12 h-12 text-emerald-600" />
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Order Placed Successfully!
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Thank you for your purchase. Your order has been confirmed.
-          </p>
-
-          {order && (
-            <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Order ID:</span>
-                  <span className="font-semibold text-gray-900">#{order.id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Amount:</span>
-                  <span className="font-semibold text-gray-900">
-                    ₹{order.amount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="font-semibold text-emerald-600 capitalize">
-                    {order.paymentStatus === "paid" || order.status === "paid" ? "Paid" : order.status || order.paymentStatus || "Pending"}
-                  </span>
-                </div>
-                {order.razorpayPaymentId && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment ID:</span>
-                    <span className="font-mono text-sm text-gray-900">
-                      {order.razorpayPaymentId.slice(0, 20)}...
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+    <main className="mx-auto max-w-2xl px-4 pt-8 pb-16 sm:px-6 sm:pt-12">
+      <div className="rounded-2xl border border-emerald-100 bg-white p-6 sm:p-8">
+        <div className="flex items-start gap-4">
+          {paid ? (
+            <CheckCircle2 className="h-9 w-9 shrink-0 text-emerald-700" />
+          ) : (
+            <Clock className="h-9 w-9 shrink-0 text-amber-600" />
           )}
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push("/shop")}
-              className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center"
-            >
-              <ShoppingBag className="w-5 h-5 mr-2" />
-              Continue Shopping
-            </button>
-            <button
-              onClick={() => router.push("/")}
-              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"
-            >
-              <Home className="w-5 h-5 mr-2" />
-              Go Home
-            </button>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-center text-gray-600">
-              <Package className="w-5 h-5 mr-2" />
-              <p className="text-sm">
-                You will receive an order confirmation email shortly.
+          <div>
+            <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900">
+              {paid ? "Order confirmed" : "Confirming your payment"}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              {paid
+                ? order?.customerEmail
+                  ? `Thank you. A confirmation has been sent to ${order.customerEmail}.`
+                  : "Thank you. A confirmation email is on its way."
+                : "This can take a few minutes. If money was taken, your order will be confirmed or the amount refunded."}
+            </p>
+            {order ? (
+              <p className="mt-2 text-sm text-gray-500">
+                Order number <span className="font-medium text-green-900">#{order.id}</span>
               </p>
-            </div>
+            ) : null}
           </div>
         </div>
+
+        {items.length > 0 ? (
+          <ul className="mt-6 divide-y divide-emerald-50 border-y border-emerald-50">
+            {items.map((item) => (
+              <li key={item.id} className="flex items-center gap-3 py-3">
+                <Thumbnail
+                  src={item.imageUrl}
+                  size={48}
+                  alt={item.name}
+                  className="h-12 w-12 rounded-lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-green-900">{item.name}</p>
+                  <p className="text-xs text-gray-500">Qty {item.quantity}</p>
+                </div>
+                <p className="shrink-0 text-sm font-medium text-green-900">
+                  {formatPrice(item.price * item.quantity)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {order ? (
+          <dl className="mt-4 space-y-1.5 text-sm">
+            {order.subtotal ? (
+              <div className="flex justify-between text-gray-700">
+                <dt>Subtotal</dt>
+                <dd>{formatPrice(order.subtotal)}</dd>
+              </div>
+            ) : null}
+            {order.subtotal ? (
+              <div className="flex justify-between text-gray-700">
+                <dt>Delivery</dt>
+                <dd>{order.deliveryFee ? formatPrice(order.deliveryFee) : "Free"}</dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between pt-1 font-semibold text-green-900">
+              <dt>Total paid</dt>
+              <dd>{formatPrice(order.amount)}</dd>
+            </div>
+          </dl>
+        ) : null}
+
+        {address ? (
+          <div className="mt-5 rounded-xl bg-emerald-50/60 px-4 py-3 text-sm">
+            <p className="text-xs font-medium text-gray-500">Delivering to</p>
+            <p className="mt-0.5 text-green-900">{address}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+          {isAuthenticated ? (
+            <ButtonLink href="/orders" className="sm:flex-1">
+              Track this order
+            </ButtonLink>
+          ) : null}
+          <ButtonLink
+            href="/shop"
+            tone={isAuthenticated ? "secondary" : "primary"}
+            className="sm:flex-1"
+          >
+            Continue shopping
+          </ButtonLink>
+        </div>
       </div>
-    </div>
+
+      <p className="mt-5 text-center text-sm text-gray-500">
+        Questions about your order?{" "}
+        <a
+          href={`mailto:${business.email}${order ? `?subject=${encodeURIComponent(`Order #${order.id}`)}` : ""}`}
+          className="font-medium text-emerald-700 hover:text-emerald-900"
+        >
+          Email us
+        </a>{" "}
+        or{" "}
+        <a
+          href={`tel:${business.telephone}`}
+          className="font-medium text-emerald-700 hover:text-emerald-900"
+        >
+          call the nursery
+        </a>
+        .
+      </p>
+    </main>
   );
 }
 
 function OrderSuccessFallback() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="flex justify-center mb-6">
-            <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
-          </div>
-          <p className="text-gray-600">Loading order details...</p>
-        </div>
-      </div>
-    </div>
+    <main className="flex min-h-[60vh] items-center justify-center">
+      <Loader2 className="h-7 w-7 animate-spin text-emerald-700" />
+    </main>
   );
 }
 
@@ -151,4 +194,3 @@ export default function OrderSuccessPage() {
     </Suspense>
   );
 }
-

@@ -5,6 +5,12 @@
   --font-space: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 }
 
+@theme {
+  /* Flat stand-in for the body's green-50 to emerald-50 gradient, for panels
+     that sit on white. */
+  --color-canvas: #f0fdf4;
+}
+
 /* Toast animations */
 @keyframes slideInRight {
   from {
@@ -86,12 +92,6 @@
   }
 }
 
-/* Image optimization */
-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
 /* Mobile optimizations */
 @media (max-width: 640px) {
   /* Improve touch targets */
@@ -100,19 +100,9 @@ img {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
 
-  /* Optimize scrolling */
-  * {
-    -webkit-overflow-scrolling: touch;
-  }
-
   /* Reduce animations on mobile for better performance */
   .group-hover\:scale-105 {
     transition: transform 0.2s ease-out;
-  }
-
-  /* Optimize image loading */
-  img {
-    content-visibility: auto;
   }
 }
 
@@ -146,24 +136,18 @@ img {
 
 /* PWA Mobile Optimizations */
 @media (max-width: 1024px) {
-  /* Prevent unwanted zoom on double-tap */
+  /* Prevent unwanted zoom on double-tap while keeping pinch-zoom (WCAG 1.4.4). */
   * {
-    touch-action: pan-x pan-y;
+    touch-action: manipulation;
   }
 
   /* Prevent overscroll bounce on iOS */
   body {
     overscroll-behavior-y: none;
-    -webkit-overflow-scrolling: touch;
   }
 
   html {
     overscroll-behavior: none;
-  }
-
-  /* Smooth native-like transitions */
-  a, button {
-    transition: all 0.2s ease;
   }
 
   /* Prevent text selection on buttons for better UX */

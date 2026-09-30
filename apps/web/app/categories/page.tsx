@@ -18,32 +18,32 @@ async function CategoriesContent() {
   const { productsBySize } = await fetchProductsData();
 
   return (
-    <main className="max-w-7xl mx-auto pt-6 sm:pt-8 md:pt-10 px-3 sm:px-4">
-      <div className="mb-6 sm:mb-8 text-center lg:text-left">
+    <main className="mx-auto max-w-7xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:px-8">
+      <div className="mb-8">
         <Breadcrumbs
           items={createBreadcrumbs([{ name: 'Plants', path: '/categories' }])}
-          className="mb-3 flex justify-center lg:justify-start"
+          className="mb-3"
         />
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-800 mb-1 sm:mb-2">
-          Plant Categories
+        <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
+          Plant categories
         </h1>
-        <p className="mx-auto max-w-3xl text-sm sm:text-base text-gray-600 lg:mx-0">
-          Every collection Growman stocks.
+        <p className="mt-1.5 max-w-2xl text-sm text-gray-600 sm:text-[15px]">
+          Every collection Growman stocks, from indoor foliage to avenue trees.
         </p>
       </div>
 
       {/* Same circular tiles as the homepage — shared component, shared catalog. */}
       <CategoryLinksSection
-        title="Browse Categories"
+        title="Collections"
         description={null}
         withContainer={false}
         plantTypesLayout="scroll"
-        className="mb-8 sm:mb-10 md:mb-12 py-0"
+        className="mb-12 py-0"
       />
 
       <ProductsDisplay
         products={productsBySize}
-        title="All Plants"
+        title="All plants"
         showCount={true}
       />
     </main>

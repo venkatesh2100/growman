@@ -1,28 +1,26 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import Footer from "../../components/hompage/footer";
-import StoreLocatorMap from "../../components/about/StoreLocatorMap";
-import Breadcrumbs from "../../components/seo/Breadcrumbs";
-import JsonLd from "../../components/seo/JsonLd";
-import { PLAY_STORE_URL } from "../../lib/appLinks";
-import { createBreadcrumbs, createPageMetadata } from "../../lib/seo/metadata";
-import { createLocalBusinessJsonLd } from "../../lib/seo/jsonLd";
-import { business } from "../../lib/seo/site";
 import {
-  FaClock,
-  FaEnvelope,
-  FaInstagram,
-  FaMapMarkerAlt,
-  FaPhone,
-  FaSeedling,
-} from "react-icons/fa";
+  Clock,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Store,
+  Truck,
+} from "lucide-react";
+import { FaInstagram } from "react-icons/fa";
+import StoreLocatorMap from "../../components/about/StoreLocatorMap";
+import { Card, PageHeader, PageShell, SectionHeading } from "../../components/layout/Page";
+import JsonLd from "../../components/seo/JsonLd";
+import ButtonLink from "../../components/ui/ButtonLink";
+import { PLAY_STORE_URL } from "../../lib/appLinks";
+import { getAllProducts, getIndexableCollections } from "../../lib/seo/catalog";
+import { createLocalBusinessJsonLd } from "../../lib/seo/jsonLd";
+import { createBreadcrumbs, createPageMetadata } from "../../lib/seo/metadata";
+import { business, openingHoursDisplay } from "../../lib/seo/site";
 
-/**
- * The previous description advertised a "Hyderabad store", which contradicts
- * the Hyderabad location published on this very page. It now
- * matches the real business details.
- */
 export const metadata: Metadata = createPageMetadata({
   title: "About Growman — Plant Nursery in Hyderabad",
   description:
@@ -30,120 +28,187 @@ export const metadata: Metadata = createPageMetadata({
   path: "/about",
 });
 
-export default function AboutPage() {
+// Keep in step with CATALOG_REVALIDATE in lib/seo/catalog.ts.
+export const revalidate = 600;
+
+const WAYS_TO_BUY = [
+  {
+    icon: Truck,
+    title: "Order online",
+    body: "Pay securely by UPI, card, netbanking or wallet. The delivery fee for your address is shown at checkout.",
+    link: { href: "/shop", label: "Shop plants" },
+  },
+  {
+    icon: Store,
+    title: "Pick up at the nursery",
+    body: `Reserve plants from your cart and collect them in ${business.address.locality}. The store calls to confirm the amount and a time; nothing is paid online.`,
+    link: { href: "/cart", label: "Go to cart" },
+  },
+  {
+    icon: FileText,
+    title: "Bulk and corporate",
+    body: "For landscaping, offices, events and resellers. Send your list and we reply with an itemised quotation.",
+    link: { href: "/bulk", label: "Request a quotation" },
+  },
+];
+
+export default async function AboutPage() {
+  const [collections, products] = await Promise.all([
+    getIndexableCollections(),
+    getAllProducts(),
+  ]);
+
+  const facts = [
+    products.length > 0 ? { value: String(products.length), label: "plants in the catalog" } : null,
+    collections.length > 0 ? { value: String(collections.length), label: "plant categories" } : null,
+    { value: "7 days", label: "a week, 9 AM – 7 PM" },
+    { value: "Pan-India", label: "delivery" },
+  ].filter((fact): fact is { value: string; label: string } => fact !== null);
+
   return (
-    <main className="min-h-screen bg-[#F9FAFB]">
+    <PageShell>
       {/* Local business details, all of which are published on this page. */}
       <JsonLd id="about-localbusiness" data={createLocalBusinessJsonLd()} />
 
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-        <Breadcrumbs
-          items={createBreadcrumbs([{ name: "About", path: "/about" }])}
-          className="mb-6"
+      <PageHeader
+        breadcrumbs={createBreadcrumbs([{ name: "About", path: "/about" }])}
+        eyebrow="About us"
+        title="About Growman"
+        description={`Growman is an online plant store backed by ${business.parentOrganization} in ${business.address.locality}. We sell indoor, outdoor, ornamental, fruit and medicinal plants, selected at the nursery and delivered across India.`}
+      />
+
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {facts.map((fact) => (
+          <Card key={fact.label} className="p-4 sm:p-5">
+            <dt className="sr-only">{fact.label}</dt>
+            <dd>
+              <span className="block font-space text-2xl font-semibold text-green-900">
+                {fact.value}
+              </span>
+              <span className="mt-0.5 block text-sm text-gray-600">{fact.label}</span>
+            </dd>
+          </Card>
+        ))}
+      </dl>
+
+      <section className="mt-14" aria-labelledby="buy-heading">
+        <SectionHeading
+          id="buy-heading"
+          title="Ways to buy"
+          description="Order online for delivery, collect in person, or ask for a quotation on larger orders."
         />
-        <div className="overflow-hidden rounded-3xl bg-linear-to-br from-green-50 to-green-100 px-6 py-10 text-center sm:px-8">
-          <Image
-            src="/growman.png"
-            alt="Growman"
-            width={48}
-            height={48}
-            className="mx-auto mb-4 rounded-md object-cover"
-          />
-          <p className="font-space text-[28px] font-bold italic tracking-tight text-green-950">
-            #Growman
-          </p>
-          <p className="mt-1.5 text-[13px] italic text-emerald-800">
-            Rooted in care, grown for you.
-          </p>
-          <div className="mx-auto my-5 h-px w-10 bg-emerald-600/25" />
-          <p className="text-[11px] text-gray-500">Growman · v2.0</p>
-        </div>
-
-        <section className="mt-8 rounded-2xl border border-emerald-100/80 bg-white p-5 sm:p-6">
-          <h1 className="font-space text-2xl font-bold tracking-tight text-green-900">
-            About Growman
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-gray-600">
-            Premium plants and gardening solutions for Indian homes. We ship healthy plants,
-            pots, and seeds across India — backed by Shiridi Sai Nursery in Hyderabad.
-          </p>
-          <p className="mt-3 flex items-center gap-2 text-sm text-emerald-800">
-            <FaSeedling className="h-4 w-4 shrink-0" />
-            Powered by Shiridi Sai Nursery
-          </p>
-        </section>
-
-        <div className="mt-8">
-          <StoreLocatorMap />
-        </div>
-
-        <section className="mt-8 rounded-2xl border border-emerald-100/80 bg-white p-5 sm:p-6">
-          <h2 className="text-base font-semibold text-green-900">Contact</h2>
-          <ul className="mt-4 space-y-3 text-sm text-gray-600">
-            <li className="flex items-start gap-2">
-              <FaMapMarkerAlt className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              Hyderabad
-            </li>
-            <li className="flex items-center gap-2">
-              <FaEnvelope className="h-4 w-4 shrink-0 text-emerald-600" />
-              <a href="mailto:growman.live@gmail.com" className="hover:text-emerald-800">
-                growman.live@gmail.com
-              </a>
-            </li>
-            <li className="flex items-center gap-2">
-              <FaPhone className="h-4 w-4 shrink-0 text-emerald-600" />
-              {/* The number is dialled by the link rather than printed, so it
-                  is not sitting in the page for scrapers to pick up. */}
-              <a
-                href={`tel:${business.telephone}`}
-                className="font-medium text-emerald-700 hover:text-emerald-800"
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+          {WAYS_TO_BUY.map(({ icon: Icon, title, body, link }) => (
+            <Card key={title} className="flex flex-col p-5 sm:p-6">
+              <Icon className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+              <h3 className="mt-3 text-base font-semibold text-green-900">{title}</h3>
+              <p className="mt-1.5 grow text-sm leading-relaxed text-gray-600">{body}</p>
+              <Link
+                href={link.href}
+                prefetch={false}
+                className="mt-4 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
               >
-                Contact us
-              </a>
-            </li>
-            <li className="flex items-center gap-2">
-              <FaClock className="h-4 w-4 shrink-0 text-emerald-600" />
-              9 AM – 7 PM (IST)
-            </li>
-          </ul>
+                {link.label} →
+              </Link>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-          <div className="mt-5 flex gap-3">
-            {/* Instagram is the only confirmed profile. The Facebook icon
-                previously linked to Instagram and the Twitter icon to a
-                malformed handle, so both are removed rather than pointing
-                users at broken profiles.
-                TODO: restore once the real profile URLs are known. */}
-            <a
-              href="https://www.instagram.com/growman.live/"
+      <div className="mt-14 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <StoreLocatorMap />
+
+        <section id="contact" aria-labelledby="contact-heading" className="scroll-mt-32">
+          <h2
+            id="contact-heading"
+            className="font-space text-xl font-semibold text-green-900"
+          >
+            Contact
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Questions about plants, orders or delivery
+          </p>
+          <Card className="mt-3 p-5">
+            <ul className="space-y-4 text-sm text-gray-700">
+              <li className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                <a
+                  href={business.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-800"
+                >
+                  <address className="not-italic">
+                    {business.parentOrganization}, {business.address.locality},{" "}
+                    {business.address.region}
+                  </address>
+                  <span className="text-xs text-emerald-700 underline underline-offset-2">
+                    Open in Google Maps
+                  </span>
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="h-4 w-4 shrink-0 text-emerald-700" />
+                {/* The number is dialled by the link rather than printed, so
+                    it is not sitting in the page for scrapers to pick up. */}
+                <a
+                  href={`tel:${business.telephone}`}
+                  className="font-medium text-emerald-700 hover:text-emerald-800"
+                >
+                  Call the nursery
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="h-4 w-4 shrink-0 text-emerald-700" />
+                <a
+                  href={`mailto:${business.email}`}
+                  className="break-all hover:text-emerald-800"
+                >
+                  {business.email}
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Clock className="h-4 w-4 shrink-0 text-emerald-700" />
+                {openingHoursDisplay}
+              </li>
+              <li className="flex items-center gap-3">
+                <FaInstagram className="h-4 w-4 shrink-0 text-emerald-700" />
+                <a
+                  href="https://www.instagram.com/growman.live/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-800"
+                >
+                  @growman.live
+                </a>
+              </li>
+            </ul>
+          </Card>
+
+          <Card className="mt-3 flex items-center gap-4 p-5">
+            <Image
+              src="/growman.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-11 w-11 shrink-0 rounded-lg object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-green-900">Growman for Android</p>
+              <p className="text-xs text-gray-500">Shop from your phone</p>
+            </div>
+            <ButtonLink
+              href={PLAY_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
-              aria-label="Growman on Instagram"
+              tone="secondary"
+              size="sm"
             >
-              <FaInstagram className="h-4 w-4" />
-            </a>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-2xl border border-emerald-100/80 bg-[#F9FAFB] p-5 sm:p-6">
-          <p className="text-sm text-gray-500">Get the Growman app</p>
-          <a
-            href={PLAY_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-800"
-          >
-            Install on Google Play →
-          </a>
-          <p className="mt-4">
-            <Link href="/shop" className="text-sm font-medium text-gray-500 hover:text-green-900">
-              Browse plants
-            </Link>
-          </p>
+              Install
+            </ButtonLink>
+          </Card>
         </section>
       </div>
-
-      <Footer />
-    </main>
+    </PageShell>
   );
 }

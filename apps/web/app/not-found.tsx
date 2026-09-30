@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
+import ButtonLink from '../components/ui/ButtonLink';
 import { getIndexableCollections } from '../lib/seo/catalog';
 
 /**
@@ -18,56 +18,37 @@ export default async function NotFound() {
   const collections = await getIndexableCollections();
 
   return (
-    <main className="bg-green-50 flex flex-col items-center justify-center text-center px-4 py-12">
-      <Image
-        src="/404.png"
-        alt=""
-        aria-hidden="true"
-        width={300}
-        height={300}
-        sizes="300px"
-        className="h-auto"
-      />
-      <h1 className="text-4xl sm:text-5xl font-extrabold text-green-800 mb-4">
-        Oops! Page not found
+    <main className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 py-16 text-center">
+      <p className="text-sm font-semibold tracking-[0.14em] text-emerald-700 uppercase">Error 404</p>
+      <h1 className="mt-2 font-space text-3xl font-semibold tracking-tight text-green-900 sm:text-4xl">
+        We couldn&rsquo;t find that page
       </h1>
-      <p className="text-lg text-green-700 max-w-md mb-6">
-        The page you&rsquo;re looking for might have been pruned or never
-        planted. Try one of these instead.
+      <p className="mt-3 max-w-md text-[15px] text-gray-600">
+        The link may be out of date, or the page may have moved. You can browse the catalog or
+        search for a plant instead.
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link
-          href="/"
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 shadow"
-        >
-          Back to home
-        </Link>
-        <Link
-          href="/shop"
-          className="border border-green-600 text-green-700 hover:bg-green-100 px-6 py-3 rounded-lg transition duration-200"
-        >
-          Browse all plants
-        </Link>
-        <Link
-          href="/search"
-          className="border border-green-600 text-green-700 hover:bg-green-100 px-6 py-3 rounded-lg transition duration-200"
-        >
+      <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
+        <ButtonLink href="/shop">Browse plants</ButtonLink>
+        <ButtonLink href="/search" tone="secondary">
           Search the catalog
-        </Link>
+        </ButtonLink>
+        <ButtonLink href="/" tone="ghost">
+          Go to the homepage
+        </ButtonLink>
       </div>
 
       {collections.length > 0 && (
-        <section className="mt-10 w-full max-w-2xl">
-          <h2 className="text-lg font-semibold text-green-800 mb-3">
+        <section className="mt-12 w-full" aria-labelledby="categories-heading">
+          <h2 id="categories-heading" className="text-sm font-semibold text-green-900">
             Plant categories
           </h2>
-          <ul className="flex flex-wrap justify-center gap-2">
+          <ul className="mt-3 flex flex-wrap justify-center gap-2">
             {collections.map(({ category }) => (
               <li key={category.id}>
                 <Link
                   href={`/categories/${category.slug}`}
-                  className="inline-block rounded-full bg-white px-3 py-1.5 text-sm font-medium text-emerald-800 border border-emerald-100 hover:bg-emerald-50"
+                  className="inline-block rounded-full border border-emerald-100 bg-white px-3.5 py-1.5 text-sm font-medium text-gray-700 hover:border-emerald-300 hover:text-green-900"
                 >
                   {category.name}
                 </Link>

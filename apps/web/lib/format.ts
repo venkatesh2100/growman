@@ -1,7 +1,7 @@
-/** Format a price as a rupee amount with no decimals, e.g. `₹499`. */
+/** Format a price as a rupee amount with no decimals and Indian digit grouping, e.g. `₹1,299`. */
 export function formatPrice(value: number | null | undefined): string {
   const n = Number(value);
-  return `₹${Number.isFinite(n) ? n.toFixed(0) : "0"}`;
+  return `₹${Number.isFinite(n) ? Math.round(n).toLocaleString("en-IN") : "0"}`;
 }
 
 export interface DiscountInfo {

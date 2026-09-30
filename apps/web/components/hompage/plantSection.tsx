@@ -37,56 +37,47 @@ export default async function PlantSection() {
   const featuredProducts = await getFeaturedProducts();
 
   return (
-    <section className="py-8 sm:py-12 md:py-16 bg-emerald-50">
-      <div className="container mx-auto px-3 sm:px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 sm:mb-8 md:mb-12">
+    <section className="py-12 sm:py-16" aria-labelledby="featured-heading">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-1 sm:mb-2">
-              Featured Plants
+            <h2
+              id="featured-heading"
+              className="font-space text-xl font-semibold tracking-tight text-green-900 sm:text-2xl"
+            >
+              Featured plants
             </h2>
-            <p className="text-sm sm:text-base text-green-700">
-              A selection from our current collection
+            <p className="mt-1 text-sm text-gray-600 sm:text-base">
+              A selection from the current collection
             </p>
           </div>
           <Link
-            href="/categories"
-            className="mt-4 md:mt-0 px-5 sm:px-6 py-2 border-2 border-emerald-700 text-emerald-700 rounded-full font-medium hover:bg-emerald-700 hover:text-white active:bg-emerald-700 transition duration-300 text-sm sm:text-base touch-manipulation"
+            href="/shop"
+            className="shrink-0 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
           >
-            View all categories
+            Shop all plants →
           </Link>
         </div>
 
         {featuredProducts.length > 0 ? (
-          <div
-            className="
-      flex flex-nowrap gap-4 overflow-x-auto pb-4
-      snap-x snap-mandatory scroll-smooth
-      scrollbar-hide
-      -mx-3 sm:-mx-4 px-3 sm:px-4 scroll-px-3 sm:scroll-px-4
-  "
-          >
+          <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:gap-4 sm:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8">
             {featuredProducts.map((product: Product) => (
               <div
                 key={product.id}
-                className="
-                 shrink-0
-                 w-[75%] sm:w-[45%] md:w-[280px] lg:w-[300px]
-               snap-start"
+                className="w-[46%] shrink-0 snap-start sm:w-[31%] md:w-[240px] lg:w-[268px]"
               >
                 <ProductCard product={product} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-600">
-              No featured plants available at the moment.{" "}
-              <Link href="/shop" className="text-emerald-700 underline">
-                Browse the full collection
-              </Link>
-              .
-            </p>
-          </div>
+          <p className="rounded-2xl border border-emerald-100 bg-white py-8 text-center text-sm text-gray-600">
+            There are no featured plants right now.{" "}
+            <Link href="/shop" className="font-medium text-emerald-700 hover:text-emerald-900">
+              Browse the full catalog
+            </Link>
+            .
+          </p>
         )}
       </div>
     </section>

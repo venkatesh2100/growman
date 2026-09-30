@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingCart, Heart, Zap } from "lucide-react";
-import { Product, ProductSize } from "../../../lib/types";
-import { useCartStore } from "../../../lib/store/cartStore";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Product, ProductSize } from "../../../lib/types";
+import { apiFetch } from "../../../lib/api";
+import { useAuthStore } from "../../../lib/store/authStore";
+import { useCartStore } from "../../../lib/store/cartStore";
 import { toast } from "../../../lib/toast";
 import { buildCartLine } from "../../../lib/cart";
 
@@ -18,153 +19,137 @@ export default function AddToCart({
 }) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const outOfStock = selectedSize.stock <= 0;
 
-  const handleAddToCart = () => {
-    if (selectedSize.stock === 0) {
-      toast("This item is out of stock", "error");
-      return;
+  // Keep the chosen quantity within what the newly selected size has.
+  useEffect(() => {
+    setQuantity((q) => Math.max(1, Math.min(q, selectedSize.stock || 1)));
+  }, [selectedSize.id, selectedSize.stock]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await apiFetch("/wishlist");
+        if (!res.ok) return;
+        const data = await res.json();
+        const list: Array<{ id: number }> = Array.isArray(data) ? data : data.data || [];
+        if (!cancelled) setIsWishlisted(list.some((p) => p.id === product.id));
+      } catch {
+        // The heart just stays unfilled; saving still works.
+      }
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, product.id]);
+
+  const addToCart = (announce: boolean) => {
+    if (outOfStock) {
+      toast("This size is out of stock.", "error");
+      return false;
     }
-
-    const qty = Math.min(quantity, selectedSize.stock);
-
-    // Add to cart store
-    addItem(buildCartLine(product, selectedSize, qty));
-
-    // Show toast notification
-    toast(`${product.name} (${selectedSize.label}) added to cart!`);
+    addItem(buildCartLine(product, selectedSize, Math.min(quantity, selectedSize.stock)));
+    if (announce) toast(`${product.name} (${selectedSize.label}) added to cart`);
+    return true;
   };
 
-  const handleBuyNow = () => {
-    if (selectedSize.stock === 0) {
-      toast("This item is out of stock", "error");
+  const buyNow = () => {
+    if (addToCart(false)) router.push("/checkout");
+  };
+
+  const toggleWishlist = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(`/product/${product.slug}`)}`);
       return;
     }
-
-    // Add to cart first
-    handleAddToCart();
-
-    // Navigate to checkout
-    setTimeout(() => {
-      router.push('/checkout');
-    }, 300);
+    setWishlistBusy(true);
+    const next = !isWishlisted;
+    try {
+      const res = next
+        ? await apiFetch("/wishlist", {
+            method: "POST",
+            body: JSON.stringify({ productId: product.id }),
+          })
+        : await apiFetch(`/wishlist/${product.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("wishlist update failed");
+      setIsWishlisted(next);
+      toast(next ? "Saved to your wishlist" : "Removed from your wishlist");
+    } catch {
+      toast("Couldn't update your wishlist. Please try again.", "error");
+    } finally {
+      setWishlistBusy(false);
+    }
   };
 
   return (
-    <>
-      <div className="space-y-4">
-        {/* Quantity Selector */}
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-700 font-medium">Quantity:</span>
-          <div className="flex items-center border-2 border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              disabled={quantity <= 1}
-            >
-              -
-            </button>
-            <span className="px-6 py-2 font-semibold text-gray-900 min-w-12 text-center">
-              {quantity}
-            </span>
-            <button
-              onClick={() => setQuantity((q) => Math.min(selectedSize.stock, q + 1))}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              disabled={quantity >= selectedSize.stock}
-            >
-              +
-            </button>
-          </div>
-          <span className="text-sm text-gray-500">
-            {selectedSize.stock} available
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <span className="text-sm font-medium text-gray-700">Quantity</span>
+        <div className="flex items-center rounded-xl border border-emerald-200 bg-white">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            disabled={quantity <= 1 || outOfStock}
+            aria-label="Decrease quantity"
+            className="flex h-10 w-10 items-center justify-center text-gray-700 hover:bg-emerald-50/60 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <span className="w-10 text-center text-sm font-semibold text-green-900" aria-live="polite">
+            {quantity}
           </span>
-        </div>
-
-        {/* Buttons */}
-      <div className="flex flex-wrap gap-3">
           <button
-            onClick={handleAddToCart}
-            disabled={selectedSize.stock === 0}
-            className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all ${
-              selectedSize.stock === 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg"
-            }`}
+            type="button"
+            onClick={() => setQuantity((q) => Math.min(selectedSize.stock, q + 1))}
+            disabled={quantity >= selectedSize.stock || outOfStock}
+            aria-label="Increase quantity"
+            className="flex h-10 w-10 items-center justify-center text-gray-700 hover:bg-emerald-50/60 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ShoppingCart size={18} className="mr-2" />
-            Add to Cart
-          </button>
-
-          <button
-            onClick={handleBuyNow}
-            disabled={selectedSize.stock === 0}
-            className={`flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all ${
-              selectedSize.stock === 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:shadow-lg"
-            }`}
-          >
-            <Zap size={18} className="mr-2" />
-            Buy Now
-          </button>
-
-          <button
-            onClick={() => setIsWishlisted(!isWishlisted)}
-            className={`p-3 border-2 rounded-lg transition-all transform hover:scale-105 active:scale-95 ${
-              isWishlisted
-                ? "bg-red-50 border-red-300 text-red-600"
-                : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-            }`}
-            aria-label="Add to wishlist"
-          >
-            <Heart size={22} className={isWishlisted ? "fill-red-500" : ""} />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {/* Login Popup */}
-      <AnimatePresence>
-        {showLoginPrompt && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
-            onClick={() => setShowLoginPrompt(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-xl font-semibold mb-3 text-center">
-                Please Sign In to Continue
-              </h2>
-              <p className="text-gray-500 mb-6 text-center">
-                You need to sign in to proceed with checkout.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => router.push("/login")}
-                  className="flex-1 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => setShowLoginPrompt(false)}
-                  className="flex-1 px-5 py-2.5 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      <div className="flex gap-2.5">
+        <button
+          type="button"
+          onClick={() => addToCart(true)}
+          disabled={outOfStock}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-gray-400 sm:text-base"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          {outOfStock ? "Out of stock" : "Add to cart"}
+        </button>
+        <button
+          type="button"
+          onClick={buyNow}
+          disabled={outOfStock}
+          className="flex flex-1 items-center justify-center rounded-lg border-2 border-emerald-700 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 sm:text-base"
+        >
+          Buy now
+        </button>
+        <button
+          type="button"
+          onClick={() => void toggleWishlist()}
+          disabled={wishlistBusy}
+          aria-pressed={isWishlisted}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Save to wishlist"}
+          className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-60 ${
+            isWishlisted
+              ? "border-rose-200 bg-rose-50 text-rose-600"
+              : "border-emerald-200 bg-white text-gray-600 hover:text-green-900"
+          }`}
+        >
+          <Heart className={`h-5 w-5 ${isWishlisted ? "fill-rose-500" : ""}`} />
+        </button>
+      </div>
+    </div>
   );
 }

@@ -37,7 +37,7 @@ function CollectionTile({
     // center via the parent `justify-center` instead of sticking left.
     <li className={`w-24 sm:w-28 lg:w-36 ${className}`.trim()}>
       <Link href={href} className="group flex flex-col items-center text-center">
-        <div className="relative aspect-square w-full overflow-hidden rounded-full bg-emerald-50 ring-1 ring-emerald-100 transition group-hover:ring-2 group-hover:ring-emerald-400">
+        <div className="relative aspect-square w-full overflow-hidden rounded-full bg-emerald-50 ring-1 ring-emerald-100 transition group-hover:ring-2 group-hover:ring-emerald-600">
           <CollectionTileImage
             urls={image?.urls ?? []}
             fallbackLabel={name}
@@ -47,10 +47,10 @@ function CollectionTile({
 
         {/* `capitalize` only affects names the catalog stores lower-case,
             such as "bonsai"; already-capitalised names are unchanged. */}
-        <span className="mt-3 text-sm font-semibold capitalize text-green-900 group-hover:text-emerald-700 sm:text-base">
+        <span className="mt-3 text-sm font-semibold capitalize text-green-900 group-hover:text-emerald-800 sm:text-[15px]">
           {name}
         </span>
-        <span className="mt-0.5 text-xs text-emerald-700">{caption}</span>
+        <span className="mt-0.5 text-xs text-gray-500">{caption}</span>
       </Link>
     </li>
   );
@@ -103,12 +103,12 @@ function buildPlantTypes(collections: IndexableCategory[]) {
  * the live catalog.
  */
 export default async function CategoryLinksSection({
-  title = "Shop Plants by Category",
-  description = "Browse our collections and pick plants suited to your space.",
+  title = "Shop by category",
+  description = "Every collection in the catalog, with the number of plants in each.",
   showPlantTypes = true,
   plantTypesLayout = "wrap",
   withContainer = true,
-  className = "py-8 sm:py-12 md:py-16",
+  className = "py-12 sm:py-16",
 }: CategoryLinksSectionProps = {}) {
   const collections = await getIndexableCollections();
   if (collections.length === 0) return null;
@@ -121,12 +121,12 @@ export default async function CategoryLinksSection({
     <>
       <h2
         id={headingId}
-        className="text-2xl sm:text-3xl font-bold text-green-900 mb-1 sm:mb-2"
+        className="font-space text-xl font-semibold tracking-tight text-green-900 sm:text-2xl"
       >
         {title}
       </h2>
       {description ? (
-        <p className="text-sm sm:text-base text-green-700 mb-6 sm:mb-8">
+        <p className="mt-1 mb-6 text-sm text-gray-600 sm:mb-8 sm:text-base">
           {description}
         </p>
       ) : (
@@ -150,11 +150,11 @@ export default async function CategoryLinksSection({
 
       {plantTypes.length > 0 && (
         <>
-          <h3 className="mt-10 mb-6 text-xl sm:text-2xl font-bold text-green-900 sm:mt-14">
-            Shop by Plant Type
+          <h3 className="mt-10 mb-6 font-space text-lg font-semibold text-green-900 sm:mt-14 sm:text-xl">
+            Shop by plant type
           </h3>
           {plantTypesScroll ? (
-            <HorizontalScrollRow label="Shop by Plant Type">
+            <HorizontalScrollRow label="Shop by plant type">
               {plantTypes.map(
                 ({ subcategory, image, categorySlug, parentName }) => (
                   <CollectionTile
@@ -191,7 +191,7 @@ export default async function CategoryLinksSection({
   return (
     <section className={className} aria-labelledby={headingId}>
       {withContainer ? (
-        <div className="container mx-auto px-3 sm:px-4">{body}</div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{body}</div>
       ) : (
         body
       )}

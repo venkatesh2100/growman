@@ -8,6 +8,7 @@ import {
 } from "../../lib/data";
 import type { ProductsPagination } from "../../lib/data";
 import { apiFetch } from "../../lib/api";
+import { buttonClass } from "../../components/ui/buttonStyles";
 import type { Category } from "../../lib/types";
 import {
   getActiveFilterLabel,
@@ -90,16 +91,13 @@ export default async function ShopProducts({
   return (
     <div id="shop-products">
       {activeFilter && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border-emerald-100 bg-emerald-50 px-4 py-3">
-          <span className="text-sm text-emerald-900">
-            Filter: <strong>{filterLabel}</strong>
-            {" · "}
-            {pagination.total}{" "}
-            {pagination.total === 1 ? "plant" : "plants"}
+        <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-100 bg-white px-4 py-2.5 text-sm">
+          <span className="text-gray-600">
+            Showing <strong className="font-semibold text-green-900">{filterLabel}</strong>
           </span>
           <Link
             href="/shop"
-            className="ml-auto text-sm font-medium text-emerald-700 underline hover:text-emerald-900"
+            className="ml-auto font-medium text-emerald-700 hover:text-emerald-900"
           >
             Clear filter
           </Link>
@@ -111,13 +109,15 @@ export default async function ShopProducts({
         title={getShopTitle(resolvedSearchParams, catalog)}
         countLabel={
           pagination.total > 0
-            ? `Showing ${rangeStart}–${rangeEnd} of ${pagination.total} plants`
+            ? pagination.totalPages > 1
+              ? `${rangeStart}–${rangeEnd} of ${pagination.total}`
+              : `${pagination.total} ${pagination.total === 1 ? "plant" : "plants"}`
             : undefined
         }
         emptyMessage={
           activeFilter
             ? "No plants match this filter. Try another category or browse all plants."
-            : "No plants found. Please check back later."
+            : "The catalog is being updated. Please check back shortly."
         }
       />
 
@@ -131,10 +131,7 @@ export default async function ShopProducts({
 
       {activeFilter && pagination.total === 0 && (
         <div className="mt-6 text-center">
-          <Link
-            href="/shop"
-            className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-          >
+          <Link href="/shop" className={buttonClass("primary", "md")}>
             View all plants
           </Link>
         </div>

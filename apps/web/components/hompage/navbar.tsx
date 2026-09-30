@@ -5,10 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Lock, Mic, ScanSearch, ShoppingBag } from "lucide-react";
 import { searchProducts } from "../../lib/api";
 import { useCartStore } from "../../lib/store/cartStore";
 import { useAuthStore } from "../../lib/store/authStore";
-import { ShoppingBag, Mic, ScanSearch } from "lucide-react";
 import CategoryFilterBar from "./CategoryFilterBar";
 import AccountMenu from "./AccountMenu";
 
@@ -34,11 +34,20 @@ type BrowserSpeechRecognition = {
 };
 
 const navLinks = [
-  { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
   { href: "/categories", label: "Categories" },
+  { href: "/gifting", label: "Gifting" },
+  { href: "/bulk", label: "Bulk orders" },
   { href: "/about", label: "About" },
 ];
+
+const mobileExtraLinks = [
+  { href: "/blog", label: "Plant care guides" },
+  { href: "/help-center", label: "Help Center" },
+];
+
+const iconButton =
+  "relative inline-flex h-10 w-10 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-50 hover:text-emerald-900 active:scale-95 touch-manipulation";
 
 const Icon = ({ children, className = "h-5 w-5" }: { children: React.ReactNode; className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,10 +79,20 @@ const MenuIcon = () => (
   </Icon>
 );
 
-const CloseIcon = () => (
-  <Icon className="h-6 w-6">
+const CloseIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <Icon className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </Icon>
+);
+
+const Wordmark = () => (
+  <Link href="/" className="group flex shrink-0 items-center gap-1 touch-manipulation" aria-label="Growman home">
+    <Image src="/logo.png" alt="" width={56} height={56} priority className="h-11 w-11 object-contain md:h-12 md:w-12" />
+    {/* Not an <h1>: each page owns its own H1. */}
+    <span className="font-space text-2xl font-bold tracking-tight text-green-800 transition-colors group-hover:text-emerald-700 sm:text-3xl md:text-[2rem]">
+      Growman
+    </span>
+  </Link>
 );
 
 const SearchResults = ({
@@ -93,10 +112,10 @@ const SearchResults = ({
 }) => (
   <AnimatePresence>
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
+      initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      className="absolute top-full left-0 right-0 z-50 mt-2 max-h-[60vh] overflow-y-auto overscroll-contain rounded-2xl border border-emerald-100/80 bg-white shadow-[0_12px_40px_rgba(6,78,59,0.12)] sm:max-h-96"
+      exit={{ opacity: 0, y: -6 }}
+      className="absolute top-full right-0 left-0 z-50 mt-2 max-h-[60vh] overflow-y-auto overscroll-contain rounded-2xl border border-emerald-100/80 bg-white shadow-[0_12px_40px_rgba(6,78,59,0.12)] sm:max-h-96"
     >
       {loading && results.length === 0 ? (
         <div className="space-y-2 p-3">
@@ -121,7 +140,7 @@ const SearchResults = ({
             }}
             className="mt-2 text-sm font-medium text-emerald-700 hover:text-emerald-800"
           >
-            Search catalog
+            Search the full catalog
           </button>
         </div>
       ) : (
@@ -139,7 +158,7 @@ const SearchResults = ({
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl.trim()}
-                  alt={product.name}
+                  alt=""
                   width={44}
                   height={44}
                   className="h-11 w-11 shrink-0 rounded-lg object-cover"
@@ -154,7 +173,7 @@ const SearchResults = ({
                 ) : null}
               </div>
               <p className="shrink-0 text-sm font-semibold text-emerald-700">
-                {product.currency} {Number(product.price || 0).toFixed(0)}
+                ₹{Number(product.price || 0).toFixed(0)}
               </p>
             </button>
           ))}
@@ -166,7 +185,7 @@ const SearchResults = ({
             }}
             className="mt-1 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
           >
-            View all results
+            See all results
           </button>
         </div>
       )}
@@ -174,10 +193,34 @@ const SearchResults = ({
   </AnimatePresence>
 );
 
+/** Header shown on checkout: brand, reassurance and a way back, nothing else to click. */
+function CheckoutHeader() {
+  return (
+    <div>
+      <header className="fixed inset-x-0 top-0 z-50 bg-linear-to-b from-green-200 to-emerald-100 shadow-sm">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 md:h-[72px] lg:px-8">
+          <Wordmark />
+          <p className="hidden items-center gap-1.5 text-sm font-medium text-green-800 sm:flex">
+            <Lock className="h-4 w-4 text-emerald-700" />
+            Secure checkout
+          </p>
+          <Link
+            href="/cart"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-50 hover:text-emerald-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to cart
+          </Link>
+        </div>
+      </header>
+      <div className="h-16 md:h-[72px]" aria-hidden="true" />
+    </div>
+  );
+}
+
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showCategories, setShowCategories] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -192,27 +235,26 @@ export default function Navbar() {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const navbarRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
   const voiceResultRef = useRef<string | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const lastScrollYRef = useRef(0);
 
-  // Cart store
   const totalQuantity = useCartStore((state) => state.getTotalQuantity());
 
-  // Auth store
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  const isCheckout = pathname === "/checkout" || pathname?.startsWith("/checkout/");
 
   // Check auth status on mount and when pathname changes (after navigation)
   useEffect(() => {
     checkAuth();
   }, [checkAuth, pathname]);
 
-  // Close account menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
@@ -231,21 +273,24 @@ export default function Navbar() {
 
   useEffect(() => setIsMounted(true), []);
 
+  // The last position lives in a ref so scrolling only re-renders the header
+  // when one of the two visible states actually flips.
   useEffect(() => {
     if (!isMounted) return;
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      const last = lastScrollYRef.current;
+      if (currentScrollY > last && currentScrollY > 120) {
         setShowCategories(false);
-      } else if (currentScrollY < lastScrollY) {
+      } else if (currentScrollY < last) {
         setShowCategories(true);
       }
-      setIsScrolled(currentScrollY > 50);
-      setLastScrollY(currentScrollY);
+      setIsScrolled(currentScrollY > 8);
+      lastScrollYRef.current = currentScrollY;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY, isMounted]);
+  }, [isMounted]);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -388,37 +433,33 @@ export default function Navbar() {
   // wait for mount, to keep the server and first client render identical.
   const cartCount = isMounted ? totalQuantity : 0;
 
+  if (isCheckout) return <CheckoutHeader />;
+
+  const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
+
   return (
-    <div ref={navbarRef}>
-      <motion.header
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? "bg-gradient-to-r from-green-100 to-emerald-50 shadow-lg py-1.5 sm:py-2" : "bg-gradient-to-b from-green-200 to-emerald-100 backdrop-blur-sm py-2 sm:py-3"
+    <div>
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-linear-to-r from-green-100 to-emerald-50 shadow-lg"
+            : "bg-linear-to-b from-green-200 to-emerald-100 backdrop-blur-sm"
         }`}
       >
-        <div className="container mx-auto px-3 sm:px-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center sm:gap-1 group touch-manipulation">
-            <Image
-              src="/logo.png"
-              alt=""
-              width={56}
-              height={56}
-              priority
-              className="h-11 w-11 sm:h-14 sm:w-14 object-contain"
-            />
-            {/* Not an <h1>: each page owns its own H1. */}
-            <span className="font-space text-3xl sm:text-3xl md:text-[2rem] font-bold tracking-tight text-green-800 group-hover:text-emerald-700 transition-colors">
-              Growman
-            </span>
-          </Link>
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 md:h-[72px] lg:px-6">
+          <Wordmark />
 
-          <nav className="hidden md:flex space-x-1">
+          <nav aria-label="Main" className="hidden items-center gap-0.5 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 prefetch={link.href === "/about" ? false : undefined}
-                className={`px-3 sm:px-4 py-2 font-medium rounded-lg transition-colors text-sm sm:text-base ${
-                  pathname === link.href ? "text-emerald-700 bg-emerald-50 font-semibold" : "text-green-800 hover:text-emerald-600 hover:bg-emerald-50"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
+                  isActive(link.href)
+                    ? "bg-emerald-50 font-semibold text-emerald-700"
+                    : "text-green-800 hover:bg-emerald-50 hover:text-emerald-600"
                 }`}
               >
                 {link.label}
@@ -426,52 +467,62 @@ export default function Navbar() {
             ))}
           </nav>
 
-
-          <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3">
-            <div ref={searchContainerRef} className="hidden md:block relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center bg-emerald-50 rounded-full pl-3 sm:pl-4 pr-2 py-1 transition-all duration-300 shadow-inner">
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            <div ref={searchContainerRef} className="relative mr-1 hidden md:block">
+              <form
+                onSubmit={handleSearchSubmit}
+                role="search"
+                className="flex items-center rounded-full bg-emerald-50 py-1 pr-1.5 pl-4 shadow-inner transition-all duration-300"
+              >
                 <input
-                  type="text"
-                  placeholder="Search plants, seeds, tools..."
+                  type="search"
+                  placeholder="Search plants"
+                  aria-label="Search plants"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                  className="bg-transparent outline-none w-48 sm:w-58 text-sm sm:text-base text-green-800 placeholder-emerald-600/70"
+                  className="w-44 bg-transparent text-sm text-green-800 outline-none placeholder:text-emerald-600/70 xl:w-56"
                 />
                 <button
                   type="button"
                   onClick={handleVoicePress}
-                  className={`p-1.5 sm:p-2 rounded-full transition-colors touch-manipulation ${listening ? "text-rose-600 bg-rose-50" : "text-emerald-700 hover:text-emerald-900"}`}
-                  aria-label={listening ? "Stop voice search" : "Start voice search"}
+                  className={`rounded-full p-1.5 transition-colors touch-manipulation ${listening ? "bg-rose-50 text-rose-600" : "text-emerald-700 hover:text-emerald-900"}`}
+                  aria-label={listening ? "Stop voice search" : "Search by voice"}
                 >
-                  <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Mic className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={handleScanPress}
-                  className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation"
-                  aria-label="Open AI plant scan"
+                  className="rounded-full p-1.5 text-emerald-700 transition-colors hover:text-emerald-900 touch-manipulation"
+                  aria-label="Identify a plant from a photo"
                 >
-                  <ScanSearch className={`h-4 w-4 sm:h-5 sm:w-5 ${scanning ? "animate-pulse" : ""}`} />
+                  <ScanSearch className={`h-4 w-4 ${scanning ? "animate-pulse" : ""}`} />
                 </button>
                 {searchQuery.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="p-1.5 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95"
+                    className="rounded-full p-1.5 text-emerald-700 transition-colors hover:text-emerald-900 touch-manipulation"
                     aria-label="Clear search"
                   >
-                    <CloseIcon />
+                    <CloseIcon className="h-4 w-4" />
                   </button>
                 )}
-                <button type="submit" aria-label="Search" className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation">
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="ml-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 transition-colors hover:text-emerald-900 touch-manipulation"
+                >
                   {isSearching ? (
-                    <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   ) : (
-                    <SearchIcon />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   )}
                 </button>
               </form>
@@ -486,37 +537,19 @@ export default function Navbar() {
               )}
             </div>
 
-            <button className="md:hidden p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
+            <button className={`${iconButton} md:hidden`} onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
               <SearchIcon />
             </button>
 
-            {/* Cart Icon with Badge */}
-            <Link
-              href="/cart"
-              className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors relative touch-manipulation active:scale-95"
-              aria-label="Cart"
-              data-cart-icon
-            >
-              <CartIcon />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-red-600 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-lg"
-                >
-                  {cartCount > 99 ? '99+' : cartCount}
-                </motion.span>
-              )}
-            </Link>
-
-            {/* Account Menu */}
             <div ref={accountMenuRef} className="relative">
               <button
                 onMouseEnter={() => setShowAccountMenu(true)}
                 onMouseLeave={() => setShowAccountMenu(false)}
                 onClick={() => setShowAccountMenu(!showAccountMenu)}
-                className="p-1.5 sm:p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors touch-manipulation active:scale-95"
+                className={iconButton}
                 aria-label="Account"
+                aria-haspopup="menu"
+                aria-expanded={showAccountMenu}
               >
                 <UserIcon />
               </button>
@@ -531,55 +564,86 @@ export default function Navbar() {
               />
             </div>
 
-            <button className="md:hidden p-1.5 sm:p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg ml-1 sm:ml-2 touch-manipulation active:scale-95" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label={isMenuOpen ? "Close menu" : "Open menu"}>
-              {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
+            <Link
+              href="/cart"
+              className={iconButton}
+              aria-label={cartCount > 0 ? `Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}` : "Cart"}
+              data-cart-icon
+            >
+              <CartIcon />
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-0 right-0 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white shadow-lg sm:h-5 sm:min-w-5 sm:text-xs"
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </motion.span>
+              )}
+            </Link>
+
+            <button
+              className={`${iconButton} lg:hidden`}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMenuOpen}
+            >
+              {isMenuOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon />}
             </button>
           </div>
         </div>
 
         {isSearchOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-3 py-2 sm:py-3 md:hidden"
+          >
             <div ref={searchContainerRef} className="relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center rounded-2xl px-2.5 py-2 border border-emerald-100 bg-white shadow-inner">
+              <form
+                onSubmit={handleSearchSubmit}
+                role="search"
+                className="flex items-center rounded-2xl border border-emerald-100 bg-white px-2.5 py-2 shadow-inner"
+              >
                 <span className="p-1 text-emerald-700">
                   <SearchIcon />
                 </span>
                 <input
                   ref={searchRef}
-                  type="text"
-                  placeholder="Search catalog or ask Dootha..."
+                  type="search"
+                  placeholder="Search plants"
+                  aria-label="Search plants"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                  className="bg-transparent outline-none w-full text-sm sm:text-base text-green-800 placeholder-gray-400 px-1.5"
+                  className="w-full bg-transparent px-1.5 text-base text-green-800 outline-none placeholder:text-gray-400"
                 />
                 <button
                   type="button"
                   onClick={handleVoicePress}
-                  className={`mr-1 p-1 rounded-full transition-colors touch-manipulation ${listening ? "text-rose-600 bg-rose-50" : "text-emerald-700 hover:text-emerald-900"}`}
-                  aria-label={listening ? "Stop voice search" : "Start voice search"}
+                  className={`mr-1 rounded-full p-1 transition-colors touch-manipulation ${listening ? "bg-rose-50 text-rose-600" : "text-emerald-700 hover:text-emerald-900"}`}
+                  aria-label={listening ? "Stop voice search" : "Search by voice"}
                 >
                   <Mic className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={handleScanPress}
-                  className="mr-1 p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation"
-                  aria-label="Open AI plant scan"
+                  className="mr-1 rounded-full p-1 text-emerald-700 transition-colors hover:text-emerald-900 touch-manipulation"
+                  aria-label="Identify a plant from a photo"
                 >
                   <ScanSearch className={`h-4 w-4 ${scanning ? "animate-pulse" : ""}`} />
                 </button>
-                {searchQuery.length > 0 && (
-                  <button
-                    type="button"
-                    className="p-1.5 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95"
-                    onClick={() => setSearchQuery("")}
-                    aria-label="Clear search"
-                  >
-                    <CloseIcon />
-                  </button>
-                )}
-                <button type="button" aria-label="Close search" className="p-1 text-emerald-700 hover:text-emerald-900 rounded-full transition-colors touch-manipulation active:scale-95" onClick={() => { setIsSearchOpen(false); setShowSearchResults(false); }}>
+                <button
+                  type="button"
+                  aria-label="Close search"
+                  className="rounded-full p-1 text-emerald-700 transition-colors hover:text-emerald-900 active:scale-95 touch-manipulation"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setShowSearchResults(false);
+                  }}
+                >
                   <CloseIcon />
                 </button>
               </form>
@@ -587,13 +651,10 @@ export default function Navbar() {
                 type="button"
                 onClick={handleCatalogSearch}
                 disabled={!searchQuery.trim()}
-                className={`mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-colors ${
-                  searchQuery.trim() ? "bg-emerald-700 text-white" : "bg-gray-200 text-gray-400"
-                }`}
-                aria-label="Search shop"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 py-3 text-sm font-semibold text-white transition-colors disabled:bg-gray-200 disabled:text-gray-400"
               >
                 <ShoppingBag className="h-4 w-4" />
-                Search shop
+                Search the shop
               </button>
               {showSearchResults && (
                 <SearchResults
@@ -611,36 +672,64 @@ export default function Navbar() {
 
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-t border-emerald-100 max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain">
-              <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-col space-y-1 sm:space-y-2">
-                {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} prefetch={link.href === "/about" ? false : undefined} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">
+            <motion.nav
+              aria-label="Mobile"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-emerald-100 bg-white lg:hidden"
+            >
+              <div className="mx-auto flex max-w-7xl flex-col space-y-1 px-3 py-3 sm:px-4">
+                {[...navLinks, ...mobileExtraLinks].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    prefetch={false}
+                    aria-current={isActive(link.href) ? "page" : undefined}
+                    className={`rounded-lg px-3 py-3 text-base font-medium transition-colors touch-manipulation ${
+                      isActive(link.href)
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "text-emerald-800 hover:bg-emerald-50 hover:text-emerald-600 active:bg-emerald-100"
+                    }`}
+                  >
                     {link.label}
                   </Link>
                 ))}
-                <Link href="/contact" prefetch={false} className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-emerald-800 font-medium hover:text-emerald-600 active:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg transition-colors touch-manipulation">Contact</Link>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-2 sm:pb-3">
-                  <Link href="/account" prefetch={false} className="flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
-                    <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><UserIcon /></span>Account
+                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-emerald-100 pt-3">
+                  <Link
+                    href={isMounted && isLoggedIn ? "/account" : "/login"}
+                    prefetch={false}
+                    className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-emerald-800 hover:bg-emerald-50 active:bg-emerald-100 touch-manipulation"
+                  >
+                    <span className="h-5 w-5">
+                      <UserIcon />
+                    </span>
+                    {isMounted && isLoggedIn ? "Account" : "Sign in"}
                   </Link>
-                  <Link href="/cart" className="relative flex items-center justify-center text-emerald-800 px-4 py-2.5 font-medium hover:bg-emerald-50 active:bg-emerald-100 rounded-lg touch-manipulation">
-                    <span className="h-4 w-4 sm:h-5 sm:w-5 mr-2"><CartIcon /></span>Cart
+                  <Link
+                    href="/cart"
+                    className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-emerald-800 hover:bg-emerald-50 active:bg-emerald-100 touch-manipulation"
+                  >
+                    <span className="h-5 w-5">
+                      <CartIcon />
+                    </span>
+                    Cart
                     {cartCount > 0 && (
-                      <span className="ml-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {cartCount > 99 ? '99+' : cartCount}
+                      <span className="rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
+                        {cartCount > 99 ? "99+" : cartCount}
                       </span>
                     )}
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </motion.nav>
           )}
         </AnimatePresence>
-      </motion.header>
+      </header>
 
       <CategoryFilterBar show={showCategories} />
 
-      <div className="h-20 sm:h-24 md:h-28 lg:h-32"></div>
+      <div className="h-[108px] md:h-[116px]" aria-hidden="true" />
     </div>
   );
 }

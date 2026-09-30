@@ -59,22 +59,22 @@ export default function Pagination({
 
   return (
     <nav
-      className="mt-8 flex flex-col items-center gap-3 border-t border-emerald-100 pt-6"
+      className="mt-10 flex flex-col items-center gap-3 border-t border-emerald-100 pt-6"
       aria-label="Product pagination"
     >
-      <p className="text-sm text-slate-600">
-        Page <span className="font-semibold text-slate-900">{page}</span> of{" "}
-        <span className="font-semibold text-slate-900">{totalPages}</span>
+      <p className="text-sm text-gray-500">
+        Page <span className="font-semibold text-green-900">{page}</span> of{" "}
+        <span className="font-semibold text-green-900">{totalPages}</span>
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <Link
           href={buildHref(basePath, searchParams, Math.max(1, page - 1), hash)}
           aria-disabled={!hasPrev}
-          className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+          className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
             hasPrev
-              ? "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"
-              : "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
+              ? "border-emerald-100 bg-white text-green-900 hover:border-emerald-300"
+              : "pointer-events-none border-emerald-100 bg-emerald-50/60 text-gray-400"
           }`}
         >
           Previous
@@ -86,17 +86,17 @@ export default function Pagination({
           return (
             <span key={p} className="flex items-center gap-1.5">
               {showEllipsis ? (
-                <span className="px-1 text-slate-400" aria-hidden>
+                <span className="px-1 text-gray-400" aria-hidden>
                   …
                 </span>
               ) : null}
               <Link
                 href={buildHref(basePath, searchParams, p, hash)}
                 aria-current={p === page ? "page" : undefined}
-                className={`min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm font-medium transition ${
+                className={`min-w-9 rounded-xl border px-3 py-2 text-center text-sm font-medium transition ${
                   p === page
                     ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"
+                    : "border-emerald-100 bg-white text-green-900 hover:border-emerald-300"
                 }`}
               >
                 {p}
@@ -108,10 +108,10 @@ export default function Pagination({
         <Link
           href={buildHref(basePath, searchParams, page + 1, hash)}
           aria-disabled={!hasNext}
-          className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+          className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
             hasNext
-              ? "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"
-              : "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
+              ? "border-emerald-100 bg-white text-green-900 hover:border-emerald-300"
+              : "pointer-events-none border-emerald-100 bg-emerald-50/60 text-gray-400"
           }`}
         >
           Next

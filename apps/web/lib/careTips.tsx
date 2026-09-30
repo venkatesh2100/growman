@@ -59,10 +59,10 @@ const TAG_CARE_TIPS: Record<string, CareTip> = {
   "air-purify": { icon: "air", text: "Air purifying" },
   "air purify": { icon: "air", text: "Air purifying" },
   bonsai: { icon: "bonsai", text: "Needs pruning" },
-  gift: { icon: "gift", text: "Perfect gift plant" },
-  office: { icon: "office", text: "Office friendly" },
-  "good-luck": { icon: "gift", text: "Good luck plant" },
-  "stress-free": { icon: "easy", text: "Stress-free care" },
+  gift: { icon: "gift", text: "Suitable as a gift" },
+  office: { icon: "office", text: "Suits offices and desks" },
+  "good-luck": { icon: "gift", text: "Considered a good luck plant" },
+  "stress-free": { icon: "easy", text: "Easy care" },
   indoor: { icon: "sun", text: "Indoor suitable" },
   outdoor: { icon: "outdoor", text: "Best outdoors" },
   medicinal: { icon: "leaf", text: "Medicinal plant" },
@@ -137,24 +137,19 @@ export function ProductCareTips({
   if (tips.length === 0) return null;
 
   return (
-    <div className="mb-4 sm:mb-6">
-      <h3 className="mb-2 sm:mb-3 text-base font-semibold text-gray-900 sm:text-lg">
-        Plant Care Tips
-      </h3>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+    <div className="mt-6">
+      <h2 className="mb-2.5 text-sm font-semibold text-green-900">Care at a glance</h2>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {tips.map((tip) => (
-          <div
+          <li
             key={tip.text}
-            className="flex items-start gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3"
+            className="flex items-start gap-2 rounded-xl bg-emerald-50/70 px-3 py-2.5"
           >
-            <CareTipIcon
-              icon={tip.icon}
-              className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"
-            />
-            <span className="text-sm leading-snug text-slate-700">{tip.text}</span>
-          </div>
+            <CareTipIcon icon={tip.icon} className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <span className="text-[13px] leading-snug text-gray-700">{tip.text}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

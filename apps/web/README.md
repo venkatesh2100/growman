@@ -83,11 +83,9 @@ apps/web/
 │
 ├── components/                   # React components
 │   ├── hompage/                  # Homepage components
-│   │   ├── benifitsSection.tsx
 │   │   ├── footer.tsx
 │   │   ├── homeHero.tsx
 │   │   ├── navbar.tsx
-│   │   ├── newsLetter.tsx
 │   │   └── plantSection.tsx
 │   ├── loading/                  # Loading components
 │   │   └── SkeletonLoader.tsx

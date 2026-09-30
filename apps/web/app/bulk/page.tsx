@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { FaClock, FaMapMarkerAlt, FaPhone, FaEnvelope } from "react-icons/fa";
-import Breadcrumbs from "../../components/seo/Breadcrumbs";
-import Footer from "../../components/hompage/footer";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { PageHeader, PageShell } from "../../components/layout/Page";
+import { buttonClass } from "../../components/ui/buttonStyles";
 import { fetchAllProducts } from "../../lib/data";
 import { quotationItemCode } from "../../lib/quotation";
 import { createBreadcrumbs, createPageMetadata } from "../../lib/seo/metadata";
@@ -16,6 +16,12 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export const revalidate = 600;
+
+const STEPS = [
+  "Choose varieties and quantities",
+  "Send the quotation request",
+  "Our team calls to confirm pricing",
+];
 
 export default async function BulkOrderPage() {
   const { productsBySize } = await fetchAllProducts(100);
@@ -44,94 +50,82 @@ export default async function BulkOrderPage() {
   });
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-3 pt-6 pb-10 sm:px-4 sm:pt-8 md:pt-10">
-        <header className="mb-6">
-          <Breadcrumbs
-            items={createBreadcrumbs([{ name: "Bulk Orders", path: "/bulk" }])}
-            className="mb-3"
-          />
-          <h1 className="mb-2 text-2xl font-bold text-green-800 sm:text-3xl md:text-4xl">
-            Bulk Plant Orders
-          </h1>
-          <p className="max-w-3xl text-sm text-gray-600 sm:text-base">
-            Buying for landscaping, offices, events or your own nursery? Pick
-            the varieties you need, set quantities and request a quotation. Our
-            Hyderabad nursery confirms bulk pricing, availability and delivery
-            by phone.
-          </p>
+    <PageShell width="wide">
+      <PageHeader
+        breadcrumbs={createBreadcrumbs([{ name: "Bulk Orders", path: "/bulk" }])}
+        eyebrow="Wholesale"
+        title="Bulk plant orders"
+        description="For landscaping projects, offices, events and resellers. Add the varieties and quantities you need and send a quotation request. Our Hyderabad nursery confirms pricing, availability and delivery by phone."
+      />
 
-          <ol className="mt-5 grid gap-2 sm:grid-cols-3 sm:gap-3">
-            {[
-              "Pick varieties and set quantities",
-              "Send the quotation request",
-              "We call you with bulk pricing",
-            ].map((step, index) => (
-              <li
-                key={step}
-                className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-white px-3 py-2.5 text-sm text-gray-700"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">
-                  {index + 1}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </header>
+      <ol className="mb-8 grid gap-2 sm:grid-cols-3 sm:gap-3">
+        {STEPS.map((step, index) => (
+          <li
+            key={step}
+            className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-3 text-sm text-gray-700"
+          >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs font-semibold text-white">
+              {index + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
 
-        <BulkOrderList items={items} phone={business.telephone} />
+      <BulkOrderList items={items} phone={business.telephone} />
 
-        <section
-          id="bulk-contact"
-          className="mt-12 rounded-xl border border-emerald-100 bg-white p-5 sm:p-8"
-        >
-          <h2 className="text-xl font-bold text-green-900 sm:text-2xl">
-            Talk to our store for bulk pricing
+      <section
+        id="bulk-contact"
+        aria-labelledby="bulk-contact-heading"
+        className="mt-12 grid gap-6 rounded-2xl border border-emerald-100 bg-white p-6 sm:p-8 md:grid-cols-[1.2fr_1fr] md:items-center"
+      >
+        <div>
+          <h2
+            id="bulk-contact-heading"
+            className="font-space text-xl font-semibold text-green-900 sm:text-2xl"
+          >
+            Prefer to talk it through?
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-gray-600 sm:text-base">
-            Bulk orders are handled directly by our nursery team. Call us with
-            your list, or visit the store to see the plants in person.
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base">
+            Bulk orders are handled directly by our nursery team. Call with your
+            list, or visit the nursery to see the plants before you order.
           </p>
-
           <a
             href={`tel:${business.telephone}`}
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 active:bg-emerald-800"
+            className={buttonClass("primary", "md", "mt-5")}
           >
-            <FaPhone className="h-4 w-4" />
-            Contact us
+            <Phone className="h-4 w-4" />
+            Call the nursery
           </a>
+        </div>
 
-          <ul className="mt-6 grid gap-3 text-sm text-gray-600 sm:grid-cols-3">
-            <li className="flex items-start gap-2">
-              <FaMapMarkerAlt className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              <a
-                href={business.mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-emerald-800"
-              >
-                Visit our store in {business.address.locality}
-                <span className="block text-xs text-emerald-700 underline underline-offset-2">
-                  Open in Google Maps
-                </span>
-              </a>
-            </li>
-            <li className="flex items-center gap-2">
-              <FaClock className="h-4 w-4 shrink-0 text-emerald-600" />
-              {openingHoursDisplay}
-            </li>
-            <li className="flex items-center gap-2">
-              <FaEnvelope className="h-4 w-4 shrink-0 text-emerald-600" />
-              <a href={`mailto:${business.email}`} className="hover:text-emerald-800">
-                {business.email}
-              </a>
-            </li>
-          </ul>
-        </section>
-      </div>
-
-      <Footer />
-    </main>
+        <ul className="space-y-3 text-sm text-gray-600">
+          <li className="flex items-start gap-3">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <a
+              href={business.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-emerald-800"
+            >
+              Nursery in {business.address.locality}
+              <span className="block text-xs text-emerald-700 underline underline-offset-2">
+                Open in Google Maps
+              </span>
+            </a>
+          </li>
+          <li className="flex items-center gap-3">
+            <Clock className="h-4 w-4 shrink-0 text-emerald-700" />
+            {openingHoursDisplay}
+          </li>
+          <li className="flex items-center gap-3">
+            <Mail className="h-4 w-4 shrink-0 text-emerald-700" />
+            <a href={`mailto:${business.email}`} className="hover:text-emerald-800">
+              {business.email}
+            </a>
+          </li>
+        </ul>
+      </section>
+    </PageShell>
   );
 }

@@ -25,7 +25,7 @@ export default function Breadcrumbs({
     <>
       <JsonLd data={createBreadcrumbJsonLd(items)} />
       <nav aria-label="Breadcrumb" className={className}>
-        <ol className="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-gray-500 sm:gap-x-2 sm:text-sm">
+        <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 sm:text-sm">
           {items.map((item, index) => {
             const isLast = index === items.length - 1;
             // Absolute canonical URLs are stored for the schema; links use the
@@ -33,23 +33,20 @@ export default function Breadcrumbs({
             const href = item.url.replace(SITE_URL, "") || "/";
 
             return (
-              <li key={item.url} className="flex items-center gap-x-1 sm:gap-x-2">
+              <li key={item.url} className="flex items-center gap-x-1.5">
                 {isLast ? (
                   <span
                     aria-current="page"
-                    className="max-w-[160px] truncate font-medium text-emerald-700 sm:max-w-none"
+                    className="max-w-[180px] truncate font-medium text-green-900 sm:max-w-none"
                   >
                     {item.name}
                   </span>
                 ) : (
                   <>
-                    <Link
-                      href={href}
-                      className="transition-colors hover:text-emerald-600"
-                    >
+                    <Link href={href} className="transition-colors hover:text-green-900">
                       {item.name}
                     </Link>
-                    <span aria-hidden="true" className="text-gray-400">
+                    <span aria-hidden="true" className="text-gray-300">
                       /
                     </span>
                   </>

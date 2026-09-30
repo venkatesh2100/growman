@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { UserFacingError } from "./errors";
 import type { CartItem } from "./store/cartStore";
 
 /**
@@ -87,7 +88,7 @@ export async function fetchDeliveryQuote(
     }),
   });
   if (!res.ok) {
-    throw new Error("Could not work out delivery for this address.");
+    throw new UserFacingError("Couldn't check delivery for this address.");
   }
   const data = (await res.json()) as { quote: FulfillmentQuote };
   return data.quote;

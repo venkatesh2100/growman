@@ -41,11 +41,13 @@ export default async function ProductsPage(
   const filteredProducts = filterProducts(productsBySize, resolvedSearchParams);
 
   return (
-    <div className="max-w-7xl pt-10 mx-auto">
+    <main className="mx-auto max-w-7xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-green-800 mb-2">Plant Categories</h1>
-        <p className="text-gray-600">
-          Explore our wide variety of plant categories and find the perfect plants for your home
+        <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
+          All plants
+        </h1>
+        <p className="mt-1.5 text-sm text-gray-600 sm:text-[15px]">
+          Browse by category or narrow the list with the filters.
         </p>
       </div>
 
@@ -67,7 +69,7 @@ export default async function ProductsPage(
         <div className="lg:col-span-3">
           {/* Categories Grid */}
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-green-800 mb-6">Browse Categories</h2>
+            <h2 className="mb-5 font-space text-xl font-semibold text-green-900 sm:text-2xl">Categories</h2>
             <div
               className="
                 flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto pb-3
@@ -94,11 +96,11 @@ export default async function ProductsPage(
           {/* All Plants Section */}
           <ProductsDisplay
             products={filteredProducts}
-            title="All Plants"
+            title="Plants"
             showCount={true}
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

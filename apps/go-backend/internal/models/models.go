@@ -375,6 +375,26 @@ type RequestedProduct struct {
 	AdminNotes     string `gorm:"type:text" json:"adminNotes,omitempty"`
 }
 
+// DoothaWaitlist stores sign-ups for the Dootha Care device waiting list,
+// collected by the first-visit popup on the storefront. Phone is the identity
+// here: a repeat sign-up from the same number updates the existing row rather
+// than adding another, so the list stays one entry per person.
+type DoothaWaitlist struct {
+	Base
+	Name      string `gorm:"not null" json:"name"`
+	Phone     string `gorm:"index;not null" json:"phone"`
+	Email     string `gorm:"index" json:"email,omitempty"`
+	Address   string `gorm:"type:text" json:"address,omitempty"`
+	Status    string `gorm:"default:'pending';index" json:"status"`        // pending, contacted, converted
+	Source    string `gorm:"default:'homepage_popup';index" json:"source"` // homepage_popup, manual
+	UserID    *uint  `gorm:"index" json:"userId,omitempty"`
+	IP        string `json:"ip,omitempty"`
+	UserAgent string `json:"userAgent,omitempty"`
+	// Signups counts how many times this number has submitted the form.
+	Signups    int    `gorm:"default:1" json:"signups"`
+	AdminNotes string `gorm:"type:text" json:"adminNotes,omitempty"`
+}
+
 // OrderSupportRequest stores delivery/support escalations from chat or support forms.
 type OrderSupportRequest struct {
 	Base

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Footer from "../../../components/hompage/footer";
 import Breadcrumbs from "../../../components/seo/Breadcrumbs";
 import JsonLd from "../../../components/seo/JsonLd";
 import { getAllPosts, getPostBySlug } from "../../../lib/seo/blog";
@@ -71,8 +70,7 @@ export default async function BlogArticlePage({
   const otherPosts = getAllPosts().filter((entry) => entry.slug !== post.slug);
 
   return (
-    <>
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+    <main className="mx-auto max-w-3xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8">
         <JsonLd
           id="article-jsonld"
           data={createArticleJsonLd({
@@ -94,7 +92,7 @@ export default async function BlogArticlePage({
 
         <article>
           <header>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-green-900">
+            <h1 className="font-space text-3xl font-semibold tracking-tight text-green-900 sm:text-4xl">
               {post.title}
             </h1>
             <p className="mt-3 text-base leading-relaxed text-gray-600">
@@ -124,7 +122,7 @@ export default async function BlogArticlePage({
           <div className="mt-8 space-y-8">
             {post.sections.map((section) => (
               <section key={section.heading}>
-                <h2 className="text-xl font-semibold text-green-900">
+                <h2 className="font-space text-xl font-semibold text-green-900">
                   {section.heading}
                 </h2>
                 {section.paragraphs.map((paragraph) => (
@@ -136,7 +134,7 @@ export default async function BlogArticlePage({
                   </p>
                 ))}
                 {section.bullets && (
-                  <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-gray-700">
+                  <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-gray-700 marker:text-emerald-600">
                     {section.bullets.map((bullet) => (
                       <li key={bullet.slice(0, 40)}>{bullet}</li>
                     ))}
@@ -148,7 +146,7 @@ export default async function BlogArticlePage({
         </article>
 
         {relatedCategories.length > 0 && (
-          <section className="mt-12 rounded-2xl border border-emerald-100/80 bg-white p-5 sm:p-6">
+          <section className="mt-12 rounded-2xl border border-emerald-100 bg-white p-5 sm:p-6">
             <h2 className="text-base font-semibold text-green-900">
               Browse plants mentioned in this guide
             </h2>
@@ -186,8 +184,6 @@ export default async function BlogArticlePage({
             </ul>
           </section>
         )}
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

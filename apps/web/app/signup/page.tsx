@@ -55,10 +55,7 @@ function mapSignupError(code: string, status: number): string {
   if (status >= 500) {
     return "Couldn't send the verification email. Try again.";
   }
-  if (code && !key.includes(" ") && key.includes("_")) {
-    return "Something went wrong. Try again.";
-  }
-  return code || "Something went wrong. Try again.";
+  return "Something went wrong. Try again.";
 }
 
 async function parseErrorResponse(res: Response): Promise<{ message: string }> {
@@ -118,21 +115,21 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      setError("Name is required");
+      setError("Please enter your name.");
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim() || !emailRegex.test(formData.email)) {
-      setError("Valid email is required");
+      setError("Please enter a valid email address.");
       return false;
     }
     const phoneRegex = /^[6-9][0-9]{9}$/;
     if (!formData.phone.trim() || !phoneRegex.test(formData.phone)) {
-      setError("Valid 10-digit phone number is required (starting with 6-9)");
+      setError("Please enter a valid 10-digit mobile number.");
       return false;
     }
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters");
+      setError("Password needs at least 8 characters.");
       return false;
     }
     return true;
@@ -167,11 +164,8 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
 
       toast("Code sent to your email.", "success");
       setOtpSent(true);
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error
-          ? err.message
-          : "Couldn't send the verification email. Try again.";
+    } catch {
+      const errorMsg = "No connection. Check your internet and try again.";
       setError(errorMsg);
       toast(errorMsg, "error");
     } finally {
@@ -209,9 +203,8 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       toast("Email verified.", "success");
       setEmailVerified(true);
       await handleSignup();
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "That code is wrong or expired.";
+    } catch {
+      const errorMsg = "No connection. Check your internet and try again.";
       setError(errorMsg);
       toast(errorMsg, "error");
     } finally {
@@ -249,9 +242,8 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
       setTimeout(() => {
         router.push("/");
       }, 1500);
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Couldn't create your account. Try again.";
+    } catch {
+      const errorMsg = "No connection. Check your internet and try again.";
       setError(errorMsg);
       toast(errorMsg, "error");
     } finally {

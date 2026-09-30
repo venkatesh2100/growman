@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ShoppingBag, Plus, Minus, Trash2, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Minus, Plus, ShieldCheck, ShoppingBag } from "lucide-react";
 import { useCartStore } from "../../lib/store/cartStore";
+import { formatPrice } from "../../lib/format";
 import Thumbnail from "../../components/ui/Thumbnail";
+import ButtonLink from "../../components/ui/ButtonLink";
 import StorePickupOption from "../../components/store/StorePickupOption";
 
 export default function CartPage() {
-  const router = useRouter();
   const cart = useCartStore((state) => state.items);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
-  const getSubtotal = useCartStore((state) => state.getSubtotal);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -20,249 +20,185 @@ export default function CartPage() {
   }, []);
 
   if (!loaded) {
+    return <div className="min-h-[70vh]" />;
+  }
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // Savings against MRP, only where the product actually lists one above its price.
+  const savings = cart.reduce(
+    (sum, item) =>
+      item.mrp && item.mrp > item.price ? sum + (item.mrp - item.price) * item.quantity : sum,
+    0
+  );
+
+  if (cart.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-      </div>
+      <main className="flex min-h-[70vh] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-8 text-center sm:p-10">
+          <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gray-400" />
+          <h1 className="mb-2 font-space text-xl font-semibold text-green-900 sm:text-2xl">
+            Your cart is empty
+          </h1>
+          <p className="mb-6 text-sm text-gray-600">
+            Browse the catalog and add plants to see them here.
+          </p>
+          <ButtonLink href="/shop" className="w-full">
+            Browse plants
+          </ButtonLink>
+        </div>
+      </main>
     );
   }
 
-  const subtotal = getSubtotal();
-  // Tax calculation commented out for now
-  // const tax = subtotal * 0.18;
-  const discount = 0; // Can be calculated from MRP vs price
-  const shipping = subtotal > 500 ? 0 : 0;
-  const total = subtotal - discount + shipping;
-
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
-            <ShoppingBag className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-emerald-600" />
-            Your Cart
-          </h1>
-          {cart.length > 0 && (
-            <button
-              onClick={() => router.push("/shop")}
-              className="text-sm sm:text-base text-emerald-600 hover:text-emerald-700 active:text-emerald-800 font-medium flex items-center touch-manipulation"
-            >
-              Continue Shopping
-              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
-            </button>
-          )}
+    <main className="min-h-[70vh] pb-28 lg:pb-0">
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
+              Cart
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </p>
+          </div>
+          <Link
+            href="/shop"
+            className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+          >
+            Continue shopping
+          </Link>
         </div>
 
-        {cart.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center">
-            <ShoppingBag className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 mb-3 sm:mb-4" />
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">
-              Your cart is empty
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-              Looks like you haven&apos;t added any plants to your cart yet.
-            </p>
-            <button
-              onClick={() => router.push("/shop")}
-              className="bg-emerald-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-colors inline-flex items-center touch-manipulation text-sm sm:text-base"
-            >
-              Start Shopping
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-2 md:space-y-4">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
+          <section aria-label="Items in your cart">
+            <ul className="divide-y divide-emerald-50 rounded-2xl border border-emerald-100 bg-white">
               {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white md:rounded-xl md:shadow-sm md:p-6 p-3 flex gap-3 md:gap-4 items-start md:items-center"
-                >
-                  {/* Mobile: Minimal design */}
-                  <div className="md:hidden flex-1">
-                    <div className="flex gap-3">
-                      <Thumbnail
-                        src={item.image}
-                        size={80}
-                        className="w-20 h-20 rounded"
-                        alt={item.name}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                          {item.name}
-                        </h3>
-                        {item.label && (
-                          <p className="text-xs text-gray-500 mb-1.5">{item.label}</p>
-                        )}
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <p className="text-sm font-semibold text-gray-900">
-                            ₹{item.price.toFixed(0)}
-                          </p>
-                          {item.mrp && item.mrp > item.price && (
-                            <p className="text-xs text-gray-500 line-through">
-                              ₹{item.mrp.toFixed(0)}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 bg-gray-100 rounded p-1">
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="w-6 h-6 flex items-center justify-center rounded active:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                              aria-label="Decrease quantity"
-                              disabled={item.quantity <= 1}
-                            >
-                              <Minus className="w-3.5 h-3.5 text-gray-700" />
-                            </button>
-                            <span className="text-sm font-medium text-gray-900 w-6 text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="w-6 h-6 flex items-center justify-center rounded active:bg-gray-200 transition-colors touch-manipulation"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="w-3.5 h-3.5 text-gray-700" />
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="text-red-500 active:text-red-700 p-1.5 active:bg-red-50 rounded transition-colors touch-manipulation"
-                            aria-label="Remove item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-900 mt-2">
-                          ₹{(item.price * item.quantity).toFixed(0)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop: Original design */}
-                  <div className="hidden md:flex md:flex-row md:gap-4 md:items-center md:w-full">
+                <li key={item.id} className="flex gap-4 p-4 sm:p-5">
                   <Thumbnail
                     src={item.image}
                     size={96}
-                    className="w-24 h-24 rounded-lg"
                     alt={item.name}
+                    className="h-20 w-20 rounded-xl sm:h-24 sm:w-24"
                   />
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {item.name}
-                    </h3>
-                    {item.label && (
-                        <p className="text-sm text-gray-500 mt-1">{item.label}</p>
-                    )}
-                      <div className="mt-2 flex items-center gap-2">
-                        <p className="text-base text-emerald-600 font-semibold">
-                        ₹{item.price.toFixed(2)}
-                      </p>
-                      {item.mrp && item.mrp > item.price && (
-                          <p className="text-sm text-gray-500 line-through">
-                          ₹{item.mrp.toFixed(2)}
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="line-clamp-2 text-sm font-semibold text-green-900 sm:text-base">
+                          {item.name}
+                        </h2>
+                        {item.label ? (
+                          <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">{item.label}</p>
+                        ) : null}
+                        <p className="mt-1 flex items-baseline gap-1.5 text-sm">
+                          <span className="text-gray-700">{formatPrice(item.price)}</span>
+                          {item.mrp && item.mrp > item.price ? (
+                            <span className="text-xs text-gray-400 line-through">
+                              {formatPrice(item.mrp)}
+                            </span>
+                          ) : null}
                         </p>
-                      )}
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold text-green-900 sm:text-base">
+                        {formatPrice(item.price * item.quantity)}
+                      </p>
+                    </div>
+
+                    <div className="mt-auto flex items-center gap-4 pt-3">
+                      <div className="flex items-center rounded-lg border border-emerald-200">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          aria-label={`Decrease quantity of ${item.name}`}
+                          className="flex h-8 w-8 touch-manipulation items-center justify-center text-gray-700 hover:bg-emerald-50/60 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span
+                          className="w-8 text-center text-sm font-medium text-green-900"
+                          aria-live="polite"
+                        >
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          aria-label={`Increase quantity of ${item.name}`}
+                          className="flex h-8 w-8 touch-manipulation items-center justify-center text-gray-700 hover:bg-emerald-50/60"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="text-sm text-gray-500 underline-offset-2 hover:text-green-900 hover:underline"
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
-
-                  {/* Quantity Controls */}
-                    <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-2">
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                      aria-label="Decrease quantity"
-                      disabled={item.quantity <= 1}
-                    >
-                      <Minus className="w-4 h-4 text-gray-700" />
-                    </button>
-                      <span className="text-lg font-medium text-gray-900 w-8 text-center">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-4 h-4 text-gray-700" />
-                    </button>
-                  </div>
-
-                  {/* Price and Delete */}
-                    <div className="flex flex-col items-end gap-2">
-                      <p className="text-lg font-bold text-gray-900">
-                      ₹{(item.price * item.quantity).toFixed(2)}
-                    </p>
-                    <button
-                      onClick={() => removeItem(item.id)}
-                        className="text-red-500 hover:text-red-700 active:text-red-800 p-2 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
-                      aria-label="Remove item"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                    </div>
-                  </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
+          </section>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sticky top-4">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
-                  Order Summary
-                </h2>
-                <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
-                    <span>Items Price</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-sm sm:text-base text-emerald-600 font-medium">
-                      <span>Discount</span>
-                      <span>-₹{discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
-                    <span>Delivery</span>
-                    <span className={shipping === 0 ? "text-emerald-600 font-medium" : ""}>
-                      {shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}
-                    </span>
-                  </div>
-                  {subtotal < 500 && (
-                    <p className="text-xs sm:text-sm text-emerald-600 font-medium">
-                      Add ₹{(500 - subtotal).toFixed(2)} more for free shipping!
-                    </p>
-                  )}
-                  <div className="border-t border-gray-300 pt-2 sm:pt-3 mt-2 sm:mt-3">
-                    <div className="flex justify-between text-lg sm:text-xl font-bold text-gray-900">
-                      <span>Total</span>
-                      <span>₹{total.toFixed(2)}</span>
-                    </div>
-                  </div>
+          <aside aria-labelledby="cart-summary-heading">
+            <div className="rounded-2xl border border-emerald-100 bg-white p-5 lg:sticky lg:top-32">
+              <h2 id="cart-summary-heading" className="text-base font-semibold text-green-900">
+                Order summary
+              </h2>
+              <dl className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between text-gray-700">
+                  <dt>Subtotal</dt>
+                  <dd>{formatPrice(subtotal)}</dd>
                 </div>
+                {savings > 0 ? (
+                  <div className="flex justify-between text-emerald-800">
+                    <dt>You save</dt>
+                    <dd>{formatPrice(savings)}</dd>
+                  </div>
+                ) : null}
+                <div className="flex justify-between text-gray-700">
+                  <dt>Delivery</dt>
+                  <dd className="text-gray-500">Calculated at checkout</dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-xs text-gray-500">
+                The delivery fee depends on your address and the size of the plants.
+              </p>
 
-                <button
-                  onClick={() => router.push("/checkout")}
-                  className="w-full bg-emerald-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors flex items-center justify-center text-sm sm:text-base touch-manipulation"
-                >
-                  Proceed to Checkout
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
-                </button>
-
-                <p className="text-[10px] sm:text-xs text-gray-500 text-center mt-3 sm:mt-4">
-                  Secure checkout with Razorpay
-                </p>
-
-                <StorePickupOption className="mt-4 sm:mt-5" />
+              <div className="mt-5 hidden lg:block">
+                <ButtonLink href="/checkout" className="w-full" size="lg">
+                  Proceed to checkout
+                </ButtonLink>
               </div>
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                Secure payment by Razorpay
+              </p>
+
+              <StorePickupOption className="mt-5" />
             </div>
-          </div>
-        )}
+          </aside>
+        </div>
       </div>
-    </div>
+
+      <div className="safe-area-pb fixed inset-x-0 bottom-0 z-40 border-t border-emerald-100 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-6xl items-center gap-4">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">Subtotal</p>
+            <p className="font-space text-lg leading-tight font-semibold text-green-900">
+              {formatPrice(subtotal)}
+            </p>
+          </div>
+          <ButtonLink href="/checkout" className="flex-1">
+            Checkout
+          </ButtonLink>
+        </div>
+      </div>
+    </main>
   );
 }

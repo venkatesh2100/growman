@@ -9,6 +9,8 @@ import ServiceWorkerRegistration from "../components/pwa/ServiceWorkerRegistrati
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import PlantChatbot from "../components/chatbot/PlantChatbot";
 import BrowseEngagementBeacon from "../components/BrowseEngagementBeacon";
+import Footer from "../components/hompage/footer";
+import HideOnRoutes from "../components/layout/HideOnRoutes";
 import JsonLd from "../components/seo/JsonLd";
 import { siteConfig } from "../lib/seo/site";
 import { absoluteUrl } from "../lib/seo/metadata";
@@ -19,6 +21,11 @@ import {
 
 
 const geist = Geist({ subsets: ["latin"] });
+
+/** Routes that run without footer, assistant or install banner competing for attention. */
+const FOCUSED_ROUTES = ["/checkout"] as const;
+/** Routes with a sticky mobile action bar that floating widgets would cover. */
+const STICKY_BAR_ROUTES = ["/checkout", "/cart"] as const;
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
@@ -128,35 +135,41 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-IN">
-      <head />
-      {/* Site-wide entities, declared once and referenced by @id elsewhere. */}
-      <JsonLd
-        id="site-jsonld"
-        data={[createOrganizationJsonLd(), createWebSiteJsonLd()]}
-      />
-      <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-49FZDEFB2Y"
-          strategy="lazyOnload"
-      />
-      <Script id="google-analytics" strategy="lazyOnload">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-49FZDEFB2Y');
-        `}
-      </Script>
+      <head>
+        {/* Site-wide entities, declared once and referenced by @id elsewhere. */}
+        <JsonLd
+          id="site-jsonld"
+          data={[createOrganizationJsonLd(), createWebSiteJsonLd()]}
+        />
+      </head>
 
       <body
-        className={`${geist.className} ${spaceGrotesk.variable} bg-linear-to-r from-green-50 to-emerald-50`}
+        className={`${geist.className} ${spaceGrotesk.variable} bg-linear-to-r from-green-50 to-emerald-50 text-gray-800 antialiased`}
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-49FZDEFB2Y"
+          strategy="lazyOnload"
+        />
+        <Script id="google-analytics" strategy="lazyOnload">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-49FZDEFB2Y');
+          `}
+        </Script>
         <ServiceWorkerRegistration />
         <BrowseEngagementBeacon />
         <Navbar />
         {children}
-        <PlantChatbot />
+        <HideOnRoutes routes={FOCUSED_ROUTES}>
+          <Footer />
+        </HideOnRoutes>
+        <HideOnRoutes routes={STICKY_BAR_ROUTES}>
+          <PlantChatbot />
+          <InstallPrompt />
+        </HideOnRoutes>
         <ToastContainer />
-        <InstallPrompt />
       </body>
     </html>
   );

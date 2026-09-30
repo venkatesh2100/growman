@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ShoppingCart, Zap, Sun, Leaf, TreePine, Flower2 } from "lucide-react";
-import { useCartStore } from "../../lib/store/cartStore";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { ShoppingCart } from "lucide-react";
+import { useCartStore } from "../../lib/store/cartStore";
 import { toast } from "../../lib/toast";
 import { buildCartLine } from "../../lib/cart";
 import { formatPrice, getDiscount } from "../../lib/format";
@@ -77,84 +77,34 @@ function GrowmanLogo({ className }: { className?: string }) {
   );
 }
 
-function GrowmanGuaranteeBadge({ compact = false }: { compact?: boolean }) {
+function GrowmanGuaranteeBadge() {
   return (
     <div
-      className={`pointer-events-none absolute z-[1] flex select-none flex-col items-end leading-none text-emerald-950 opacity-[0.18] transition-opacity duration-500 group-hover:opacity-[0.24] ${
-        compact ? "bottom-1.5 right-1.5" : "bottom-2.5 right-2.5"
-      }`}
+      className="pointer-events-none absolute right-2 bottom-2 z-[1] flex flex-col items-end leading-none text-emerald-950 opacity-[0.18] select-none"
       aria-hidden
     >
-      <span
-        className={`font-medium uppercase tracking-[0.22em] ${
-          compact ? "text-[7px]" : "text-[9px] sm:text-[10px]"
-        }`}
-      >
+      <span className="text-[8px] font-medium tracking-[0.22em] uppercase sm:text-[9px]">
         Growman
       </span>
-      <div
-        className={`mt-0.5 flex items-center gap-0.5 pr-0.5 ${
-          compact ? "scale-90 origin-bottom-right" : ""
-        }`}
-      >
-        <GrowmanLogo className={compact ? "h-3.5 w-3.5" : "h-4 w-4 sm:h-5 sm:w-5"} />
-        <span
-          className={`font-black tracking-tighter ${
-            compact ? "text-[11px]" : "text-sm sm:text-base"
-          }`}
-        >
-          GG
-        </span>
+      <div className="mt-0.5 flex items-center gap-0.5 pr-0.5">
+        <GrowmanLogo className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="text-xs font-black tracking-tighter sm:text-sm">GG</span>
       </div>
     </div>
   );
 }
 
-function normalizeCategoryKey(value?: string): string {
-  return (value ?? "").trim().toLowerCase().replace(/\s+/g, "-");
-}
+type ProductCardProps = {
+  product: AnyProduct;
+  /** Optional control pinned to the image corner, e.g. "Remove from wishlist". */
+  cornerAction?: ReactNode;
+};
 
-function CategoryIcon({
-  category,
-  className,
-}: {
-  category?: { name?: string; slug?: string };
-  className?: string;
-}) {
-  const key = normalizeCategoryKey(category?.slug) || normalizeCategoryKey(category?.name);
-
-  if (key.includes("indoor")) return <Leaf className={className} strokeWidth={2} />;
-  if (key.includes("outdoor")) return <Sun className={className} strokeWidth={2} />;
-  if (key.includes("avenue")) return <TreePine className={className} strokeWidth={2} />;
-  if (key.includes("ornamental")) return <Flower2 className={className} strokeWidth={2} />;
-  return <Leaf className={className} strokeWidth={2} />;
-}
-
-function CategoryBadge({
-  category,
-  compact = false,
-}: {
-  category: { name: string; slug?: string };
-  compact?: boolean;
-}) {
-  return (
-    <div className="mb-1 flex items-center gap-1.5">
-      <CategoryIcon
-        category={category}
-        className={`shrink-0 text-emerald-600 ${compact ? "h-3 w-3" : "h-3.5 w-3.5"}`}
-      />
-      <span
-        className={`font-bold uppercase tracking-[0.16em] text-emerald-700 ${
-          compact ? "text-[10px]" : "text-[10px] sm:text-[11px]"
-        }`}
-      >
-        {category.name}
-      </span>
-    </div>
-  );
-}
-
-export default function ProductCard({ product }: { product: AnyProduct }) {
+/**
+ * Product tile used on every listing. One markup for all screen sizes: the
+ * whole card links to the product, and the cart buttons sit above that link.
+ */
+export default function ProductCard({ product, cornerAction }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
@@ -164,25 +114,22 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
     if (Array.isArray(product?.sizes) && product.sizes.length > 0) {
       return product.sizes;
     }
-    // Try to build a single pseudo-size from top-level fields to avoid blank cards
-    if (product) {
-      const extendedProduct = product as ProductWithVariations;
-      const fallback = {
+    const extendedProduct = product as ProductWithVariations;
+    return [
+      {
         price: product.price ?? (product as { mrp?: number }).mrp ?? 0,
         stock: product.stock ?? 0,
         label: extendedProduct.sizeLabel ?? "Default",
         images: extendedProduct.images ?? [],
-      };
-      return [fallback];
-    }
-    return [];
+      },
+    ];
   }, [product]);
 
   const extendedProduct = product as ProductWithVariations;
   const fallbackImages =
     extendedProduct?.images ||
     extendedProduct?.featuredImage ||
-    extendedProduct?.image || 
+    extendedProduct?.image ||
     extendedProduct?.thumbnail ||
     product?.imageUrl ||
     [];
@@ -194,277 +141,137 @@ export default function ProductCard({ product }: { product: AnyProduct }) {
     if (typeof fallbackImages === "string") return [fallbackImages];
     return [];
   })();
-  const hasMultipleSizes = normalizedSizes.length > 1;
 
-  // Normalize prices to numbers to avoid toFixed crashes
   const numericPrices = normalizedSizes
     .map((s) => Number(s?.price))
     .filter((p: number) => Number.isFinite(p));
-
-  const totalStock =
-    normalizedSizes.reduce(
-      (sum: number, size) => sum + (size?.stock || 0),
-      0
-    ) ??
-    product?.stock ??
-    0;
+  const totalStock = normalizedSizes.reduce((sum: number, size) => sum + (size?.stock || 0), 0);
+  const inStock = totalStock > 0;
 
   const firstPrice = numericPrices[0] ?? null;
-  const { effectiveMrp, hasDiscount, percent: discountPercent } = getDiscount(firstPrice, product.mrp);
-
-  const showGrowmanGuarantee = isGrowmanBrand(product);
+  const { effectiveMrp, hasDiscount, percent: discountPercent } = getDiscount(
+    firstPrice,
+    product.mrp
+  );
+  const sizeCount = Array.isArray(product.sizes) ? product.sizes.length : 0;
 
   const productUrl = `/product/${product?.slug ?? ""}`;
+  const image = hovered && allImages[1] ? allImages[1] : allImages[0];
 
-  // Shared by both the mobile and desktop "Add to cart" / "Buy now" buttons.
   const handleAdd = (mode: "cart" | "buy") => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const firstSize = normalizedSizes[0];
-    if (firstSize && totalStock > 0) {
-      addItem(buildCartLine(product, firstSize, 1));
-      if (mode === "cart") {
-        toast(`${product.name} added to cart!`);
-      } else {
-        router.push("/checkout");
-      }
-    } else if (mode === "cart") {
-      toast("This item is out of stock", "error");
+    if (!firstSize || !inStock) {
+      toast("This plant is out of stock.", "error");
+      return;
     }
+    addItem(buildCartLine(product, firstSize, 1));
+    if (mode === "cart") toast(`${product.name} added to cart`);
+    else router.push("/checkout");
   };
 
   return (
-    <div className="relative h-full w-full">
-      {/* Mobile: Amazon-like minimal design */}
-      <div className="flex h-full flex-col  touch-manipulation md:hidden">
-        <Link
-          href={`/product/${product?.slug ?? ""}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative block bg-gray-50 touch-manipulation"
-        >
-          <div className="relative w-full aspect-square">
-            {allImages.length > 0 && allImages[0] ? (
-              <OptimizedImage
-                src={allImages[0]}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 50vw, 25vw"
-                className="object-cover"
-                loading="lazy"
-                onError={(e) => {
-                  console.error("Image failed to load:", e);
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <span className="text-gray-400 text-xs">No image</span>
-              </div>
-            )}
-            {/* Discount badge - minimal */}
-            {discountPercent > 0 && (
-              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-semibold">
-                {discountPercent}% OFF
-              </div>
-            )}
-            {showGrowmanGuarantee && <GrowmanGuaranteeBadge compact />}
+    <article
+      className="group relative flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-shadow duration-300 ease-out hover:shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="relative aspect-square overflow-hidden bg-gray-50">
+        {image ? (
+          <OptimizedImage
+            src={image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gray-200 text-xs text-gray-400">
+            No image
           </div>
-        </Link>
+        )}
 
-        <div className="p-2.5 flex flex-col">
-          <Link
-            href={`/product/${product?.slug ?? ""}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="touch-manipulation mb-1.5"
-          >
-            {product.category?.name && (
-              <CategoryBadge category={product.category} compact />
-            )}
-
-            {/* h3: cards always sit under a section's h2 ("Featured Plants",
-                "Indoor Plants" and so on), so this keeps the document
-                outline correct on every listing page. */}
-            <h3 className="min-h-10 text-sm font-semibold leading-snug text-slate-900">
-              {product.name}
-            </h3>
-          </Link>
-
-          {/* Pricing - clean and minimal */}
-          {firstPrice !== null && firstPrice !== undefined && firstPrice > 0 ? (
-            <div className="mb-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-semibold text-gray-900">
-                  {formatPrice(firstPrice)}
-                </span>
-                {hasDiscount && effectiveMrp !== null && (
-                    <span className="text-xs text-gray-500 line-through">
-                      {formatPrice(effectiveMrp)}
-                    </span>
-                  )}
-              </div>
-              {hasMultipleSizes && product.sizes && (
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
-                  {product.sizes.length} sizes available
-                </p>
-              )}
-            </div>
+        <div className="absolute top-2 left-2 z-[2] flex flex-col items-start gap-1">
+          {!inStock ? (
+            <span className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-medium text-white shadow-sm sm:text-xs">
+              Sold out
+            </span>
+          ) : discountPercent > 0 ? (
+            <span className="rounded-md bg-red-600 px-2 py-1 text-[10px] font-bold text-white shadow-sm sm:text-xs">
+              {discountPercent}% off
+            </span>
           ) : null}
-
-          {/* Stock indicator - minimal */}
-
-          {/* Action Buttons - Mobile */}
-          <div className="mt-auto flex gap-1.5 pt-2">
-            <button
-              onClick={handleAdd("cart")}
-              disabled={totalStock === 0}
-              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
-                totalStock === 0
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white border border-emerald-700 text-emerald-700 active:bg-emerald-50"
-              }`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-              <span>Add</span>
-            </button>
-            <button
-              onClick={handleAdd("buy")}
-              disabled={totalStock === 0}
-              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
-                totalStock === 0
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-emerald-700 text-white active:bg-emerald-800"
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5 shrink-0" />
-              <span>Buy</span>
-            </button>
-          </div>
         </div>
+        {cornerAction ? <div className="absolute top-2 right-2 z-20">{cornerAction}</div> : null}
+        {isGrowmanBrand(product) ? <GrowmanGuaranteeBadge /> : null}
       </div>
 
-      {/* Desktop: hover lift + care tips overlay */}
-      <div className="relative hidden h-full md:block">
-        <div
-          className="group/card relative flex h-full flex-col overflow-hidden rounded-xl  shadow-sm  duration-300 ease-out group-hover/card:shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
-          {/* Stretched link makes the entire card clickable to view product */}
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        {product.category?.name ? (
+          <p className="mb-1 truncate text-[10px] font-bold tracking-[0.16em] text-emerald-700 uppercase sm:text-[11px]">
+            {product.category.name}
+          </p>
+        ) : null}
+
+        {/* h3: cards always sit under a section's h2 ("Featured plants",
+            "Indoor plants" and so on), so this keeps the document outline
+            correct on every listing page. */}
+        <h3 className="line-clamp-2 min-h-10 text-sm leading-snug font-bold text-slate-900 transition-colors group-hover:text-emerald-800 sm:text-[15px]">
           <Link
             href={productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 z-10"
-            aria-label={`View ${product.name}`}
-          />
+            className="after:absolute after:inset-0 after:z-10 focus-visible:outline-none"
+          >
+            {product.name}
+          </Link>
+        </h3>
 
-          <div className="relative aspect-square overflow-hidden bg-gray-50">
-            {allImages.length > 0 && allImages[0] ? (
-              <OptimizedImage
-                src={hovered && allImages[1] ? allImages[1] : allImages[0]}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                className="object-cover transition-transform duration-500 group-hover/card:scale-105 will-change-transform"
-                loading="lazy"
-                onError={(e) => {
-                  console.error("Image failed to load:", e);
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                <span className="text-gray-400 text-xs sm:text-sm">
-                  No image
+        {firstPrice !== null && firstPrice > 0 ? (
+          <div className="mt-1.5 mb-3">
+            <div className="flex flex-wrap items-baseline gap-x-1.5">
+              <span className="text-base font-bold text-gray-900 sm:text-lg">
+                {formatPrice(firstPrice)}
+              </span>
+              {hasDiscount && effectiveMrp !== null ? (
+                <span className="text-xs text-gray-500 line-through sm:text-sm">
+                  {formatPrice(effectiveMrp)}
                 </span>
-              </div>
-            )}
-            {/* Stock badge */}
-            <div
-              className={`absolute top-2 right-2 z-[2] px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium shadow-sm ${
-                totalStock > 0
-                  ? "bg-green-500 text-white"
-                  : "bg-red-500 text-white"
-              }`}
-            >
-              {totalStock > 0 ? "In Stock" : "Sold Out"}
+              ) : null}
             </div>
-            {/* Discount badge */}
-            {discountPercent > 0 && (
-              <div className="absolute top-2 left-2 z-[2] px-2 py-1 rounded-md bg-red-600 text-white text-[10px] sm:text-xs font-bold shadow-sm">
-                {discountPercent}% OFF
-              </div>
-            )}
-            {showGrowmanGuarantee && <GrowmanGuaranteeBadge />}
+            {sizeCount > 1 ? (
+              <p className="mt-0.5 text-[10px] text-gray-500 sm:text-xs">{sizeCount} sizes</p>
+            ) : null}
           </div>
+        ) : (
+          <div className="mb-3" />
+        )}
 
-          <div className="flex flex-1 flex-col p-3 sm:p-4">
-            {product.category?.name && <CategoryBadge category={product.category} />}
-
-            <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover/card:text-emerald-800 sm:text-[15px]">
-              {product.name}
-            </h3>
-
-          {/* Pricing Display */}
-          {firstPrice !== null && firstPrice !== undefined && firstPrice > 0 ? (
-            <div className="mb-2 mt-1.5 sm:mb-3">
-              <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-                <span className="text-base sm:text-lg font-bold text-gray-900">
-                  {formatPrice(firstPrice)}
-                </span>
-                {hasDiscount && effectiveMrp !== null && (
-                    <>
-                      <span className="text-xs sm:text-sm text-gray-500 line-through">
-                        {formatPrice(effectiveMrp)}
-                      </span>
-                      <span className="text-xs sm:text-sm text-green-600 font-medium">
-                        {discountPercent}% off
-                      </span>
-                    </>
-                  )}
-              </div>
-              {hasMultipleSizes && product.sizes && (
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
-                  {product.sizes.length} sizes available
-                </p>
-              )}
-            </div>
-          ) : null}
-
-          {/* Action Buttons */}
-          <div className="relative z-20 mt-auto flex gap-1.5 sm:gap-2">
-            <button
-              onClick={handleAdd("cart")}
-              disabled={totalStock === 0}
-              className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
-                totalStock === 0
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white border-2 border-emerald-700 text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100"
-              }`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="hidden sm:inline">Add to Cart</span>
-              <span className="sm:hidden">Add</span>
-            </button>
-            <button
-              onClick={handleAdd("buy")}
-              disabled={totalStock === 0}
-              className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-all touch-manipulation active:scale-95 ${
-                totalStock === 0
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 shadow-md active:shadow-sm"
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="hidden sm:inline">Buy Now</span>
-              <span className="sm:hidden">Buy</span>
-            </button>
-          </div>
-          </div>
+        <div className="relative z-20 mt-auto flex gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={handleAdd("cart")}
+            disabled={!inStock}
+            aria-label={`Add ${product.name} to cart`}
+            className="flex flex-1 touch-manipulation items-center justify-center gap-1.5 rounded-lg border-2 border-emerald-700 bg-white py-2 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-50 active:scale-95 active:bg-emerald-100 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-200 disabled:text-gray-400 sm:text-[13px]"
+          >
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+            <span className="sm:hidden">Add</span>
+            <span className="hidden sm:inline">Add to cart</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleAdd("buy")}
+            disabled={!inStock}
+            className="flex flex-1 touch-manipulation items-center justify-center rounded-lg bg-emerald-700 py-2 text-xs font-semibold text-white shadow-md transition-all hover:bg-emerald-800 active:scale-95 active:bg-emerald-900 active:shadow-sm disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none sm:text-[13px]"
+          >
+            Buy now
+          </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

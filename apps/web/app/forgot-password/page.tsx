@@ -33,18 +33,7 @@ function mapError(code: string, status: number, fallback: string, retryAfter?: n
   if (key === "email_send_failed" || key === "email_unavailable") {
     return "Couldn't send the code. Try again.";
   }
-  if (
-    key === "otp_unavailable" ||
-    key.includes("failed to verify") ||
-    status === 502 ||
-    status === 503
-  ) {
-    return fallback;
-  }
-  if (status >= 500) {
-    return fallback;
-  }
-  return code || fallback;
+  return fallback;
 }
 
 async function readError(res: Response, fallback: string): Promise<string> {

@@ -125,7 +125,7 @@ export default async function SubcategoryPage({
   );
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+    <main className="mx-auto max-w-7xl px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:px-8">
       <JsonLd
         id="subcategory-jsonld"
         data={[
@@ -145,39 +145,39 @@ export default async function SubcategoryPage({
         ]}
       />
 
-      <div className="mb-4 sm:mb-6 md:mb-8">
-        <Breadcrumbs items={breadcrumbs} className="mb-3 sm:mb-4" />
+      <div className="mb-8">
+        <Breadcrumbs items={breadcrumbs} className="mb-3" />
 
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-800 mb-1 sm:mb-2">
+        <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
           {subcategory.name} {category.name}
         </h1>
-        <p className="max-w-3xl text-sm sm:text-base text-gray-600">{intro}</p>
+        <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-gray-600 sm:text-[15px]">{intro}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
         <div className="lg:col-span-4">
           <section>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-2">
-              <h2 className="text-xl sm:text-2xl font-semibold text-green-800">
-                {subcategory.name} Plants
+            <div className="mb-5 flex items-baseline justify-between gap-3">
+              <h2 className="font-space text-xl font-semibold text-green-900 sm:text-2xl">
+                {subcategory.name} plants
               </h2>
-              <div className="text-xs sm:text-sm text-emerald-600">
-                Showing {products.length} plants
-              </div>
+              <p className="shrink-0 text-sm text-gray-500">
+                {products.length} {products.length === 1 ? "plant" : "plants"}
+              </p>
             </div>
 
             <ProductGrid
               products={products}
               emptyState={
-                <div className="bg-white rounded-xl p-6 sm:p-8 text-center border border-green-100">
-                  <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">
-                    No plants found in this subcategory
+                <div className="rounded-2xl border border-emerald-100 bg-white p-8 text-center">
+                  <h3 className="text-base font-semibold text-green-900">
+                    No plants of this type right now
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-600">
+                  <p className="mt-1 text-sm text-gray-600">
                     Browse all{" "}
                     <Link
                       href={`/categories/${category.slug}`}
-                      className="text-emerald-700 underline"
+                      className="font-medium text-emerald-700 hover:text-emerald-900"
                     >
                       {category.name.toLowerCase()}
                     </Link>{" "}
@@ -189,8 +189,8 @@ export default async function SubcategoryPage({
           </section>
 
           {siblings.length > 0 && (
-            <section className="mt-10 border-t border-emerald-100 pt-6">
-              <h2 className="text-lg sm:text-xl font-semibold text-green-800 mb-3">
+            <section className="mt-12 border-t border-emerald-100 pt-6">
+              <h2 className="mb-3 text-base font-semibold text-green-900">
                 More in {category.name}
               </h2>
               <ul className="flex flex-wrap gap-2">
@@ -198,7 +198,7 @@ export default async function SubcategoryPage({
                   <li key={sibling.id}>
                     <Link
                       href={`/categories/${category.slug}/${sibling.slug}`}
-                      className="inline-block rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+                      className="inline-block rounded-full border border-emerald-100 bg-white px-3.5 py-1.5 text-sm font-medium text-gray-700 hover:border-emerald-300 hover:text-green-900"
                     >
                       {sibling.name}
                     </Link>

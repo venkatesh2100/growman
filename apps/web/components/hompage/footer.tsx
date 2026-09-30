@@ -1,326 +1,181 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { FaInstagram } from "react-icons/fa";
 import { PLAY_STORE_URL } from "../../lib/appLinks";
 import { getIndexableCollections } from "../../lib/seo/catalog";
-import { business } from "../../lib/seo/site";
-import {
-  FaInstagram,
-  FaMapMarkerAlt,
-  FaEnvelope,
-  FaPhone,
-  FaClock,
-  FaGift,
-  FaSeedling,
-  FaShoppingBag,
-  FaHeadset,
-  FaGlobeEurope,
-} from "react-icons/fa";
-import { GiPlantSeed, GiFlowerPot } from "react-icons/gi";
+import { business, openingHoursDisplay } from "../../lib/seo/site";
+
+type FooterLink = { href: string; label: string };
+
+const SERVICE_LINKS: FooterLink[] = [
+  { href: "/gifting", label: "Plant gifting" },
+  { href: "/bulk", label: "Bulk orders" },
+  { href: "/blog", label: "Plant care guides" },
+];
+
+const HELP_LINKS: FooterLink[] = [
+  { href: "/help-center", label: "Help Center" },
+  { href: "/orders", label: "Track an order" },
+  { href: "/about", label: "About us" },
+  { href: "/delete-account", label: "Delete account" },
+];
+
+const linkClass = "text-sm text-green-300 transition-colors hover:text-white";
+
+function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
+  return (
+    <div>
+      <h2 className="font-semibold text-white">
+        {title}
+      </h2>
+      <ul className="mt-4 space-y-2.5">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} prefetch={false} className={linkClass}>
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /**
- * Site footer. A server component so its links are in the HTML on every page,
- * and so the Shop column can be built from the live catalog — previously it
- * pointed at /seeds, /pots and /faq, none of which exist.
+ * Site footer, rendered once from the root layout. A server component so its
+ * links are in the HTML on every page, and so the Shop column is built from
+ * the live catalog.
  */
 export default async function Footer() {
   const currentYear = new Date().getFullYear();
   const collections = await getIndexableCollections();
-  const shopLinks = collections.slice(0, 5).map(({ category }) => ({
-    href: `/categories/${category.slug}`,
-    label: category.name,
-  }));
+  const shopLinks: FooterLink[] = [
+    { href: "/shop", label: "All plants" },
+    ...collections.slice(0, 5).map(({ category }) => ({
+      href: `/categories/${category.slug}`,
+      label: category.name,
+    })),
+  ];
 
   return (
-    <footer className=" bg-green-800 text-white">
-      <div className="container mx-auto px-4  pt-8 md:pt-12">
-        <div className="grid grid-cols-2 md:grid-cols-4  gap-2">
-          {/* Brand */}
-          <div>
-            <Link
-              href="/"
-              className="mb-4 flex items-center gap-2 touch-manipulation"
-              aria-label="Growman home"
-            >
+    <footer className="bg-green-800 text-white">
+      <div className="mx-auto max-w-7xl px-4 pt-12 pb-8 sm:px-6 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-12">
+          <div className="md:col-span-4">
+            <Link href="/" className="inline-flex items-center gap-2" aria-label="Growman home">
               <Image
                 src="/growman.png"
                 alt=""
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-md object-contain"
+              />
+              <span className="font-space text-2xl font-bold text-white sm:text-3xl">Growman</span>
+            </Link>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-green-200">
+              Plants grown at {business.parentOrganization} in{" "}
+              {business.address.locality}, delivered across India.
+            </p>
+
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex items-center gap-3 rounded-xl border border-green-700 bg-green-900/40 p-2 pr-4 transition-colors hover:border-emerald-400"
+            >
+              <Image
+                src="/qr-code.svg"
+                alt=""
                 width={56}
                 height={56}
-                className="h-11 w-11 sm:h-14 sm:w-14 rounded-md object-contain"
+                className="hidden h-14 w-14 rounded-md bg-white p-1 md:block"
               />
-              <h2 className="text-2xl sm:text-4xl font-space font-bold">Growman</h2>
-            </Link>
-            <p className="text-green-200 text-sm mb-4">
-              Premium plants & gardening solutions for Indian homes
-            </p>
-            <div className=" flex gap-3">
-              {/* Only the Instagram profile URL is confirmed, so it is the
-                  single social link here — the previous Facebook and Twitter
-                  icons pointed at the Instagram URL and a malformed handle.
-                  TODO: restore them once the real profile URLs are known. */}
+              <span className="text-sm leading-tight">
+                <span className="block font-semibold text-white">Growman for Android</span>
+                <span className="text-green-200">Get it on Google Play</span>
+              </span>
+            </a>
+
+            <div className="mt-6 flex gap-2">
+              {/* Instagram is the only confirmed profile; add others to
+                  `business.sameAs` first so structured data stays in step. */}
               <a
                 href="https://www.instagram.com/growman.live/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-green-300 hover:text-white hover:bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-green-300 transition-all duration-300 hover:bg-emerald-600 hover:text-white"
                 aria-label="Growman on Instagram"
               >
-                <FaInstagram className="w-4 h-4" />
+                <FaInstagram className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          {/* Shop */}
-          <div className="hidden md:block">
-            <h3 className="font-semibold mb-3 flex items-center gap-2 ">
-              <FaShoppingBag className="w-4 h-4 text-emerald-400" />
-              Shop
-            </h3>
-            <ul className="space-y-2 text-sm">
-              {shopLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    prefetch={false}
-                    className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 md:col-span-8">
+            <FooterColumn title="Shop" links={shopLinks} />
+            <FooterColumn title="Services" links={SERVICE_LINKS} />
+            <FooterColumn title="Help" links={HELP_LINKS} />
+
+            <div>
+              <h2 className="font-semibold text-white">Contact</h2>
+              <ul className="mt-4 space-y-3 text-sm">
+                <li>
+                  <a
+                    href={business.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${linkClass} flex items-start gap-2`}
                   >
-                    <GiPlantSeed className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                    <span>{link.label}</span>
-                  </Link>
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    <address className="not-italic">
+                      Nursery in {business.address.locality}
+                    </address>
+                  </a>
                 </li>
-              ))}
-              <li>
-                <Link
-                  href="/categories"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
-                >
-                  <GiFlowerPot className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                  <span>All Categories</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/gifting"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors group"
-                >
-                  <FaGift className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                  <span>Gifting</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Help */}
-          <div className="hidden md:block">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <FaHeadset className="w-4 h-4 text-emerald-400" />
-              Help
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="/help-center"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <span>Help Center</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/about"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <span>Contact Us</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/blog"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <span>Plant Care Guides</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terms"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <span>Terms</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy-policy"
-                  prefetch={false}
-                  className="text-green-300 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <span>Privacy Policy</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <FaGlobeEurope className="w-4 h-4 text-emerald-400" />
-              Contact
-            </h3>
-            <ul className="space-y-2 text-sm text-green-300">
-              <li className="flex items-start gap-2">
-                <FaMapMarkerAlt className="w-3 h-3 text-emerald-400 mt-0.5 shrink-0" />
-                <a
-                  href={business.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
-                  <address className="not-italic">
-                    Visit our store in {business.address.locality} 
-                  </address>
-                  {/* <span className="block text-xs text-emerald-200 mt-0.5 underline underline-offset-2">
-                    Open in Google Maps
-                  </span> */}
-                </a>
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <FaEnvelope className="text-emerald-400  text-[14px] shrink-0" />
-                <a
-                  href={`mailto:${business.email}`}
-                  className="text-[13px] hover:text-white transition-colors"
-                >
-                  {business.email}
-                </a>
-              </li>
-
-              <li className="flex items-center gap-2">
-                <FaPhone className="w-3 h-3 text-emerald-400" />
-                {/* The number is dialled by the link rather than printed, so it
-                    is not sitting in the page for scrapers to pick up. "Call us"
-                    rather than "Contact us" because the Help column already
-                    links "Contact Us" to the About page. */}
-                <a
-                  href={`tel:${business.telephone}`}
-                  className="hover:text-white transition-colors"
-                >
-                  Call us
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <FaClock className="w-3 h-3 text-emerald-400" />
-                <span>9 AM - 7 PM (IST)</span>
-              </li>
-            </ul>
+                <li>
+                  {/* Dialled by the link rather than printed, so the number is
+                      not sitting in the page for scrapers to pick up. */}
+                  <a
+                    href={`tel:${business.telephone}`}
+                    className={`${linkClass} flex items-center gap-2`}
+                  >
+                    <Phone className="h-4 w-4 shrink-0 text-emerald-400" />
+                    Call us
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`mailto:${business.email}`}
+                    className={`${linkClass} flex items-center gap-2 break-all`}
+                  >
+                    <Mail className="h-4 w-4 shrink-0 text-emerald-400" />
+                    {business.email.split("@")[0]}
+                  </a>
+                </li>
+                <li className="flex items-start gap-2 text-green-200">
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  {openingHoursDisplay}
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col justify-between   md:flex-row items-center    text-center md:text-left">
-          {/* App install — mobile */}
-          {/* <a
-            href={PLAY_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-6 flex w-full items-center mx-auto gap-4 rounded-xl p-4 text-left md:hidden"
-          >
-            <Image
-              src="/qr-code.svg"
-              alt="Install Growman app"
-              height={72}
-              width={72}
-              className="shrink-0 rounded-lg bg-white p-1"
-            />
-            <div className="text-sm text-green-100 leading-tight">
-              <p className="font-semibold text-white">Get the Growman app</p>
-              <p className="mt-1">Install free on Google Play</p>
-              <span className="mt-2 inline-block rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-green-800">
-                Install on Google Play
-              </span>
-            </div>
-          </a> */}
-
-          {/* App install — desktop */}
-          <a
-            href={PLAY_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-6 hidden items-center gap-4 rounded-xl p-4 transition-colors  md:mb-0 md:flex"
-          >
-            <Image
-              src="/qr-code.svg"
-              alt="Growman app QR code"
-              height={120}
-              width={120}
-              className="shrink-0 rounded-lg bg-white p-1"
-            />
-            <div className="text-sm text-green-200 leading-tight">
-              <p className="font-semibold text-white">Get the Growman app</p>
-              <p className="mt-1">Scan the QR or click to open Google Play</p>
-              <span className="mt-2 inline-block text-xs font-medium text-emerald-300 underline">
-                Install on Google Play →
-              </span>
-            </div>
-          </a>
-
-          <div className="font-serif italic tracking-wide text-emerald-300 text-xl">
-            {/* Decorative illustration: square source, so declare it square to
-                avoid a layout shift, and hide it from assistive tech. */}
-            <Image
-              src="/404.png"
-              width={200}
-              height={200}
-              sizes="(max-width: 768px) 140px, 200px"
-              alt=""
-              aria-hidden="true"
-              className="md:w-50 h-auto"
-            />
-          </div>
-
-          {/* Copyright */}
-          <div className="flex flex-col items-center  mb-2 md:pr-20">
-            <p className="text-green-300 text-sm">
-              © {currentYear} Growman. All rights reserved.
-            </p>
-
-            <p className="text-emerald-300 text-sm font-medium flex items-center gap-1 mt-1">
-              <FaSeedling className="w-4 h-4" />
-              Powered by Shiridi Sai Nursery
-            </p>
-          </div>
+        <div className="mt-12 flex flex-col gap-3 border-t border-green-700 pt-6 text-xs text-green-200 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {currentYear} Growman · Powered by {business.parentOrganization}
+          </p>
+          <nav aria-label="Legal" className="flex gap-5">
+            <Link href="/terms" prefetch={false} className="hover:text-white">
+              Terms
+            </Link>
+            <Link href="/privacy-policy" prefetch={false} className="hover:text-white">
+              Privacy Policy
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>
   );
-}
-
-{
-  /* <div className="flex justify-center gap-4">
-            <Link
-              href="/privacy"
-              prefetch={false}
-              className="hover:text-white transition-colors flex items-center gap-1"
-            >
-              <span>Privacy</span>
-            </Link>
-            <Link
-              href="/terms"
-              prefetch={false}
-              className="hover:text-white transition-colors flex items-center gap-1"
-            >
-              <span>Terms</span>
-            </Link>
-            <Link
-              href="/shipping"
-              prefetch={false}
-              className="hover:text-white transition-colors flex items-center gap-1"
-            >
-              <span>Shipping Policy</span>
-            </Link>
-          </div> */
 }

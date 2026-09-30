@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { UserFacingError } from "./errors";
 
 export type QuotationLine = {
   no: number;
@@ -149,17 +150,14 @@ export async function submitQuotation(payload: QuotationRequest): Promise<Quotat
       body: JSON.stringify(payload),
     });
   } catch {
-    throw new Error("Couldn't reach the store. Check your connection and try again.");
+    throw new UserFacingError("No connection. Please check your internet and try again.");
   }
   if (res.status === 429) {
-    throw new Error("Too many requests. Please wait a few minutes and try again.");
+    throw new UserFacingError("Too many tries. Please wait a few minutes and try again.");
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(
-      (data && typeof data.error === "string" && data.error) ||
-        "We couldn't send your quotation. Please try again."
-    );
+    throw new UserFacingError("Couldn't send your request. Please try again.");
   }
   return data as Quotation;
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Clock, MapPin, Phone, X } from "lucide-react";
 import { apiFetch } from "../../lib/api";
+import { userMessage } from "../../lib/errors";
 import {
   collectClientContext,
   formatRupees,
@@ -177,9 +178,7 @@ export default function StorePickupDialog({ items, onClose, onSent }: Props) {
       }
       setQuotation(result);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
-      );
+      setError(userMessage(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -356,7 +355,7 @@ export default function StorePickupDialog({ items, onClose, onSent }: Props) {
               </div>
 
               {error ? (
-                <p role="alert" className="mt-3 text-sm text-red-600">
+                <p role="alert" className="mt-3 text-sm text-green-950/55">
                   {error}
                 </p>
               ) : null}

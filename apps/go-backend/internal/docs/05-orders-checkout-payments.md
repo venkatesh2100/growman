@@ -324,3 +324,19 @@ when a customer asks for something not in the catalog:
 - Also auto-created by the chat handler (`maybeAutoCreateRequestedProduct`,
   `Source: "chatbot_auto"`) when a user's message strongly implies they
   couldn't find a product — see [06-chat-and-ai.md](./06-chat-and-ai.md).
+
+## Dootha Care waiting list (`internal/handlers/dootha_waitlist.go`)
+
+Pre-launch interest in the Dootha Care device (`models.DoothaWaitlist`),
+collected by the first-visit popup on the web homepage:
+- `POST /dootha-waitlist` — public, rate limited to 5 per IP per 10 minutes
+  and honeypotted on `website`. Name and a 10-digit mobile number are
+  required; email and delivery area are optional. A user ID is attached when
+  a valid JWT happens to be present, as with requested products.
+- The mobile number is the identity: a repeat sign-up updates the existing
+  row and increments `signups` rather than inserting a duplicate.
+- Each sign-up is emailed to `WAITLIST_EMAIL` (default
+  `growman.live@gmail.com`, falling back to `MERCHANT_NOTIFY_EMAIL`) in a
+  goroutine, so a mail failure never fails the request — the row is already
+  saved.
+- `GET /dootha-waitlist` — admin-only listing, newest first.

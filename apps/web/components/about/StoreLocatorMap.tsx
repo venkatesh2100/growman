@@ -19,13 +19,17 @@ const HUB = CITIES.find((c) => c.open)!;
 
 export default function StoreLocatorMap() {
   return (
-    <section>
+    <section aria-labelledby="visit-heading">
       <div className="mb-3">
-        <h2 className="font-space text-xl font-semibold text-green-900">Visit us in person</h2>
-        <p className="mt-0.5 text-sm text-gray-500">Our store, and where we&apos;re headed next</p>
+        <h2 id="visit-heading" className="font-space text-xl font-semibold text-green-900">
+          Visit the nursery
+        </h2>
+        <p className="mt-0.5 text-sm text-gray-500">
+          Our store in Hyderabad, and the cities we plan to open in next
+        </p>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-[#DCEFE4] bg-[#F0F7F4]">
+      <div className="overflow-hidden rounded-2xl border border-emerald-100 bg-[#F0F7F4]">
         <div className="relative aspect-[2/1] min-h-[200px] sm:min-h-[240px]">
           <div
             className="pointer-events-none absolute inset-0 opacity-60"
@@ -92,11 +96,11 @@ export default function StoreLocatorMap() {
           )}
         </div>
 
-        <div className="border-t border-[#DCEFE4] bg-white px-4 py-3">
+        <div className="border-t border-emerald-100 bg-white px-4 py-3">
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
-              Open now
+              Open
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-emerald-600 bg-white" />
@@ -109,7 +113,7 @@ export default function StoreLocatorMap() {
             rel="noopener noreferrer"
             className="mt-3 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-800"
           >
-            Get directions to Hyderabad →
+            Get directions →
           </a>
         </div>
       </div>

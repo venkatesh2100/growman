@@ -1,19 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import {
   ShoppingBag,
-  CreditCard,
+  Check,
   Loader2,
+  Lock,
   LogIn,
   Navigation,
-  ArrowLeft,
   ArrowRight,
   MapPin,
   User,
   ShieldCheck,
+  FileText,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,8 +34,14 @@ import {
 } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
 import { toast } from "../../lib/toast";
+import { userMessage } from "../../lib/errors";
+import { formatPrice } from "../../lib/format";
+import { business } from "../../lib/seo/site";
 import { FormField, FormSelect } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+import ButtonLink from "../../components/ui/ButtonLink";
+import { buttonClass } from "../../components/ui/buttonStyles";
+import QuotationEnquiry, { type EnquiryLine } from "../bulk/QuotationEnquiry";
 import {
   fetchDeliveryQuote,
   pickDeliveryOption,
@@ -151,6 +166,32 @@ export default function CheckoutPage() {
   // A quoted address with no delivery available is outside the radius or
   // too large to send retail, which is a sales conversation, not a payment.
   const needsCustomQuote = quote !== null && deliveryOption === null;
+  // When delivery can't be paid for here, the cart goes to the store as a
+  // quotation request instead.
+  const offersQuotation = !canPay && (needsCustomQuote || quoteError !== null);
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const enquiryLines = useMemo<EnquiryLine[]>(
+    () =>
+      cart.map((item) => ({
+        key: item.id,
+        productId: item.productId,
+        sizeId: item.productSizeId ?? 0,
+        itemCode: "",
+        name: item.name,
+        size: item.label ?? "",
+        slug: "",
+        category: "",
+        price: item.price,
+        image: item.image,
+        quantity: item.quantity,
+      })),
+    [cart],
+  );
+  const setEnquiryQuantity = (key: string, quantity: number) => {
+    const store = useCartStore.getState();
+    if (quantity <= 0) store.removeItem(key);
+    else store.updateQuantity(key, quantity);
+  };
 
   useEffect(() => {
     setLoaded(true);
@@ -193,9 +234,7 @@ export default function CheckoutPage() {
           return;
         }
         setQuoteError(
-          err instanceof Error
-            ? err.message
-            : "Could not work out delivery for this address.",
+          userMessage(err, "Couldn't check delivery for this address."),
         );
         setQuote(null);
       } finally {
@@ -323,12 +362,10 @@ export default function CheckoutPage() {
         }
       }
     } catch (err: unknown) {
-      // getCurrentLocation already phrases its failures for shoppers, so no
-      // prefix is added on top of them.
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Could not read your location. Please type your pincode.";
+      const msg = userMessage(
+        err,
+        "Couldn't find your location. Please enter your pincode.",
+      );
       setError(msg);
       toast(msg, "error");
     } finally {
@@ -385,8 +422,8 @@ export default function CheckoutPage() {
 
     if (!channel) {
       const msg = needsCustomQuote
-        ? "We can't deliver this order to that address — request a quote and we'll price it."
-        : "Enter your address to work out delivery.";
+        ? "We can't deliver this order to that address at a fixed price. Request a quotation and we'll price it."
+        : "Enter your pincode to check delivery.";
       setError(msg);
       toast(msg, "error");
       return;
@@ -407,7 +444,7 @@ export default function CheckoutPage() {
     try {
       const isLoaded = await loadRazorpay();
       if (!isLoaded) {
-        setError("Payment gateway failed to load. Please try again.");
+        setError("Payment couldn't start. Please try again.");
         setPaymentStatus("failed");
         setLoading(false);
         return;
@@ -416,7 +453,7 @@ export default function CheckoutPage() {
       const orderItems = toOrderItems(cart);
 
       if (orderItems.length === 0) {
-        setError("Invalid cart items. Please add items to cart again.");
+        setError("Please add the items to your cart again.");
         setPaymentStatus("failed");
         setLoading(false);
         return;
@@ -461,9 +498,8 @@ export default function CheckoutPage() {
 
       if (!orderRes.ok) {
         const errorData = await orderRes.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { error?: string }).error || "Failed to create order",
-        );
+        console.error("Create order failed:", orderRes.status, errorData);
+        throw new Error("create order failed");
       }
 
       const orderData = await orderRes.json();
@@ -486,13 +522,9 @@ export default function CheckoutPage() {
             });
 
             if (!verifyRes.ok) {
-              const errorData = await verifyRes
-                .json()
-                .catch(() => ({ error: "Unknown error" }));
-              throw new Error(
-                (errorData as { error?: string }).error ||
-                  "Payment verification failed",
-              );
+              const errorData = await verifyRes.json().catch(() => ({}));
+              console.error("Payment verify failed:", verifyRes.status, errorData);
+              throw new Error("payment verification failed");
             }
 
             setPaymentStatus("success");
@@ -523,11 +555,9 @@ export default function CheckoutPage() {
             setTimeout(() => {
               router.push(`/order-success?orderId=${orderData.orderId}`);
             }, 1500);
-          } catch (err: unknown) {
+          } catch {
             setError(
-              err instanceof Error
-                ? err.message
-                : "Payment verification failed",
+              "We couldn't confirm your payment. If money was taken, it will be refunded or your order will be confirmed shortly.",
             );
             setPaymentStatus("failed");
           } finally {
@@ -553,7 +583,7 @@ export default function CheckoutPage() {
           Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
         }
       ).Razorpay;
-      if (!Razorpay) throw new Error("Razorpay SDK not loaded");
+      if (!Razorpay) throw new Error("payment script missing");
 
       const paymentObject = new Razorpay(options);
       paymentObject.on("payment.failed", function () {
@@ -563,8 +593,8 @@ export default function CheckoutPage() {
       });
       paymentObject.open();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Something went wrong. Try again.";
+      console.error("Checkout error:", err);
+      const msg = userMessage(err, "Payment couldn't start. Please try again.");
       setError(msg);
       toast(msg, "error");
       setPaymentStatus("failed");
@@ -574,30 +604,26 @@ export default function CheckoutPage() {
 
   if (!loaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-emerald-700" />
       </div>
     );
   }
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 sm:p-12 text-center max-w-md w-full">
-          <ShoppingBag className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 mb-4" />
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+      <div className="flex min-h-[70vh] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-8 text-center sm:p-10">
+          <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gray-400" />
+          <h1 className="mb-2 font-space text-xl font-semibold text-green-900 sm:text-2xl">
             Your cart is empty
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mb-6">
-            Add some plants to your cart before checking out.
+          <p className="mb-6 text-sm text-gray-600">
+            Add plants to your cart to check out.
           </p>
-          <Button
-            variant="solid-sm"
-            onClick={() => router.push("/shop")}
-            icon={<ShoppingBag className="w-4 h-4" />}
-          >
-            Continue Shopping
-          </Button>
+          <ButtonLink href="/shop" className="w-full">
+            Browse plants
+          </ButtonLink>
         </div>
       </div>
     );
@@ -606,75 +632,147 @@ export default function CheckoutPage() {
   const payButton = (
     <Button
       variant="solid-sm"
-      onClick={handlePayment}
+      onClick={offersQuotation ? () => setEnquiryOpen(true) : handlePayment}
       loading={loading || paymentStatus === "processing"}
       loadingText="Opening payment…"
-      icon={<CreditCard className="w-5 h-5" />}
-      disabled={paymentStatus === "success" || !canPay}
+      icon={
+        offersQuotation ? (
+          <FileText className="h-4 w-4" />
+        ) : (
+          <Lock className="h-4 w-4" />
+        )
+      }
+      disabled={paymentStatus === "success" || (!canPay && !offersQuotation)}
     >
       {paymentStatus === "success"
-        ? "Payment successful"
+        ? "Payment received"
         : canPay
-          ? `Pay ₹${total.toFixed(0)} securely`
-          : needsCustomQuote
-            ? "Delivery needs a quote"
-            : "Enter address to continue"}
+          ? `Pay ${formatPrice(total)}`
+          : offersQuotation
+            ? "Request a quotation"
+            : "Enter your address to continue"}
     </Button>
   );
+
+  // What the quote means for this order, shown under the address so the
+  // shopper sees the effect of the pincode they just typed.
+  let deliveryNote: ReactNode = null;
+  if (hasDestination && quoteLoading && !quote) {
+    deliveryNote = (
+      <p className="flex items-center gap-2 text-sm text-gray-500">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Checking delivery for this address…
+      </p>
+    );
+  } else if (deliveryOption) {
+    const days = quote?.estimatedDeliveryDays ?? 0;
+    const freeGap = quote?.amountForFreeDelivery ?? 0;
+    deliveryNote = (
+      <div className="flex items-start gap-3 rounded-xl bg-emerald-50/70 px-3.5 py-3 text-sm">
+        <Truck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+        <div className="min-w-0 space-y-0.5">
+          <p className="font-medium text-green-900">
+            {deliveryOption.label} ·{" "}
+            {deliveryFee > 0 ? formatPrice(deliveryFee) : "Free"}
+          </p>
+          {days > 0 ? (
+            <p className="text-gray-600">
+              Courier estimate: about {days} {days === 1 ? "day" : "days"}.
+            </p>
+          ) : null}
+          {freeGap > 0 ? (
+            <p className="text-gray-600">
+              Add {formatPrice(freeGap)} more for free delivery.
+            </p>
+          ) : null}
+          {quote?.storeVisitSuggested ? (
+            <p className="text-gray-600">
+              You are close to our nursery. To collect in person instead,
+              choose store pickup from your{" "}
+              <Link
+                href="/cart"
+                className="font-medium text-emerald-700 underline underline-offset-2"
+              >
+                cart
+              </Link>
+              .
+            </p>
+          ) : null}
+        </div>
+      </div>
+    );
+  } else if (needsCustomQuote) {
+    deliveryNote = (
+      <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 px-3.5 py-3 text-sm text-gray-700">
+        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+        <p>
+          We can&apos;t price delivery to{" "}
+          {customerInfo.pincode || "this address"} automatically for this
+          order. Send a quotation request and our team will call you with a
+          delivery price.
+        </p>
+      </div>
+    );
+  } else if (quoteError) {
+    deliveryNote = (
+      <p className="rounded-xl bg-stone-50 px-3.5 py-3 text-sm text-green-950/70">
+        {quoteError} You can send a quotation request, or{" "}
+        <a
+          href={`tel:${business.telephone}`}
+          className="font-medium text-emerald-700 underline underline-offset-2"
+        >
+          call the nursery
+        </a>
+        .
+      </p>
+    );
+  }
 
   // Top padding is set separately from the bottom so the `md:` step cannot
   // override the space kept clear for the mobile sticky pay bar.
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 sm:pt-6 pb-28 lg:pb-8">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/cart"
-              aria-label="Back to cart"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-emerald-700 touch-manipulation"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-green-800">
-                Checkout
-              </h1>
-              <p className="text-xs text-gray-500">
-                {itemCount} {itemCount === 1 ? "item" : "items"} · UPI, card,
-                netbanking or wallet
-              </p>
-            </div>
+    <div className="min-h-screen pt-5 pb-32 sm:pt-8 lg:pb-16">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <CheckoutSteps />
+
+        <div className="mt-5 mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <div>
+            <h1 className="font-space text-2xl font-semibold tracking-tight text-green-900 sm:text-3xl">
+              Checkout
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {itemCount} {itemCount === 1 ? "item" : "items"} · Pay by UPI,
+              card, netbanking or wallet
+            </p>
           </div>
           {isAuthenticated ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Details prefilled
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+              <Check className="h-3.5 w-3.5" />
+              Details filled from your account
             </span>
           ) : (
             <Link
               href="/login?redirect=/checkout"
               prefetch={false}
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-emerald-700 hover:text-emerald-800"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-900"
             >
-              <LogIn className="w-4 h-4" />
-              Sign in for faster checkout
+              <LogIn className="h-4 w-4" />
+              Have an account? Sign in
             </Link>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* One card, three steps. Separate cards for contact, address and
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
+          {/* One card, two sections. Separate cards for contact, address and
               delivery pushed the total below the fold on every screen. */}
-          <div className="lg:col-span-2">
-            <div className="divide-y divide-gray-100 rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div>
+            <div className="divide-y divide-emerald-50 rounded-2xl border border-emerald-100 bg-white">
               {/* Contact */}
-              <section className="p-4">
-                <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  <User className="w-4 h-4 text-emerald-600" />
-                  Contact
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <section className="p-5 sm:p-6" aria-labelledby="contact-heading">
+                <StepHeading id="contact-heading" number={1} icon={User}>
+                  Contact details
+                </StepHeading>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField
                     size="sm"
                     label="Full name *"
@@ -686,7 +784,7 @@ export default function CheckoutPage() {
                   />
                   <FormField
                     size="sm"
-                    label="Mobile *"
+                    label="Mobile number *"
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel"
@@ -725,28 +823,33 @@ export default function CheckoutPage() {
                         }
                       }}
                       placeholder="you@example.com"
+                      hint="Your order confirmation is sent here."
                     />
                   </div>
                 </div>
               </section>
 
               {/* Address */}
-              <section className="p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    <MapPin className="w-4 h-4 text-emerald-600" />
+              <section className="p-5 sm:p-6" aria-labelledby="address-heading">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <StepHeading
+                    id="address-heading"
+                    number={2}
+                    icon={MapPin}
+                    className="mb-0"
+                  >
                     Delivery address
-                  </h2>
+                  </StepHeading>
                   <button
                     type="button"
                     onClick={handleLocateMe}
                     disabled={locating}
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 touch-manipulation"
+                    className="inline-flex shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-green-900 hover:bg-emerald-50/60 disabled:opacity-50"
                   >
                     {locating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Navigation className="w-3.5 h-3.5" />
+                      <Navigation className="h-3.5 w-3.5 text-emerald-700" />
                     )}
                     {locating ? "Locating…" : "Use my location"}
                   </button>
@@ -762,7 +865,7 @@ export default function CheckoutPage() {
                     onChange={(e) => updateField("addressLine", e.target.value)}
                     placeholder="House / flat, building, street"
                   />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <FormField
                       size="sm"
                       label="Pincode *"
@@ -804,97 +907,101 @@ export default function CheckoutPage() {
                       </FormSelect>
                     </div>
                   </div>
+                  {deliveryNote}
                 </div>
               </section>
             </div>
           </div>
 
           {/* Summary */}
-          {/* The item list lives here rather than in a fourth section on the
-              left, so the cart and the total stay on screen together. */}
-          <aside className="lg:col-span-1">
-            <div className="sticky top-4">
-              <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
-                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          {/* The item list lives here rather than in a separate section on
+              the left, so the cart and the total stay on screen together. */}
+          <aside aria-labelledby="summary-heading">
+            <div className="lg:sticky lg:top-24">
+              <div className="rounded-2xl border border-emerald-100 bg-white">
+                <div className="flex items-center justify-between border-b border-emerald-50 px-5 py-3.5">
+                  <h2
+                    id="summary-heading"
+                    className="text-base font-semibold text-green-900"
+                  >
                     Order summary
                   </h2>
                   <Link
                     href="/cart"
-                    className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                    className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
                   >
-                    Edit cart
+                    Edit
                   </Link>
                 </div>
 
-                <ul className="max-h-52 divide-y divide-gray-100 overflow-y-auto px-4">
+                <ul className="max-h-60 divide-y divide-emerald-50 overflow-y-auto px-5">
                   {cart.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center gap-2.5 py-2.5"
-                    >
-                      <Image
-                        src={item.image}
-                        width={40}
-                        height={40}
-                        className="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-gray-200"
-                        alt={item.name}
-                      />
+                    <li key={item.id} className="flex items-center gap-3 py-3">
+                      <div className="relative shrink-0">
+                        <Image
+                          src={item.image}
+                          width={48}
+                          height={48}
+                          className="h-12 w-12 rounded-lg object-cover ring-1 ring-emerald-100"
+                          alt={item.name}
+                        />
+                        <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[11px] font-semibold text-white">
+                          {item.quantity}
+                        </span>
+                      </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-gray-900">
+                        <p className="truncate text-sm font-medium text-green-900">
                           {item.name}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {item.label ? `${item.label} · ` : ""}Qty{" "}
-                          {item.quantity}
-                        </p>
+                        {item.label ? (
+                          <p className="text-xs text-gray-500">{item.label}</p>
+                        ) : null}
                       </div>
-                      <span className="shrink-0 text-sm font-medium text-gray-900">
-                        ₹{(item.price * item.quantity).toFixed(0)}
+                      <span className="shrink-0 text-sm font-medium text-green-900">
+                        {formatPrice(item.price * item.quantity)}
                       </span>
                     </li>
                   ))}
                 </ul>
 
-                <div className="space-y-2 border-t border-gray-100 px-4 py-3">
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Items ({itemCount})</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
+                <dl className="space-y-2 border-t border-emerald-50 px-5 py-4 text-sm">
+                  <div className="flex justify-between text-gray-700">
+                    <dt>Subtotal</dt>
+                    <dd>{formatPrice(subtotal)}</dd>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span className="truncate pr-2">
-                      {deliveryOption?.label ?? "Delivery"}
-                    </span>
-                    {quoteLoading && !quote ? (
-                      <span className="shrink-0 text-gray-400">Checking…</span>
-                    ) : needsCustomQuote ? (
-                      <span className="shrink-0 text-gray-400">On quote</span>
-                    ) : !deliveryOption ? (
-                      <span className="shrink-0 text-gray-400">—</span>
-                    ) : deliveryFee > 0 ? (
-                      <span className="shrink-0">
-                        ₹{deliveryFee.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="shrink-0 font-medium text-emerald-600">
-                        FREE
-                      </span>
-                    )}
+                  <div className="flex justify-between text-gray-700">
+                    <dt>Delivery</dt>
+                    <dd>
+                      {quoteLoading && !quote ? (
+                        <span className="text-gray-400">Checking…</span>
+                      ) : needsCustomQuote ? (
+                        <span className="text-gray-500">On quotation</span>
+                      ) : !deliveryOption ? (
+                        <span className="text-gray-400">
+                          {hasDestination ? "—" : "Enter pincode"}
+                        </span>
+                      ) : deliveryFee > 0 ? (
+                        formatPrice(deliveryFee)
+                      ) : (
+                        <span className="font-medium text-emerald-700">
+                          Free
+                        </span>
+                      )}
+                    </dd>
                   </div>
-                  {quoteError ? (
-                    <p className="text-xs text-amber-700">{quoteError}</p>
-                  ) : null}
-                  <div className="flex justify-between border-t border-gray-100 pt-2 text-lg font-bold text-gray-900">
-                    <span>Total</span>
-                    <span>₹{total.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between border-t border-emerald-50 pt-3">
+                    <dt className="font-semibold text-green-900">Total</dt>
+                    <dd className="font-space text-xl font-semibold text-green-900">
+                      {formatPrice(total)}
+                    </dd>
                   </div>
-                </div>
+                </dl>
 
-                <div className="px-4 pb-4">
+                <div className="px-5 pb-5">
                   {error ? (
                     <div
                       role="alert"
-                      className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                      className="mb-3 rounded-lg bg-stone-50 px-3 py-2 text-sm text-green-950/70"
                     >
                       {error}
                     </div>
@@ -902,88 +1009,99 @@ export default function CheckoutPage() {
 
                   {paymentStatus === "success" ? (
                     <p className="mb-3 text-sm font-medium text-emerald-700">
-                      Payment successful. Redirecting…
+                      Payment received. Taking you to your order…
                     </p>
                   ) : null}
 
                   <div className="hidden lg:block">{payButton}</div>
 
                   <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500">
-                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                    Encrypted checkout via Razorpay
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-700" />
+                    Payments are processed securely by Razorpay. Growman does
+                    not store your card details.
                   </p>
                 </div>
               </div>
 
-              {/* Outside the card: a quote is a way off this page, so it sits
-                below the box rather than competing with the pay button.
-                When there is no delivery to pay for, this stops being a
-                footnote and becomes the way forward. */}
-              <Link
-                href="/bulk"
-                className={
-                  needsCustomQuote
-                    ? "mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-                    : "mt-3 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800"
-                }
-              >
-                {needsCustomQuote
-                  ? "Request a delivery quote"
-                  : "Ordering 10+ plants? Get a wholesale quote"}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-
-              {needsCustomQuote ? (
-                <p className="mt-2 text-center text-xs text-gray-600">
-                  {customerInfo.pincode || "This address"} is outside our
-                  Hyderabad delivery area, so we price the trip per order.
-                </p>
+              {/* Outside the card: a wholesale quote is a way off this page,
+                so it sits below the box rather than competing with the pay
+                button. */}
+              {!offersQuotation ? (
+                <Link
+                  href="/bulk"
+                  className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-900"
+                >
+                  Ordering in bulk? Request a quotation
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               ) : null}
             </div>
           </aside>
         </div>
       </div>
 
-      {/* Mobile sticky pay bar — matches cart CTA pattern, keeps pay one tap away */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-emerald-900/10 bg-white/95 backdrop-blur px-3 py-3 safe-area-pb">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
+      {/* Mobile sticky pay bar: keeps payment one tap away on small screens. */}
+      <div className="safe-area-pb fixed inset-x-0 bottom-0 z-40 border-t border-emerald-100 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-6xl items-center gap-4">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-lg font-bold text-green-900 leading-tight">
-              ₹{total.toFixed(0)}
+            <p className="font-space text-lg leading-tight font-semibold text-green-900">
+              {formatPrice(total)}
             </p>
           </div>
           <div className="flex-1">{payButton}</div>
         </div>
       </div>
 
+      {enquiryOpen ? (
+        <QuotationEnquiry
+          lines={enquiryLines}
+          phone={business.telephone}
+          onQuantityChange={setEnquiryQuantity}
+          onClose={() => setEnquiryOpen(false)}
+          onSent={() => {
+            useCartStore.getState().clearCart();
+            router.push("/");
+          }}
+          initialContact={{
+            name: customerInfo.name,
+            phone: customerInfo.phone,
+            address: [
+              customerInfo.addressLine,
+              customerInfo.city,
+              customerInfo.pincode,
+            ]
+              .filter(Boolean)
+              .join(", "),
+          }}
+        />
+      ) : null}
+
       {showLoginPrompt && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
             role="dialog"
+            aria-modal="true"
             aria-labelledby="login-prompt-title"
-            className="bg-white rounded-xl shadow-xl p-5 sm:p-6 max-w-md w-full"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
           >
-            <div className="flex items-center mb-3 gap-2">
-              <LogIn className="w-5 h-5 text-emerald-600" />
-              <h2
-                id="login-prompt-title"
-                className="text-lg sm:text-xl font-semibold text-green-900"
-              >
-                Account already exists
-              </h2>
-            </div>
-            <p className="text-sm sm:text-base text-gray-600 mb-5">
-              Sign in to use your saved address and finish checkout faster. Or
-              use a different email to continue as a guest.
+            <h2
+              id="login-prompt-title"
+              className="font-space text-lg font-semibold text-green-900"
+            >
+              You already have an account
+            </h2>
+            <p className="mt-2 mb-5 text-sm text-gray-600">
+              Sign in to use your saved address and see this order in your
+              account. Or use a different email to continue as a guest.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="flex flex-col gap-2.5 sm:flex-row">
               <Link
                 href={`/login?email=${encodeURIComponent(customerInfo.email)}&phone=${encodeURIComponent(customerInfo.phone)}&redirect=/checkout`}
                 prefetch={false}
-                className="flex-1 bg-emerald-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation"
+                className={buttonClass("primary", "md", "flex-1")}
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="h-4 w-4" />
                 Sign in
               </Link>
               <button
@@ -992,7 +1110,7 @@ export default function CheckoutPage() {
                   setShowLoginPrompt(false);
                   setError(null);
                 }}
-                className="px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base touch-manipulation"
+                className={buttonClass("secondary", "md")}
               >
                 Use another email
               </button>
@@ -1001,5 +1119,82 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+const STEPS = ["Cart", "Details", "Payment"] as const;
+
+/** Where the shopper is in the purchase: the cart is done, payment is next. */
+function CheckoutSteps() {
+  return (
+    <nav aria-label="Checkout progress">
+      <ol className="flex items-center gap-2 text-xs font-medium sm:text-sm">
+        {STEPS.map((step, index) => {
+          const done = index === 0;
+          const current = index === 1;
+          return (
+            <li key={step} className="flex items-center gap-2">
+              {index > 0 ? (
+                <span aria-hidden="true" className="h-px w-6 bg-emerald-200 sm:w-10" />
+              ) : null}
+              {done ? (
+                <Link
+                  href="/cart"
+                  className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-700 text-white">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  {step}
+                </Link>
+              ) : (
+                <span
+                  aria-current={current ? "step" : undefined}
+                  className={`inline-flex items-center gap-1.5 ${current ? "text-green-900" : "text-gray-400"}`}
+                >
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border text-[11px] ${
+                      current
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-emerald-200"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  {step}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function StepHeading({
+  id,
+  number,
+  icon: Icon,
+  className = "mb-4",
+  children,
+}: {
+  id: string;
+  number: number;
+  icon: ComponentType<{ className?: string }>;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <h2
+      id={id}
+      className={`flex items-center gap-2.5 text-base font-semibold text-green-900 ${className}`}
+    >
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="sr-only">Step {number}: </span>
+      {children}
+    </h2>
   );
 }

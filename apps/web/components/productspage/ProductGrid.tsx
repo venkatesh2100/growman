@@ -7,6 +7,8 @@ interface ProductGridProps {
   /** Grid container classes — each page keeps its own responsive column layout. */
   className?: string;
   emptyState: ReactNode;
+  /** Optional control shown on each card's image, e.g. a remove button. */
+  renderAction?: (product: Product) => ReactNode;
 }
 
 /**
@@ -16,15 +18,20 @@ interface ProductGridProps {
  */
 export default function ProductGrid({
   products,
-  className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6",
+  className = "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5",
   emptyState,
+  renderAction,
 }: ProductGridProps) {
   if (products.length === 0) return <>{emptyState}</>;
 
   return (
     <div className={className}>
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard
+          key={product.id}
+          product={product}
+          cornerAction={renderAction?.(product)}
+        />
       ))}
     </div>
   );

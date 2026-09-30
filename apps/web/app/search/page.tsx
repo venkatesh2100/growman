@@ -16,10 +16,8 @@ export const metadata: Metadata = {
 export default function SearchPage(){
   return(
     <main>
-      <Suspense fallback={<div> Loading ..</div>}>
-
+      <Suspense fallback={<div className="mx-auto min-h-[50vh] max-w-7xl px-4 pt-8 sm:px-6 lg:px-8" aria-busy="true" />}>
         <Searchcomponent/>
-
       </Suspense>
     </main>
   )

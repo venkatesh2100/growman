@@ -1383,6 +1383,51 @@ paths:
         "403":
           $ref: "#/components/responses/Error"
 
+  /api/v1/dootha-waitlist:
+    post:
+      tags: [Dootha Waitlist]
+      summary: Join the Dootha Care device waiting list
+      description: >
+        Public, rate limited to 5 sign-ups per IP per 10 minutes. A repeat
+        sign-up from the same mobile number updates the existing entry. The
+        details are emailed to WAITLIST_EMAIL.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinDoothaWaitlistRequest"
+      responses:
+        "201":
+          description: Added to the waiting list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoothaWaitlistAck"
+        "400":
+          $ref: "#/components/responses/Error"
+    get:
+      tags: [Dootha Waitlist]
+      summary: List waiting list sign-ups (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, contacted, converted]
+      responses:
+        "200":
+          description: Up to 500 rows, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DoothaWaitlistEntry"
+        "403":
+          $ref: "#/components/responses/Error"
+
   /api/v1/order-support-requests:
     get:
       tags: [Order Support]
@@ -2301,6 +2346,68 @@ components:
           type: string
         requesterPhone:
           type: string
+        adminNotes:
+          type: string
+    JoinDoothaWaitlistRequest:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          description: 10-digit Indian mobile number
+        email:
+          type: string
+          description: Optional
+        address:
+          type: string
+          description: Optional delivery area
+        source:
+          type: string
+          example: homepage_popup
+        website:
+          type: string
+          description: Honeypot; must be empty
+    DoothaWaitlistAck:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+    DoothaWaitlistEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        userId:
+          type: integer
+        ip:
+          type: string
+        userAgent:
+          type: string
+        signups:
+          type: integer
         adminNotes:
           type: string
     OrderSupportRequest:

@@ -5,6 +5,7 @@ import { CheckCircle2, Printer, X } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { FormField, FormTextarea } from "../../components/ui/Input";
 import { apiFetch } from "../../lib/api";
+import { userMessage } from "../../lib/errors";
 import {
   collectClientContext,
   formatRupees,
@@ -33,6 +34,8 @@ type Props = {
   onQuantityChange: (key: string, quantity: number) => void;
   onClose: () => void;
   onSent: () => void;
+  /** Details the shopper already typed elsewhere; they win over saved ones. */
+  initialContact?: Partial<Contact>;
 };
 
 const CONTACT_STORAGE_KEY = "growman-quotation-contact";
@@ -90,9 +93,14 @@ export default function QuotationEnquiry({
   onQuantityChange,
   onClose,
   onSent,
+  initialContact,
 }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [contact, setContact] = useState<Contact>({ name: "", phone: "", address: "" });
+  const [contact, setContact] = useState<Contact>({
+    name: initialContact?.name ?? "",
+    phone: initialContact?.phone ?? "",
+    address: initialContact?.address ?? "",
+  });
   const [website, setWebsite] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -144,7 +152,11 @@ export default function QuotationEnquiry({
       const saved = localStorage.getItem(CONTACT_STORAGE_KEY);
       if (saved) {
         const s = JSON.parse(saved) as Partial<Contact>;
-        setContact({ name: s.name ?? "", phone: s.phone ?? "", address: s.address ?? "" });
+        setContact((prev) => ({
+          name: prev.name || s.name || "",
+          phone: prev.phone || s.phone || "",
+          address: prev.address || s.address || "",
+        }));
         return;
       }
     } catch {
@@ -218,7 +230,7 @@ export default function QuotationEnquiry({
       }
       setQuotation(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(userMessage(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -398,7 +410,7 @@ export default function QuotationEnquiry({
                     Add
                   </button>
                 </div>
-                {draftError ? <p className="mt-1 text-xs text-red-600">{draftError}</p> : null}
+                {draftError ? <p className="mt-1 text-xs text-green-950/55">{draftError}</p> : null}
               </div>
 
               <div className="mt-5 space-y-3">
@@ -436,7 +448,7 @@ export default function QuotationEnquiry({
                 <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
               </div>
 
-              {error ? <p role="alert" className="mt-3 text-sm text-red-600">{error}</p> : null}
+              {error ? <p role="alert" className="mt-3 text-sm text-green-950/55">{error}</p> : null}
             </div>
 
             <div className="border-t border-gray-200 px-4 py-3 sm:px-5">

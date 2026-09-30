@@ -269,6 +269,30 @@ function withLocalImage(
   return { urls, productName: image?.productName ?? "" };
 }
 
+export type TagCollection = {
+  tag: string;
+  productCount: number;
+  image: CollectionImage | null;
+};
+
+/** Product count and a representative photo for each tag, from one catalog read. */
+export async function getTagCollections(
+  tags: readonly string[]
+): Promise<TagCollection[]> {
+  const products = await getAllProducts();
+  return tags.map((tag) => {
+    const key = tag.trim().toLowerCase();
+    const matches = products.filter((product) =>
+      (product.tags ?? []).some((value) => value.trim().toLowerCase() === key)
+    );
+    return {
+      tag,
+      productCount: matches.length,
+      image: pickCollectionImage(matches),
+    };
+  });
+}
+
 /**
  * Categories and subcategories that actually contain products, with counts.
  *

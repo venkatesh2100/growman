@@ -57,6 +57,7 @@ func (h *Handler) AutoMigrate() error {
 		&models.Wishlist{},
 		&models.RequestedProduct{},
 		&models.OrderSupportRequest{},
+		&models.DoothaWaitlist{},
 	); err != nil {
 		return err
 	}

@@ -1,3 +1,14 @@
+/** An error whose message was written for shoppers and is safe to show as-is. */
+export class UserFacingError extends Error {}
+
+/**
+ * The text to show a shopper for a caught error. Browser and server messages
+ * ("Failed to fetch", "invalid_request") are never shown; only our own copy is.
+ */
+export function userMessage(err: unknown, fallback: string): string {
+  return err instanceof UserFacingError ? err.message : fallback;
+}
+
 /** Raw error info extracted from a failed API response body. */
 export interface ApiErrorPayload {
   /** The `error`/`message` field from the JSON body, or the raw text body. */

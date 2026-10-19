@@ -23,11 +23,24 @@ Growman is a complete e-commerce solution featuring:
 - **Backend**: High-performance Go API with PostgreSQL and Redis
 - **Features**:
   - Product catalog with categories and subcategories
-  - User authentication (email/password + Google OAuth)
-  - Shopping cart and checkout
-  - Payment processing (Razorpay)
-  - Order management
-  - Email notifications (OTP-based)
+  - User authentication (email/password, Google OAuth, phone OTP, Truecaller)
+  - Shopping cart and checkout, with guest checkout gated on a verified email
+  - Payment processing (Razorpay), with signature verification on both the
+    checkout callback and the webhook
+  - Inventory: stock is reserved at order creation, committed on payment, and
+    released if the order is abandoned, so the last plant cannot be sold twice
+  - Coupons and discounts (percentage, fixed, free shipping), with the discount
+    evaluated server-side
+  - Order management, customer-initiated cancellation, and refunds
+  - GST tax invoices as PDFs, numbered per Indian financial year, plus a
+    GSTR-ready CSV export
+  - Courier fulfillment through Shiprocket: shipment booking, AWB generation,
+    pickup scheduling and tracking updates by webhook
+  - Product reviews with verified-purchase detection and admin moderation
+  - DPDP Act 2023 support: consent records, data export, and erasure that
+    respects the one-year transactional retention floor
+  - Email notifications (OTP, order confirmation, shipped, cancelled, invoice,
+    review request, back-in-stock)
   - Progressive Web App (PWA) support
   - Rate limiting and caching
 
@@ -59,19 +72,38 @@ Growman is a complete e-commerce solution featuring:
 
 1. **Frontend** (Next.js) makes API calls to **Backend** (Go API)
 2. **Backend** handles:
-   - Authentication (JWT tokens)
+   - Authentication (JWT tokens, scoped so a half-registered signup cannot
+     reach full-account endpoints)
    - Business logic
    - Database operations (PostgreSQL via GORM)
    - Caching and rate limiting (Redis)
    - Payment processing (Razorpay webhooks)
+   - Courier fulfillment (Shiprocket order creation, AWB, tracking webhook)
 3. **Database** stores:
    - Users, products, categories, orders
    - Product inventory and pricing
+   - Reviews, coupons, refunds, invoices, shipments, consent records
 4. **Redis** provides:
    - Rate limiting (per IP)
-   - OTP storage (temporary)
+   - OTP storage and the short-lived checkout email-verification proof
    - Caching (optional)
    - Orders & wishlist
+
+### Background Workers
+
+The server starts three workers before it begins listening. They share a
+context that is cancelled on `SIGINT`/`SIGTERM`, so a shutdown stops them
+before the connection pool closes. Each runs on its own ticker, so the first
+pass happens one interval after boot rather than immediately.
+
+| Worker | Interval | Responsibility |
+|---|---|---|
+| `StartInventorySweeper` | 5 minutes | Returns reserved stock from orders left unpaid for 30 minutes |
+| `StartShipmentWorker` | 15 minutes | Books pending shipments, refreshes tracking as a backstop for missed webhooks, sends post-delivery review requests |
+| `StartRetentionSweeper` | daily | Enforces DPDP purpose-limited retention by removing minimised order rows past the one-year floor |
+
+They are wired up in `apps/go-backend/cmd/server/main.go`.
+
 ## Tech Stack
 
 ### Frontend (`apps/web`)
@@ -242,6 +274,15 @@ The frontend will start on `http://localhost:3001`
 
 #### Backend (`apps/go-backend/.env`)
 
+`apps/go-backend/example.env` is the authoritative list. It is a commented
+template with every supported variable, and it explains what each one does
+and what breaks when it is wrong — read it rather than relying on the subset
+below. It is tracked in git deliberately so new contributors get the
+template, which means **nothing real may ever be written into it**; put real
+values in `.env`, which is gitignored.
+
+The minimum for local development:
+
 ```env
 GO_PORT=:8080
 GO_ENV=development
@@ -253,9 +294,41 @@ AUTO_MIGRATE=true
 SEED_ON_STARTUP=false
 RAZORPAY_KEY_ID=rzp_test_xxxxx
 RAZORPAY_KEY_SECRET=your-razorpay-secret
+RAZORPAY_WEBHOOK_SECRET=your-dashboard-webhook-secret
 SMTP_EMAIL=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
+IMAGE_BASE_URL=https://your-image-host/
 ```
+
+With `GO_ENV=development` the Razorpay signature check is skipped, so local
+checkout works without real keys. That bypass is gated solely on `GO_ENV`
+being `development`, `dev` or `test` — an empty secret does **not** disable
+verification, because a misconfigured production deploy silently accepting
+unsigned payments is exactly the failure mode worth preventing.
+
+**The two Razorpay secrets are different values and are not
+interchangeable.** This catches people out, so it is worth being explicit:
+
+| Variable | Where it comes from | What it signs |
+|---|---|---|
+| `RAZORPAY_KEY_SECRET` | Razorpay dashboard, Settings → API Keys | The checkout callback: `HMAC-SHA256("<order_id>\|<payment_id>")` |
+| `RAZORPAY_WEBHOOK_SECRET` | Chosen by you when you create the webhook under Settings → Webhooks | The raw webhook request body |
+
+Putting the key secret in both places makes every webhook delivery fail its
+signature check, and it fails quietly, because the happy path still works
+through the checkout callback. Razorpay then retries with backoff for 24
+hours and disables the endpoint. Watch the
+`payment_signature_failures_total{stage="webhook"}` metric after changing
+either value.
+
+Two further variables are needed for the courier flow.
+`SHIPROCKET_PICKUP_LOCATION` must match the nickname of a pickup address
+exactly as it appears in the Shiprocket panel under Settings → Pickup
+Addresses, because Shiprocket rejects a booking whose pickup location does
+not match one by name. `SHIPROCKET_WEBHOOK_TOKEN` is the shared secret
+Shiprocket sends in the `x-api-key` header on status updates; leave it blank
+and `POST /webhooks/shiprocket` refuses every request rather than trusting
+unauthenticated status changes.
 
 #### Frontend (`apps/web/.env.local`)
 
@@ -298,7 +371,27 @@ pnpm build        # Build for production
 pnpm start        # Start production server
 pnpm lint         # Run ESLint
 pnpm check-types  # Type check
+pnpm test         # Run unit tests
 ```
+
+### Continuous Integration
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to
+`main`, and is the workflow that should gate a merge. Deployment lives in a
+separate `cd.yml`. CI runs two jobs:
+
+- **Go backend**: `go mod verify`, a `gofmt` check, `go vet`, `go build`, and
+  `go test -race`. The race detector is not optional here — the webhook
+  deduplication claim, the inventory reservation and the cache's singleflight
+  all depend on correct synchronisation.
+- **Next.js web**: `check-types`, `lint`, `test`, then `build`.
+
+Run these locally before pushing. `pnpm --filter web check-types` is the one
+most worth remembering, because `next.config.ts` now sets
+`typescript.ignoreBuildErrors: false`: a type error fails the production
+build outright rather than shipping and surfacing as a runtime crash in a
+customer's browser. The type check also reports every error at once, where
+the build stops at the first module.
 
 ## Docker Setup
 
@@ -388,17 +481,47 @@ docker push your-registry/growman-web
 
 Ensure all required environment variables are set in your deployment platform:
 
-**Backend**:
+**Backend** — the service refuses to boot in production without the first
+four. `config.Load()` checks them at startup rather than letting the
+service come up and fail later at checkout:
+
+- `JWT_SECRET` (strong and random; the default is rejected in production)
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET` (the dashboard webhook secret, not the key secret)
 - `DATABASE_URL` or `HYPERDRIVE_URL`
-- `JWT_SECRET` (strong, random secret)
+
+Also required for correct operation, though not enforced at boot:
+
+- `GO_ENV=production` — this is what enables the checks above and disables
+  the non-production signature bypass
 - `CORS_ORIGINS` (your frontend domain)
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_KEY_ID`
 - `SMTP_EMAIL` and `SMTP_PASSWORD`
+- `IMAGE_BASE_URL`
+- `SHIPROCKET_EMAIL` and `SHIPROCKET_PASSWORD`, plus
+  `SHIPROCKET_PICKUP_LOCATION` and `SHIPROCKET_WEBHOOK_TOKEN`, if you are
+  using courier fulfillment. Without them the backend still quotes on fee
+  bands but cannot book a shipment
+- `REDIS_URL` — technically optional, since the cache, rate limiter and OTP
+  store all fall back to in-process memory. In production with more than one
+  replica you want it anyway: the fallback rate limiter is per-process, so N
+  replicas means N times the configured limit
 
 **Frontend**:
 - `NEXT_PUBLIC_API_URL` (your backend URL)
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
 - `NEXT_PUBLIC_RAZORPAY_KEY_ID`
+
+### Health and readiness probes
+
+Point your orchestrator's **liveness** probe at `GET /healthz` and its
+**readiness** probe at `GET /readyz`. They are deliberately different:
+`/healthz` is a static response that proves the process is up and
+intentionally touches no datastore, while `/readyz` pings Postgres and Redis
+under a two-second timeout. A Postgres failure returns `503` with status
+`down`; a Redis failure reports `degraded` but still returns `200`, because
+the code tolerates a missing Redis throughout and pulling a replica out of
+rotation over a cache outage would do more harm than good.
 
 ## Contributing
 
@@ -415,17 +538,20 @@ Ensure all required environment variables are set in your deployment platform:
    - Write/update tests if applicable
    - Update documentation
 
-4. **Test your changes**:
+4. **Test your changes** — run what CI runs, so a failure surfaces locally
+   rather than on the pull request:
    ```bash
    # Backend
    cd apps/go-backend
-   pnpm dev
-   
+   gofmt -l .          # must print nothing
+   go vet ./...
+   go test -race ./...
+
    # Frontend
    cd apps/web
-   pnpm dev
+   pnpm check-types    # the build fails on type errors, so this is not optional
    pnpm lint
-   pnpm check-types
+   pnpm test
    ```
 
 5. **Commit and push**:
@@ -451,6 +577,8 @@ Ensure all required environment variables are set in your deployment platform:
 - **Database**: Use migrations for schema changes
 
 ## Documentation
+
+Start with **[docs/COMPLETE-GUIDE.md](docs/COMPLETE-GUIDE.md)** for interview prep and the checklist for adding a feature across the API, the web app, and the mobile app. The backend essays under `apps/go-backend/internal/docs/` are the deep reference for payments, auth, caching, and privacy.
 
 ### Detailed Documentation
 
@@ -479,13 +607,36 @@ Ensure all required environment variables are set in your deployment platform:
 
 **Checkout Flow**:
 1. User adds items to cart (frontend state)
-2. User proceeds to checkout
-3. Email OTP verification (backend sends OTP)
-4. User enters shipping address
-5. Backend creates Razorpay order
+2. User proceeds to checkout and chooses a fulfillment channel. This is
+   required: the server reprices the cart from the database per channel and
+   charges its own figure, so omitting the channel would skip repricing
+3. Guests verify their email by OTP. `POST /checkout/verify-email-otp`
+   returns a short-lived, single-use `verificationToken` bound to that one
+   address, which `create-order` then requires — so the OTP step cannot be
+   skipped by calling the API directly. Signed-in customers skip this
+4. User enters a shipping address, and optionally a coupon code, which the
+   server validates and prices itself
+5. `POST /checkout/create-order` reserves stock, redeems the coupon, creates
+   the local order and the Razorpay order — all in one transaction — and
+   returns a `publicToken` for guest order lookup
 6. User completes payment
-7. Razorpay webhook confirms payment
-8. Order is created in database
+7. Payment is confirmed on whichever path arrives first. Both verify an
+   HMAC signature and both are safe to run twice: the browser callback hits
+   `POST /razorpay/verify` (signed with the key secret), and the Razorpay
+   webhook hits `POST /webhooks/razorpay` (signed with the webhook secret,
+   over the raw body). The paid transition is claimed with a conditional
+   update, so whichever arrives second is a no-op and the customer gets
+   exactly one confirmation email
+8. On payment: stock is committed and a GST invoice number is assigned,
+   both inside the same transaction, so the invoice sequence cannot skip on
+   a rolled-back payment. Courier-channel orders are then picked up by
+   `StartShipmentWorker` on its next pass, which books the shipment and
+   generates the AWB — booking is not inline, so a Shiprocket outage cannot
+   fail a payment confirmation
+
+Note that `POST /razorpay/order` no longer exists. It created a Razorpay
+order from a client-supplied amount with no cart validation;
+`POST /checkout/create-order` is the only way to create an order.
 
 **Data Flow**:
 - Frontend → API Client (`lib/api.ts`) → Backend → Database
@@ -515,6 +666,35 @@ Ensure all required environment variables are set in your deployment platform:
 - Verify `JWT_SECRET` is set
 - Check token is included in requests
 - Verify token hasn't expired
+- A `403` on an endpoint you expect to work may be a scope problem rather
+  than an expiry one. Phone and Truecaller signups that have not completed
+  a profile hold `scope=onboarding` tokens, which may only call
+  `POST /auth/profile/complete`
+
+**Every Razorpay webhook returns 401**:
+- Almost always `RAZORPAY_WEBHOOK_SECRET` holding the API key secret
+  instead of the webhook secret you set in the dashboard. See the two-secret
+  table under Environment Variables
+- Confirm with `payment_signature_failures_total{stage="webhook"}` on
+  `/metrics`, and with the delivery log in the Razorpay dashboard
+- This fails quietly, because the checkout callback keeps confirming
+  payments on its own. Check it explicitly after any change to either secret
+
+**Checkout returns 400 or 403**:
+- `fulfillment_channel_required` — the request omitted the channel, which
+  the server needs in order to reprice the cart
+- `email_not_verified` — a guest's `verificationToken` is missing, expired
+  (15 minutes) or already spent. Each token is single-use and bound to one
+  email address
+- `amount_mismatch` (409) — the server repriced the cart and disagreed. The
+  response carries the new `quote`; show it to the customer
+- `out_of_stock` (409) — the `items` field names the lines that could not be
+  reserved
+
+**Production build fails on a type error**:
+- Expected. `next.config.ts` sets `ignoreBuildErrors: false`
+- Run `pnpm --filter web check-types` to see every error at once instead of
+  stopping at the first module
 
 ### Getting Help
 

@@ -2,6 +2,8 @@
 
 A modern e-commerce web application built with Next.js 16, React 19, and TypeScript. This is the frontend application for the Growman plant e-commerce platform.
 
+The full map of this app, the Go API, and the Expo mobile app — architecture, packages, and how to add a feature — is [../../docs/COMPLETE-GUIDE.md](../../docs/COMPLETE-GUIDE.md). Section 8 is this app.
+
 ## Table of Contents
 
 - [Overview](#overview)

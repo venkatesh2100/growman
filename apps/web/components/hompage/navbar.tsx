@@ -161,7 +161,9 @@ const SearchResults = ({
                   alt=""
                   width={44}
                   height={44}
-                  className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                  sizes="44px"
+                  style={{ width: 44, height: 44 }}
+                  className="shrink-0 rounded-lg object-cover"
                 />
               ) : (
                 <div className="h-11 w-11 shrink-0 rounded-lg bg-emerald-50" />

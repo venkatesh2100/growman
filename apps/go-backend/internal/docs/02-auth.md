@@ -18,9 +18,11 @@ type Claims struct {
 Two scopes exist:
 - **`full`** — normal, fully-authenticated user.
 - **`onboarding`** — issued to a brand-new phone/Truecaller user who hasn't
-  supplied a name yet. Can only call `POST /api/v1/auth/profile/complete`;
-  every other authenticated route is blocked with `403 invalid token scope` /
-  `403 complete your profile first`.
+  supplied a name yet. It can call `POST /api/v1/auth/profile/complete` and
+  nothing else: every full-scope route rejects it with
+  `403 complete your profile first`, and the onboarding route rejects a
+  full-scope token with `403 invalid token scope`. That enforcement is
+  route-level, in the middleware — see below.
 
 Tokens are always issued with a 24-hour TTL (`appauth.GenerateToken` /
 `GenerateTokenWithScope`, called with `24*time.Hour` everywhere). `ParseToken`
@@ -34,21 +36,60 @@ empty `Scope` claim to `full` for backward compatibility with older tokens.
 | `AuthMiddleware(secret)` | Valid JWT, any scope |
 | `FullAuthMiddleware(secret)` | Valid JWT, must be `full` scope (blocks onboarding tokens) |
 | `OnboardingAuthMiddleware(secret)` | Valid JWT, must be `onboarding` scope |
+| `OptionalAuthMiddleware(secret)` | Nothing. Attaches `*Claims` if a valid token is present, proceeds anonymously otherwise |
 | `AdminMiddleware(secret)` | Valid JWT + `role` is `admin` or `superadmin` (via `IsAdminRole`) |
 
-All of them parse the `Authorization: Bearer <token>` header, validate it,
-and stash `*Claims` in the request context (`SetUserContext`/`FromContext`).
-Handlers pull it back out with `appauth.Require(w, r)`, which writes a `401`
-and returns `ok=false` if somehow called without the middleware (defensive —
-matters mainly in tests that invoke handlers directly).
+The four mandatory ones are all `requireScope(secret, required)` with a
+different `required` value, so they share one implementation: parse the
+`Authorization: Bearer <token>` header, validate it, enforce the scope, and
+stash `*Claims` in the request context (`SetUserContext`/`FromContext`). A
+scope mismatch is a `403` — `complete your profile first` when a full-scope
+route sees an onboarding token, `invalid token scope` the other way round.
+Handlers pull the claims back out with `appauth.Require(w, r)`, which writes
+a `401` and returns `ok=false` if somehow called without the middleware
+(defensive — matters mainly in tests that invoke handlers directly).
 
-`router.go` currently uses only `AuthMiddleware` (any scope) for the private
-route group — individual handlers that need full scope (like
-`CompletePhoneProfile` checking for onboarding scope, or admin-only checks
-inline) enforce that themselves rather than via `FullAuthMiddleware`/
-`AdminMiddleware` route wrapping, except for the product-mutation and
-image-upload routes which do use `appauth.AdminMiddleware` directly in the
-router.
+`OptionalAuthMiddleware` is the one that does not reject anything. It exists
+for endpoints that legitimately serve both a signed-in user and a guest
+holding a capability token, where a missing or malformed `Authorization`
+header must not be a `401` because the anonymous path is a valid one. The
+handler, not the middleware, decides what the caller may see.
+
+`AdminMiddleware` is built on `AuthMiddleware`, not `FullAuthMiddleware`, so
+it accepts an admin-role token of either scope. In practice an
+onboarding-scope token is only ever issued to a brand-new phone signup with
+no name, which is not a row that carries an admin role.
+
+### Which middleware guards which routes (`internal/server/router.go`)
+
+| Guard | Routes |
+|---|---|
+| None (public) | Catalogue reads; all of `/auth/*` except `me`/`profile`; `/checkout/*`; `POST /razorpay/verify`; `GET /auth/check-user`; `POST /consent`; `POST /requested-products`; `POST /quotations`; `POST /dootha-waitlist`; `POST /products/{slug}/back-in-stock`; `POST /engagement/long-browse`; `POST /chat`; `POST /images/identify-plant`; `GET /plants/status`, `/plants/languages`, `/plants/projects`, `/plants/species`, `/plants/diseases`, `/plants/varieties`, `/plants/quota` |
+| `OptionalAuthMiddleware` | `GET /order`, `GET /orders/{id}/invoice` |
+| `OnboardingAuthMiddleware` | `POST /auth/profile/complete` — and nothing else |
+| `FullAuthMiddleware` | `POST /products/{slug}/reviews`, plus the main authenticated group: `GET /auth/me`, `PUT /auth/profile`, `POST /auth/save-location`, `/orders` (list, status, expected-delivery, cancel), `/wishlist`, `/addresses`, `/privacy/export`, `/privacy/erase`, `/dashboard/map`, `GET /requested-products`, `GET /dootha-waitlist`, `/order-support-requests` |
+| `AdminMiddleware` | `POST /images/upload`; product create/update/delete; `/inventory/*`; `GET /reviews` and `PATCH /reviews/{id}/status`; `/refunds` and `POST /orders/{id}/refund`; `POST /orders/{id}/invoice/email` and `GET /reports/gst`; `/orders/{id}/shipment*`; `/coupons` CRUD |
+| HMAC / shared-secret body auth | `POST /webhooks/razorpay`, `POST /webhooks/shiprocket` — mounted outside `/api/v1`, no JWT at all (see [08-middleware-and-security.md](./08-middleware-and-security.md)) |
+
+The important property of that table is that the main authenticated group is
+mounted under `FullAuthMiddleware`, not `AuthMiddleware`. The scoped
+middlewares existed for a long time without being wired up: every
+authenticated route used `AuthMiddleware`, which accepts a token of *any*
+scope, so an onboarding token — issued to a phone signup that has not even
+supplied a name yet — could list orders, cancel them, write to the wishlist
+and read the DPDP data export. Scope was a claim nothing enforced. Mounting
+`FullAuthMiddleware` on the group is what makes the `onboarding` scope mean
+something, and mounting `OnboardingAuthMiddleware` on
+`POST /auth/profile/complete` replaced a hand-rolled scope check that used to
+live inside the handler.
+
+A handful of routes inside the full-scope group are admin-only but are not
+wrapped in `AdminMiddleware`, because the same handler serves both audiences
+off one path: `ListOrders` returns the caller's own orders or every order
+depending on `IsAdminRole(claims.Role)` and a `?scope=self` override, while
+`UpdateOrderStatus` and `ListOrderSupportRequests` do their own
+`IsAdminRole` check and return `403 admin access required`. Route-level
+wrapping is preferred for anything that is unambiguously admin-only.
 
 ## Auth flows
 
@@ -167,21 +208,87 @@ Three-step flow backed by `services.OTPService` (Redis + in-memory fallback,
    (preferring the "verified" marker, falling back to re-checking the OTP),
    then updates the bcrypt password hash.
 
+### 7. Checkout email verification (guest proof token)
+
 The checkout flow (see [05-orders-checkout-payments.md](./05-orders-checkout-payments.md))
 has its own, separate email-OTP pair (`send-email-otp` / `verify-email-otp`)
 used to verify a guest's email before creating a Razorpay order — it does not
-create or touch a `User` row.
+create or touch a `User` row, and it issues no JWT. What it issues instead is
+a **verification proof token**, because `POST /checkout/create-order` has to
+be able to tell that the address it is about to write onto an order actually
+passed the OTP check. Without that, the OTP step is advisory: a client can
+skip it and post straight to the order endpoint with any address.
+
+`POST /checkout/verify-email-otp` therefore returns
+`{"verificationToken": "<64 hex chars>", "expiresIn": 900}` alongside its
+success message, minted by `OTPService.IssueVerificationProof`
+(`internal/services/otp.go`). The token is 32 random bytes from `crypto/rand`,
+hex-encoded, stored in Redis under `checkout:verified:<normalised-email>`
+with a TTL of `VerificationProofTTL` (15 minutes — long enough to fill in an
+address and reach the payment screen, short enough that a leaked token is
+near-useless). `CreateCheckoutOrder` presents it to
+`ConsumeVerificationProof`, which returns false for a missing, expired,
+mismatched or already-spent token and answers the caller with
+`403 {"error": "email_not_verified"}`.
+
+Three properties make it a proof rather than just another secret:
+
+- **Bound to one email.** The token is the *value* at a key derived from the
+  address, so a token minted for one address cannot authorise an order for
+  another — the lookup simply misses.
+- **Single use, and *claimed* rather than merely deleted.** A
+  read-compare-then-delete sequence would leave a window in which two
+  concurrent `create-order` requests both read the proof, both match, and
+  both proceed — one verification, two orders, which is the thing the token
+  exists to prevent. So the delete is conditional on the key still holding
+  that token (a Lua `GET`-compare-`DEL` on Redis, a load-and-delete on the
+  in-memory fallback), and only the caller it succeeds for holds the proof.
+  One verification buys exactly one order even under a double-clicked pay
+  button.
+- **Compared in constant time** (`crypto/subtle.ConstantTimeCompare`). It is
+  a credential, and a timing oracle on it would be as good as leaking it.
+  The comparison runs before the claim and a mismatch stops there, leaving
+  the stored proof untouched — so a wrong guess, or a stray retry, cannot
+  burn a legitimate shopper's proof and lock them out of their own
+  checkout. The claim's own comparison is not constant-time, but by then
+  the token has already been established as correct and there is no secret
+  left to leak.
+
+The OTP itself cannot serve this purpose, which is why a second token exists
+at all. The OTP is deleted when it is verified — correctly, because it is
+single-use — so there is nothing left for the order endpoint to re-check.
+Re-sending the OTP to the client to be replayed at order creation would turn
+it into a bearer credential with no binding to the verification event: it
+would prove only that the caller knows six digits, not that those digits
+were ever accepted for that address. A separate opaque token keeps the OTP
+single-use while giving checkout something it can verify.
+
+`CreateCheckoutOrder` only demands the proof from callers it sees as
+unauthenticated (`appauth.FromContext` returning no claims); a signed-in
+customer is already verified by their JWT. This is why the `/checkout/*`
+group mounts `OptionalAuthMiddleware` rather than nothing: guests must be
+able to check out, but without the middleware the claims would never reach
+the context and a signed-in customer would be made to verify an address
+their account already proves. `ValidateCoupon` depends on the same claims
+for per-customer usage caps.
+
+`POST /consent` (`internal/handlers/privacy.go`) is mounted the same way.
+It has to be reachable before sign-in, because the consent banner fires on
+first visit, but it reads `appauth.FromContext` to attach a `UserID` when
+the caller does have a session — otherwise a logged-in customer's consent
+record would be keyed by email alone and would not join to their account.
 
 ## Profile & account endpoints
 
-All under the JWT-protected group in `router.go`:
+All under the `FullAuthMiddleware` group in `router.go`, so an onboarding
+token cannot read or edit a profile it has not finished creating:
 - `GET /auth/me` — returns the current user's public fields (selects only
   needed columns).
 - `PUT /auth/profile` — partial update (`UpdateProfileRequest`, only
   non-empty fields are applied); checks phone uniqueness before saving.
 - `POST /auth/save-location` — stores address + lat/lng (used by the
   location-based dashboard/checkout prefill).
-- `GET /auth/check-user-exists` — public (no auth), used by the frontend to
+- `GET /auth/check-user` — public (no auth), used by the frontend to
   decide "log in" vs "sign up" before the user picks a method.
 
 ## Notable design choices
@@ -195,3 +302,13 @@ All under the JWT-protected group in `router.go`:
 - **No account enumeration** on password reset; **generic "invalid
   credentials"** on login regardless of whether the email/phone or the
   password was wrong.
+- **Scope is enforced where the route is mounted, not inside handlers.** A
+  scope check that lives in a handler protects exactly the one handler that
+  remembers to do it, and the failure mode is silent: a new route added to
+  the group simply inherits no check. Putting `FullAuthMiddleware` on the
+  group inverts that, so the default for anything added later is the strict
+  one.
+- **Capability tokens are bound and single-use.** Both opaque tokens the
+  system hands out — the checkout verification proof and `Order.PublicToken`
+  — authorise exactly one thing: one email's next order, one order's lookup.
+  Neither is a session, and neither widens with the holder's identity.

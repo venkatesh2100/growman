@@ -3,13 +3,22 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, LogOut, Package, UserRound } from "lucide-react";
+import {
+  Heart,
+  LogOut,
+  MapPin,
+  Package,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { useAuthStore } from "../../lib/store/authStore";
 
 const NAV = [
   { href: "/account", label: "Profile", icon: UserRound },
+  { href: "/account/addresses", label: "Addresses", icon: MapPin },
   { href: "/orders", label: "Orders", icon: Package },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
+  { href: "/account/privacy", label: "Your data", icon: ShieldCheck },
 ] as const;
 
 type AccountShellProps = {

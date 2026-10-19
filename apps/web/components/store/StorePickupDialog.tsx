@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Clock, MapPin, Phone, X } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { userMessage } from "../../lib/errors";
 import {
   collectClientContext,
@@ -39,6 +39,9 @@ type Props = {
 };
 
 type Contact = { name: string; phone: string };
+
+/** The parts of the signed-in profile this form prefills from. */
+type ProfileResponse = { name?: string; phone?: string };
 
 function validate(contact: Contact): string | null {
   if (contact.name.trim().length < 2) return "Please enter your name.";
@@ -108,7 +111,7 @@ export default function StorePickupDialog({ items, onClose, onSent }: Props) {
       try {
         const res = await apiFetch("/auth/me");
         if (!res.ok) return;
-        const me = await res.json();
+        const me = await readJson<ProfileResponse>(res);
         setContact((prev) => ({
           name: prev.name || me.name || "",
           phone:

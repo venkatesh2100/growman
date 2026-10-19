@@ -62,6 +62,20 @@ func main() {
 		}
 	}
 
+	// Background workers share one context so shutdown stops them all.
+	// They are deliberately started before the listener: the inventory
+	// sweep in particular should run even if no request ever arrives.
+	workerCtx, stopWorkers := context.WithCancel(context.Background())
+	defer stopWorkers()
+
+	// Returns stock held by orders that were never paid.
+	h.StartInventorySweeper(workerCtx, 5*time.Minute)
+	// Books courier shipments for paid orders, refreshes tracking as a
+	// backstop for missed webhooks, and sends post-delivery review asks.
+	h.StartShipmentWorker(workerCtx, 15*time.Minute)
+	// Enforces DPDP purpose-limited retention.
+	h.StartRetentionSweeper(workerCtx)
+
 	handler := server.NewRouter(h, cfg)
 	addr := cfg.Port
 	if addr != "" && addr[0] != ':' && addr[0] != '/' {
@@ -82,6 +96,10 @@ func main() {
 		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 		<-stop
+		log.Printf("shutting down")
+		// Stop the workers first so none of them is mid-transaction while
+		// the connection pool is closing.
+		stopWorkers()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(ctx)
@@ -90,5 +108,12 @@ func main() {
 	log.Printf("listening on %s", addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server error: %v", err)
+	}
+
+	// Close the pool explicitly: in-flight worker transactions have
+	// already been cancelled, and leaving sockets open delays container
+	// exit for no benefit.
+	if sqlDB, err := dbConn.DB(); err == nil {
+		_ = sqlDB.Close()
 	}
 }

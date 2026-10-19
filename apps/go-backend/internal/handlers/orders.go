@@ -19,8 +19,31 @@ import (
 // applyOrderFilters applies the status/orderId/search query filters shared
 // by ListOrders' count and data queries, so the two can never drift apart.
 func applyOrderFilters(q *gorm.DB, statusFilter, orderIDFilter, searchFilter string) *gorm.DB {
-	if statusFilter != "" && statusFilter != "all" {
-		q = q.Where("LOWER(status) = ? OR LOWER(payment_status) = ?", statusFilter, statusFilter)
+	switch {
+	case statusFilter == "" || statusFilter == "all":
+		// No status constraint.
+	case statusFilter == "settled":
+		// Every order money was actually taken for, whatever became of it
+		// afterwards. A single `status = 'paid'` filter looks equivalent but
+		// is not: once a refund completes, payment_status becomes
+		// `refunded` and the order would drop out of the customer's history
+		// entirely — they would see a cancelled order vanish rather than be
+		// shown as refunded. Carts that never paid are excluded instead,
+		// which is the actual intent.
+		q = q.Where("LOWER(payment_status) NOT IN ?", []string{"created", "failed"}).
+			Where("LOWER(status) <> ?", "abandoned")
+	default:
+		// A comma-separated list so a caller can ask for several states
+		// without issuing a request per state.
+		wanted := make([]string, 0, 4)
+		for _, part := range strings.Split(statusFilter, ",") {
+			if part = strings.TrimSpace(part); part != "" {
+				wanted = append(wanted, part)
+			}
+		}
+		if len(wanted) > 0 {
+			q = q.Where("LOWER(status) IN ? OR LOWER(payment_status) IN ?", wanted, wanted)
+		}
 	}
 	if orderIDFilter != "" {
 		if orderID, err := strconv.ParseUint(orderIDFilter, 10, 64); err == nil {
@@ -169,7 +192,29 @@ func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	h.notifyStatus(r.Context(), order)
 	httpjson.JSON(w, http.StatusOK, order)
+}
+
+func (h *Handler) notifyStatus(ctx context.Context, order models.Order) {
+	switch order.Status {
+	case "confirmed", "processing":
+		if order.FulfillmentChannel == "store_pickup" {
+			h.notifyOrderEvent(ctx, order, "Ready for store pickup", "Your order can be collected from the nursery.", "pickup")
+			return
+		}
+		h.notifyOrderEvent(ctx, order, "Order packed", "Your plants are packed and waiting to leave.", "packed")
+	case "shipped":
+		h.notifyOrderEvent(ctx, order, "Order shipped", "Your order is on the way.", "shipped")
+	case "out_for_delivery":
+		h.notifyOrderEvent(ctx, order, "Out for delivery", "Your order is out for delivery today.", "ofd")
+	case "delivered":
+		h.notifyOrderEvent(ctx, order, "Order delivered", "Your plants have arrived. Tell us how the delivery went.", "delivered")
+	case "failed":
+		h.notifyOrderEvent(ctx, order, "Payment failed", "The payment did not go through. You can try again from Orders.", "failed")
+	case "cancelled":
+		h.notifyOrderEvent(ctx, order, "Order cancelled", "This order has been cancelled.", "cancelled")
+	}
 }
 
 // UpdateOrderExpectedDeliveryDate allows admin/superadmin to set (or clear,
@@ -217,6 +262,10 @@ func (h *Handler) UpdateOrderExpectedDeliveryDate(w http.ResponseWriter, r *http
 	order, ok = h.reloadOrderForResponse(w, r.Context(), orderID)
 	if !ok {
 		return
+	}
+	if order.ExpectedDeliveryDate != nil {
+		h.notifyOrderEvent(r.Context(), order, "Delivery date updated",
+			"The new expected date is "+order.ExpectedDeliveryDate.Format("2 Jan 2006")+".", "date:"+order.ExpectedDeliveryDate.Format("2006-01-02"))
 	}
 	httpjson.JSON(w, http.StatusOK, order)
 }

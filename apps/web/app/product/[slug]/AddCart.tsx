@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Product, ProductSize } from "../../../lib/types";
-import { apiFetch } from "../../../lib/api";
+import { apiFetch, readJson } from "../../../lib/api";
 import { useAuthStore } from "../../../lib/store/authStore";
 import { useCartStore } from "../../../lib/store/cartStore";
 import { toast } from "../../../lib/toast";
 import { buildCartLine } from "../../../lib/cart";
+
+type WishlistEntry = { id: number };
+
+type WishlistResponse = WishlistEntry[] | { data?: WishlistEntry[] };
 
 export default function AddToCart({
   product,
@@ -37,8 +41,8 @@ export default function AddToCart({
       try {
         const res = await apiFetch("/wishlist");
         if (!res.ok) return;
-        const data = await res.json();
-        const list: Array<{ id: number }> = Array.isArray(data) ? data : data.data || [];
+        const data = await readJson<WishlistResponse>(res);
+        const list: WishlistEntry[] = Array.isArray(data) ? data : data.data || [];
         if (!cancelled) setIsWishlisted(list.some((p) => p.id === product.id));
       } catch {
         // The heart just stays unfilled; saving still works.

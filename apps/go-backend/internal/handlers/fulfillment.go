@@ -276,6 +276,7 @@ type orderFulfillment struct {
 	CourierProvider string
 	CourierService  string
 	CourierCost     *float64
+	GiftFee         float64
 }
 
 // amountTolerance absorbs rounding differences between the client's
@@ -292,9 +293,17 @@ const amountTolerance = 1.0
 // A request without a channel is a client predating these rules: the order
 // is accepted with the amount as its subtotal and no channel recorded.
 func (h *Handler) resolveOrderFulfillment(w http.ResponseWriter, r *http.Request, req *CreateCheckoutOrderRequest) (orderFulfillment, bool) {
+	// Required, and deliberately so. This function is the only thing that
+	// reprices a cart against the database; an earlier version returned
+	// early when the channel was absent and took the client's amount at
+	// face value, which made the whole check skippable by omitting one
+	// field. There is no legitimate order without a channel.
 	if req.FulfillmentChannel == "" {
-		log.Printf("[FULFILLMENT] order created without a channel; recording amount as subtotal")
-		return orderFulfillment{Subtotal: req.Amount}, true
+		httpjson.JSON(w, http.StatusBadRequest, map[string]any{
+			"error":  "fulfillment_channel_required",
+			"reason": "Choose a delivery option before placing the order.",
+		})
+		return orderFulfillment{}, false
 	}
 
 	channel := fulfillment.Channel(req.FulfillmentChannel)
@@ -329,7 +338,11 @@ func (h *Handler) resolveOrderFulfillment(w http.ResponseWriter, r *http.Request
 		return orderFulfillment{}, false
 	}
 
-	expected := quote.Subtotal + opt.Fee
+	gift := 0.0
+	if req.GiftWrap {
+		gift = giftWrapFee
+	}
+	expected := quote.Subtotal + opt.Fee + gift
 	if math.Abs(req.Amount-expected) > amountTolerance {
 		httpjson.JSON(w, http.StatusConflict, map[string]any{
 			"error":          "amount_mismatch",
@@ -358,5 +371,6 @@ func (h *Handler) resolveOrderFulfillment(w http.ResponseWriter, r *http.Request
 		result.CourierService = quote.CourierName
 		result.CourierCost = quote.CourierCost
 	}
+	result.GiftFee = gift
 	return result, true
 }

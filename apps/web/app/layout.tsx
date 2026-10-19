@@ -11,6 +11,7 @@ import PlantChatbot from "../components/chatbot/PlantChatbot";
 import BrowseEngagementBeacon from "../components/BrowseEngagementBeacon";
 import Footer from "../components/hompage/footer";
 import HideOnRoutes from "../components/layout/HideOnRoutes";
+import ConsentBanner from "../components/privacy/ConsentBanner";
 import JsonLd from "../components/seo/JsonLd";
 import { siteConfig } from "../lib/seo/site";
 import { absoluteUrl } from "../lib/seo/metadata";
@@ -168,6 +169,7 @@ export default function RootLayout({
         <HideOnRoutes routes={STICKY_BAR_ROUTES}>
           <PlantChatbot />
           <InstallPrompt />
+          <ConsentBanner />
         </HideOnRoutes>
         <ToastContainer />
       </body>

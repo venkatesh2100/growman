@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Clock, Loader2 } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { formatPrice } from "../../lib/format";
 import { business } from "../../lib/seo/site";
 import { useAuthStore } from "../../lib/store/authStore";
@@ -36,6 +36,11 @@ interface Order {
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  // Checkout puts an opaque token in the URL for guests. Order ids are
+  // sequential, so the server will not serve an order by id to anyone who
+  // isn't the signed-in owner — the token is how a guest proves this
+  // confirmation is theirs.
+  const token = searchParams.get("token");
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(Boolean(orderId));
@@ -44,8 +49,11 @@ function OrderSuccessContent() {
     if (!orderId) return;
     const fetchOrder = async () => {
       try {
-        const res = await apiFetch(`/order?id=${encodeURIComponent(orderId)}`);
-        if (res.ok) setOrder(await res.json());
+        const query = token
+          ? `token=${encodeURIComponent(token)}`
+          : `id=${encodeURIComponent(orderId)}`;
+        const res = await apiFetch(`/order?${query}`);
+        if (res.ok) setOrder(await readJson<Order>(res));
       } catch (error) {
         console.error("Error fetching order:", error);
       } finally {
@@ -53,7 +61,7 @@ function OrderSuccessContent() {
       }
     };
     void fetchOrder();
-  }, [orderId]);
+  }, [orderId, token]);
 
   if (loading) return <OrderSuccessFallback />;
 

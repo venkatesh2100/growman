@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"sync"
@@ -20,7 +22,11 @@ const (
 	PasswordResetOTPPrefix      = "otp:password-reset:"
 	PasswordResetCooldownPrefix = "otp:password-reset:cooldown:"
 	PasswordResetVerifiedPrefix = "otp:password-reset:verified:"
+	VerificationProofPrefix     = "checkout:verified:"
 	redisOpTimeout              = 800 * time.Millisecond
+	// VerificationProofTTL is long enough to fill in an address and reach
+	// the payment screen, short enough that a leaked token is near-useless.
+	VerificationProofTTL = 15 * time.Minute
 )
 
 type OTPService struct {
@@ -60,6 +66,22 @@ func memGet(key string) (string, bool) {
 
 func memDel(key string) {
 	memStore.Delete(key)
+}
+
+// memCompareAndDelete removes key only if it still holds want, reporting
+// whether this caller was the one that removed it.
+func memCompareAndDelete(key, want string) bool {
+	raw, ok := memStore.LoadAndDelete(key)
+	if !ok {
+		return false
+	}
+	entry := raw.(memEntry)
+	if entry.value == want && time.Now().Before(entry.expiresAt) {
+		return true
+	}
+	// Not ours to consume, so put it back.
+	memStore.Store(key, entry)
+	return false
 }
 
 func memTTL(key string) time.Duration {
@@ -126,6 +148,31 @@ func (s *OTPService) delValue(ctx context.Context, key string) {
 	rctx, cancel := s.withRedisTimeout(ctx)
 	defer cancel()
 	_ = s.Redis.Del(rctx, key).Err() // best-effort
+}
+
+// compareAndDeleteScript deletes a key only when it still holds the
+// expected value, as one indivisible step.
+var compareAndDeleteScript = redis.NewScript(`
+	if redis.call('get', KEYS[1]) == ARGV[1] then
+		return redis.call('del', KEYS[1])
+	end
+	return 0
+`)
+
+// compareAndDelete claims a single-use value: of several callers presenting
+// the same correct value, exactly one gets true. A plain delete cannot do
+// this, because every caller would succeed.
+func (s *OTPService) compareAndDelete(ctx context.Context, key, want string) bool {
+	if s.Redis != nil {
+		rctx, cancel := s.withRedisTimeout(ctx)
+		res, err := compareAndDeleteScript.Run(rctx, s.Redis, []string{key}, want).Int64()
+		cancel()
+		if err == nil {
+			memDel(key)
+			return res == 1
+		}
+	}
+	return memCompareAndDelete(key, want)
 }
 
 func (s *OTPService) cooldownTTL(ctx context.Context, key string) (time.Duration, error) {
@@ -277,6 +324,64 @@ func (s *OTPService) CanResendOTP(ctx context.Context, email string) (bool, time
 func (s *OTPService) SetResendCooldown(ctx context.Context, email string) error {
 	email = normalizeEmail(email)
 	return s.setValue(ctx, OTPCooldownPrefix+email, "1", OTPResendCooldown)
+}
+
+// IssueVerificationProof mints a single-use token proving that an email
+// address passed the OTP check, for the checkout flow to present when it
+// creates the order.
+//
+// The OTP itself cannot serve this purpose: it is deleted on verification
+// (correctly — it is single-use), and re-sending it to the client to be
+// replayed would make it a bearer credential with a 5-minute window and no
+// binding to the verification event. A separate opaque token is bound to
+// one email, consumed on use, and expires on its own schedule.
+func (s *OTPService) IssueVerificationProof(ctx context.Context, email string) (string, error) {
+	email = normalizeEmail(email)
+
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(buf)
+
+	if err := s.setValue(ctx, VerificationProofPrefix+email, token, VerificationProofTTL); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// ConsumeVerificationProof validates and burns a proof token. Returns
+// false for a missing, expired, mismatched or already-used token.
+func (s *OTPService) ConsumeVerificationProof(ctx context.Context, email, token string) (bool, error) {
+	email = normalizeEmail(email)
+	if token == "" {
+		return false, nil
+	}
+
+	key := VerificationProofPrefix + email
+	stored, ok, err := s.getValue(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	// Constant-time compare: the token is a credential, and a timing
+	// oracle on it would be as good as leaking it. A wrong token stops
+	// here without disturbing the stored proof, so a guess — or a stray
+	// retry — cannot lock the shopper out of their own checkout.
+	if subtle.ConstantTimeCompare([]byte(stored), []byte(token)) != 1 {
+		return false, nil
+	}
+
+	// Single use, and claimed rather than merely deleted. Deleting after
+	// the comparison above would leave a window in which two concurrent
+	// create-order requests both read the proof, both match, and both
+	// proceed — one verification, two orders. compareAndDelete is the
+	// serialisation point: only the caller it returns true to holds the
+	// proof. The comparison has already established the token is correct,
+	// so the non-constant-time compare inside it leaks nothing.
+	return s.compareAndDelete(ctx, key, token), nil
 }
 
 // CanResendPasswordResetOTP checks the 60s password-reset resend cooldown.

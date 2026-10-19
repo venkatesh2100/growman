@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CheckCircle2, Printer, X } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { FormField, FormTextarea } from "../../components/ui/Input";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { userMessage } from "../../lib/errors";
 import {
   collectClientContext,
@@ -19,6 +19,13 @@ import QuotationDocument from "./QuotationDocument";
 export type EnquiryLine = BulkItem & { quantity: number };
 
 type Contact = { name: string; phone: string; address: string };
+
+/** The parts of the signed-in profile this form prefills from. */
+type ProfileResponse = {
+  name?: string;
+  phone?: string;
+  address?: { line?: string; city?: string; pincode?: string } | null;
+};
 
 type CustomLine = { id: number; name: string; size: string; quantity: number };
 
@@ -167,7 +174,7 @@ export default function QuotationEnquiry({
       try {
         const res = await apiFetch("/auth/me");
         if (!res.ok) return;
-        const me = await res.json();
+        const me = await readJson<ProfileResponse>(res);
         const address = [me.address?.line, me.address?.city, me.address?.pincode]
           .filter(Boolean)
           .join(", ");

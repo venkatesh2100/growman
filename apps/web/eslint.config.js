@@ -13,4 +13,15 @@ export default [
     "dist/**",
     "public/sw.js",
   ]),
+  {
+    // The root error boundary replaces the whole document and runs when the
+    // app shell itself has failed, so its escape links must be plain
+    // anchors: next/link routes through the client router, which is one of
+    // the things that may be broken. A hard navigation is the intent here,
+    // not an oversight.
+    files: ["app/global-error.tsx"],
+    rules: {
+      "@next/next/no-html-link-for-pages": "off",
+    },
+  },
 ];

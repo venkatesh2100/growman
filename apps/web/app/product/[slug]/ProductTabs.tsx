@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Star } from "lucide-react";
-import type { Review } from "../../../lib/types";
 
-type TabKey = "description" | "specifications" | "reviews";
+type TabKey = "description" | "specifications";
 
 function parseSpecifications(specifications: unknown): Array<[string, string]> {
   if (!specifications) return [];
@@ -25,27 +23,12 @@ function parseSpecifications(specifications: unknown): Array<[string, string]> {
   return [];
 }
 
-function Stars({ rating, size = "h-4 w-4" }: { rating: number; size?: string }) {
-  return (
-    <span className="flex" aria-hidden="true">
-      {[...Array(5)].map((_, i) => (
-        <Star
-          key={i}
-          className={`${size} ${i < Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
 export default function ProductTabs({
   fullDescription,
   specifications,
-  reviews,
 }: {
   fullDescription: string;
   specifications?: unknown;
-  reviews: Review[];
 }) {
   const specs = parseSpecifications(specifications);
   const paragraphs = fullDescription.split("\n").map((p) => p.trim()).filter(Boolean);
@@ -53,12 +36,10 @@ export default function ProductTabs({
   const tabs: Array<{ key: TabKey; label: string }> = [
     ...(paragraphs.length > 0 ? [{ key: "description" as const, label: "Description" }] : []),
     ...(specs.length > 0 ? [{ key: "specifications" as const, label: "Specifications" }] : []),
-    { key: "reviews", label: `Reviews (${reviews.length})` },
   ];
-  const [activeTab, setActiveTab] = useState<TabKey>(tabs[0]?.key ?? "reviews");
+  const [activeTab, setActiveTab] = useState<TabKey>(tabs[0]?.key ?? "description");
 
-  const average =
-    reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0;
+  if (tabs.length === 0) return null;
 
   return (
     <section className="mt-12 rounded-2xl border border-emerald-100 bg-white" aria-label="Product information">
@@ -107,45 +88,6 @@ export default function ProductTabs({
             ))}
           </dl>
         )}
-
-        {activeTab === "reviews" &&
-          (reviews.length > 0 ? (
-            <div className="max-w-3xl">
-              <div className="mb-6 flex items-center gap-4">
-                <span className="font-space text-4xl font-semibold text-green-900">
-                  {average.toFixed(1)}
-                </span>
-                <div>
-                  <Stars rating={average} size="h-5 w-5" />
-                  <p className="mt-1 text-sm text-gray-500">
-                    Based on {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-                  </p>
-                </div>
-              </div>
-              <ul className="divide-y divide-emerald-50">
-                {reviews.map((review) => (
-                  <li key={review.id} className="py-4">
-                    <Stars rating={review.rating} />
-                    {review.comment ? (
-                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{review.comment}</p>
-                    ) : null}
-                    <p className="mt-2 text-xs text-gray-500">
-                      {review.user?.name || "Growman customer"}
-                      {review.createdAt
-                        ? ` · ${new Date(review.createdAt).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}`
-                        : ""}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600">This plant has no reviews yet.</p>
-          ))}
       </div>
     </section>
   );

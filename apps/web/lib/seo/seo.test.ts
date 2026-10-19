@@ -22,7 +22,8 @@ import {
 } from "./jsonLd";
 import { getAllPosts, getPostBySlug, posts } from "./blog";
 import robots from "../../app/robots";
-import type { Product, Review } from "../types";
+import type { Product } from "../types";
+import type { ProductReview } from "../reviews";
 
 /** Minimal product fixture; individual tests override only what they exercise. */
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -338,41 +339,59 @@ describe("Product structured data", () => {
   });
 
   it("never invents ratings or reviews", () => {
-    const jsonLd = createProductJsonLd(makeProduct({ reviews: [] }));
+    const jsonLd = createProductJsonLd(makeProduct({ ratingAverage: 0, ratingCount: 0 }));
     assert.equal("aggregateRating" in jsonLd, false);
     assert.equal("review" in jsonLd, false);
   });
 
-  it("uses genuine review data when it exists", () => {
-    const reviews = [
+  it("omits aggregateRating when nothing has been rated, even with a stray average", () => {
+    const jsonLd = createProductJsonLd(makeProduct({ ratingAverage: 4.5, ratingCount: 0 }));
+    assert.equal("aggregateRating" in jsonLd, false);
+  });
+
+  it("uses the product's own rating aggregate", () => {
+    const jsonLd = createProductJsonLd(
+      makeProduct({ ratingAverage: 4.5, ratingCount: 12 })
+    ) as { aggregateRating: Record<string, unknown> };
+
+    assert.equal(jsonLd.aggregateRating.ratingValue, 4.5);
+    assert.equal(jsonLd.aggregateRating.reviewCount, 12);
+    assert.equal(jsonLd.aggregateRating.bestRating, 5);
+  });
+
+  it("marks up only the approved reviews the page renders", () => {
+    const published: ProductReview[] = [
       {
         id: 1,
-        createdAt: "2026-02-01T00:00:00Z",
-        updatedAt: "2026-02-01T00:00:00Z",
         rating: 5,
+        title: "Thriving",
         comment: "Arrived healthy and well packed.",
-        productId: 68,
-        userId: 2,
+        author: "Asha",
+        verifiedPurchase: true,
+        images: [],
+        createdAt: "2026-02-01T00:00:00Z",
       },
       {
         id: 2,
-        createdAt: "2026-02-02T00:00:00Z",
-        updatedAt: "2026-02-02T00:00:00Z",
         rating: 4,
+        title: "",
         comment: "Good size for the price.",
-        productId: 68,
-        userId: 3,
+        author: "Ravi",
+        verifiedPurchase: false,
+        images: [],
+        createdAt: "2026-02-02T00:00:00Z",
       },
-    ] as Review[];
+    ];
 
-    const jsonLd = createProductJsonLd(makeProduct({ reviews })) as {
-      aggregateRating: { ratingValue: number; reviewCount: number };
-      review: unknown[];
-    };
+    const jsonLd = createProductJsonLd(
+      makeProduct({ ratingAverage: 4.5, ratingCount: 2 }),
+      published
+    ) as { review: Array<Record<string, unknown>> };
 
-    assert.equal(jsonLd.aggregateRating.ratingValue, 4.5);
-    assert.equal(jsonLd.aggregateRating.reviewCount, 2);
     assert.equal(jsonLd.review.length, 2);
+    assert.deepEqual(jsonLd.review[0]!.author, { "@type": "Person", name: "Asha" });
+    assert.equal(jsonLd.review[0]!.name, "Thriving");
+    assert.equal("name" in jsonLd.review[1]!, false);
   });
 
   it("omits a GTIN, which is never fabricated, and uses the catalog id as SKU", () => {

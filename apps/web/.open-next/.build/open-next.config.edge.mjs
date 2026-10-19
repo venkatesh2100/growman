@@ -299,26 +299,29 @@ function isPurgeCacheEnabled() {
   return cdnInvalidation !== void 0 && cdnInvalidation !== "dummy";
 }
 
-// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/overrides/incremental-cache/r2-incremental-cache.js
-var NAME = "cf-r2-incremental-cache";
-var BINDING_NAME = "NEXT_INC_CACHE_R2_BUCKET";
-var PREFIX_ENV_NAME = "NEXT_INC_CACHE_R2_PREFIX";
-var R2IncrementalCache = class {
+// ../../node_modules/.pnpm/@opennextjs+cloudflare@1.19.8_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6___838b11fd91968e99d51a21149ec40c72/node_modules/@opennextjs/cloudflare/dist/api/overrides/incremental-cache/kv-incremental-cache.js
+var NAME = "cf-kv-incremental-cache";
+var BINDING_NAME = "NEXT_INC_CACHE_KV";
+var PREFIX_ENV_NAME = "NEXT_INC_CACHE_KV_PREFIX";
+var KVIncrementalCache = class {
   constructor() {
     __publicField(this, "name", NAME);
   }
   async get(key, cacheType) {
-    const r2 = getCloudflareContext().env[BINDING_NAME];
-    if (!r2)
-      throw new IgnorableError("No R2 bucket");
-    debugCache("R2IncrementalCache", `get ${key}`);
+    const kv = getCloudflareContext().env[BINDING_NAME];
+    if (!kv)
+      throw new IgnorableError("No KV Namespace");
+    debugCache("KVIncrementalCache", `get ${key}`);
     try {
-      const r2Object = await r2.get(this.getR2Key(key, cacheType));
-      if (!r2Object)
+      const entry = await kv.get(this.getKVKey(key, cacheType), "json");
+      if (!entry)
         return null;
+      if ("lastModified" in entry) {
+        return entry;
+      }
       return {
-        value: await r2Object.json(),
-        lastModified: r2Object.uploaded.getTime()
+        value: entry,
+        lastModified: globalThis.__BUILD_TIMESTAMP_MS__
       };
     } catch (e) {
       error("Failed to get from cache", e);
@@ -326,28 +329,38 @@ var R2IncrementalCache = class {
     }
   }
   async set(key, value, cacheType) {
-    const r2 = getCloudflareContext().env[BINDING_NAME];
-    if (!r2)
-      throw new IgnorableError("No R2 bucket");
-    debugCache("R2IncrementalCache", `set ${key}`);
+    const kv = getCloudflareContext().env[BINDING_NAME];
+    if (!kv)
+      throw new IgnorableError("No KV Namespace");
+    debugCache("KVIncrementalCache", `set ${key}`);
     try {
-      await r2.put(this.getR2Key(key, cacheType), JSON.stringify(value));
+      await kv.put(
+        this.getKVKey(key, cacheType),
+        JSON.stringify({
+          value,
+          // Note: `Date.now()` returns the time of the last IO rather than the actual time.
+          //       See https://developers.cloudflare.com/workers/reference/security-model/
+          lastModified: Date.now()
+        })
+        // TODO: Figure out how to best leverage KV's TTL.
+        // NOTE: Ideally, the cache should operate in an SWR-like manner.
+      );
     } catch (e) {
       error("Failed to set to cache", e);
     }
   }
   async delete(key) {
-    const r2 = getCloudflareContext().env[BINDING_NAME];
-    if (!r2)
-      throw new IgnorableError("No R2 bucket");
-    debugCache("R2IncrementalCache", `delete ${key}`);
+    const kv = getCloudflareContext().env[BINDING_NAME];
+    if (!kv)
+      throw new IgnorableError("No KV Namespace");
+    debugCache("KVIncrementalCache", `delete ${key}`);
     try {
-      await r2.delete(this.getR2Key(key));
+      await kv.delete(this.getKVKey(key, "cache"));
     } catch (e) {
       error("Failed to delete from cache", e);
     }
   }
-  getR2Key(key, cacheType) {
+  getKVKey(key, cacheType) {
     return computeCacheKey(key, {
       prefix: getCloudflareContext().env[PREFIX_ENV_NAME],
       buildId: process.env.OPEN_NEXT_BUILD_ID,
@@ -355,7 +368,7 @@ var R2IncrementalCache = class {
     });
   }
 };
-var r2_incremental_cache_default = new R2IncrementalCache();
+var kv_incremental_cache_default = new KVIncrementalCache();
 
 // ../../node_modules/.pnpm/@opennextjs+aws@4.0.1_next@16.2.6_react-dom@19.2.6_react@19.2.6__react@19.2.6_/node_modules/@opennextjs/aws/dist/utils/semver.js
 function compareSemver(v1, operator, v2) {
@@ -549,7 +562,7 @@ var do_queue_default = {
 
 // open-next.config.ts
 var open_next_config_default = defineCloudflareConfig({
-  incrementalCache: withRegionalCache(r2_incremental_cache_default, {
+  incrementalCache: withRegionalCache(kv_incremental_cache_default, {
     mode: "long-lived"
   }),
   queue: do_queue_default,

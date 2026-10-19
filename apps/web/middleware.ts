@@ -32,6 +32,30 @@ const DATACENTER_ASNS = new Set([
   63949,         // Linode
 ]);
 
+type EdgeEnv = {
+  RATE_LIMIT?: {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  };
+  WAE?: {
+    writeDataPoint(event: { blobs?: string[]; doubles?: number[]; indexes?: string[] }): void;
+  };
+};
+
+// `next dev` does not run inside a Worker, so the OpenNext context is absent
+// unless the Next config started a local Wrangler proxy. Page views should
+// still render; analytics and the edge rate limit only run once that context
+// exists (production, and local dev after initOpenNextCloudflareForDev).
+function readEdgeContext(): { env: EdgeEnv; cf?: CfProperties } | null {
+  const installed = (globalThis as Record<symbol, { env: EdgeEnv; cf?: CfProperties } | undefined>)[
+    Symbol.for("__cloudflare-context__")
+  ];
+  if (installed) return installed;
+  if (process.env.NODE_ENV === "development") return null;
+  const { env, cf } = getCloudflareContext();
+  return { env: env as EdgeEnv, cf: cf as CfProperties | undefined };
+}
+
 // ── Middleware ────────────────────────────────────────────────────
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
@@ -61,8 +85,10 @@ export async function middleware(request: NextRequest) {
     if (BOT_UA_RE.test(ua)) return response;
     if (/Headless|Phantom|Puppeteer|Playwright/i.test(ua)) return response;
 
-    const { env, cf } = getCloudflareContext();
-    const cfProps = cf as CfProperties;
+    const edge = readEdgeContext();
+    if (!edge) return response;
+    const { env } = edge;
+    const cfProps = edge.cf ?? {};
 
     // Layer 4: datacenter ASN filter
     if (cfProps.asn && DATACENTER_ASNS.has(cfProps.asn)) return response;

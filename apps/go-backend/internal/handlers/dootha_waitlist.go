@@ -12,6 +12,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/phoneutil"
+	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 	"github.com/venkatesh2100/growman/apps/go-backend/pkg/httpjson"
 )
 
@@ -140,8 +141,8 @@ func (h *Handler) notifyWaitlistSignup(entry models.DoothaWaitlist, referrer str
 	if to == "" {
 		to = h.merchantEmail()
 	}
-	if to == "" || h.Cfg.SMTPEmail == "" || h.Cfg.SMTPPassword == "" {
-		log.Printf("[WAITLIST] email not configured; sign-up %d not sent", entry.ID)
+	if strings.TrimSpace(h.Cfg.DiscordWebhookURL) == "" && (to == "" || h.Cfg.SMTPEmail == "" || h.Cfg.SMTPPassword == "") {
+		log.Printf("[WAITLIST] alerts not configured; sign-up %d not sent", entry.ID)
 		return
 	}
 
@@ -179,12 +180,12 @@ Received: %s
 		time.Now().In(istZone).Format("02-01-2006 15:04 IST"),
 	)
 
-	subject := fmt.Sprintf("[Growman] Dootha Care waiting list — %s (%s)", entry.Name, entry.Phone)
-	go func() {
-		if err := h.emailService().SendMerchantAlert(to, subject, body); err != nil {
-			log.Printf("[WAITLIST] email failed for sign-up %d: %v", entry.ID, err)
-		}
-	}()
+	subject := fmt.Sprintf("Dootha Care waitlist · %s", entry.Name)
+	h.dispatchMerchantTo(to, services.DiscordMessage{
+		Title:       subject,
+		Description: body,
+		Color:       services.ColorBlue,
+	}, "")
 }
 
 func orDash(value string) string {

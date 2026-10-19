@@ -1,3 +1,5 @@
+import { readJson } from "./api";
+
 /** An error whose message was written for shoppers and is safe to show as-is. */
 export class UserFacingError extends Error {}
 
@@ -17,6 +19,13 @@ export interface ApiErrorPayload {
   retryAfter?: number;
 }
 
+/** The JSON body a failed response carries, when it carries one at all. */
+type ErrorBody = {
+  error?: string;
+  message?: string;
+  retry_after?: number;
+};
+
 /**
  * Read a failed response's body (JSON or plain text) and pull out the error code and
  * optional retry-after hint. This is the parsing boilerplate that used to be copy-pasted
@@ -29,7 +38,7 @@ export async function readApiError(res: Response): Promise<ApiErrorPayload> {
   try {
     const contentType = res.headers.get("content-type");
     if (contentType?.includes("application/json")) {
-      const data = await res.json();
+      const data = await readJson<ErrorBody>(res);
       return {
         code: String(data.error || data.message || ""),
         status,
@@ -39,7 +48,7 @@ export async function readApiError(res: Response): Promise<ApiErrorPayload> {
     const text = (await res.text()).trim();
     if (text) {
       try {
-        const data = JSON.parse(text);
+        const data = JSON.parse(text) as ErrorBody;
         return {
           code: String(data.error || data.message || text),
           status,

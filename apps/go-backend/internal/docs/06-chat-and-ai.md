@@ -141,20 +141,55 @@ extraction (`extractRequestedProductName`) prefers a quoted phrase in the
 message, then falls back to text after "looking for"/"need"/"want"/"find",
 then the raw (truncated) message.
 
-## Plant identification (`internal/handlers/plants.go`)
+## Plant identification (`internal/handlers/plants.go`, `internal/plantnet`)
 
-`POST /api/v1/images/identify-plant` (rate-limited 20/min per IP) proxies to
-the **Pl@ntNet** API (`my-api.plantnet.org/v2/identify/all`), not an LLM:
+`POST /api/v1/images/identify-plant` (rate-limited 20/min per IP, shared with
+the read-only Pl@ntNet routes below) identifies one plant from 1–5 JPEG or
+PNG photos.
 
-- Accepts 1–5 images (`image`/`images` multipart fields), up to 50MB total,
-  optional per-image `organs` hints (`auto`/`flower`/`leaf`/`fruit`/`bark`).
-- Rebuilds the multipart body to forward to Pl@ntNet, appending
-  `nb-results`/`lang` if provided.
-- **Silently uploads the submitted images to Google Cloud Storage in a
-  background goroutine** (`GenerateImageKey("plants", filename)` — see
-  [07-images-and-storage.md](./07-images-and-storage.md)), purely for the
-  business to build a dataset/log of what users are photographing; failures
-  there are logged and otherwise ignored, never surfaced to the caller.
-- Returns Pl@ntNet's raw JSON response body unchanged — no reshaping,
-  intentionally, to stay compatible with whatever the frontend already
-  expects from Pl@ntNet's own response schema.
+Pl@ntNet's free plan is **500 identifications per UTC day**. Species
+(`POST /v2/identify/{project}`), diseases (`POST /v2/diseases/identify`), and
+varieties (`POST /v2/varieties/identify`) all spend that same credit. The
+handler spends them as follows:
+
+- **Species is always one credit.** `project` defaults to `PLANTNET_PROJECT`
+  (`all`, which lets Pl@ntNet pick the flora). `lat` and `lon` select the
+  nearest Kew flora (`k-*` from `GET /v2/projects`) for the same single credit.
+- **`focus=care` (the default)** also calls disease identification when the
+  day's remaining balance is above `PLANTNET_RESERVE` (default 40). Variety
+  identification runs only when that balance allows it **and** the species
+  is in the cached `GET /v2/varieties` catalog, so a houseplant does not
+  spend a credit on a crop model that cannot name it.
+- **`focus=species`** never spends the extra credits. `health` and `variety`
+  opt into one extra call. `full` opts into both, still under the reserve.
+- The same photo, flora, language, and focus are cached until 00:00 UTC, so
+  a retry does not spend another credit. A known balance of zero is refused
+  before calling Pl@ntNet.
+
+Pl@ntNet does not return origin or care text. Origin is the species' GBIF
+native countries, using the GBIF id already inside the identify response
+(no extra identify credit). Care (light, water, soil, typical pests and
+diseases) comes from the configured chat model and is cached per species
+for 14 days. The raw identify fields `bestMatch` and `results` are unchanged.
+
+`health.skipped` / `varieties.skipped` explain a call that did not run:
+`not_requested`, `quota_reserve`, `not_in_catalog`, `no_species`, `failed`.
+
+Other routes, all cached, none of them an identify credit:
+
+| Route | Upstream | Notes |
+|---|---|---|
+| `GET /plants/status` | `GET /v2/_status` | Health of the Pl@ntNet API |
+| `GET /plants/languages` | `GET /v2/languages` | Unlimited |
+| `GET /plants/projects` | `GET /v2/projects` | Optional `lat`, `lon`, `lang`. Legacy floras are rejected |
+| `GET /plants/species` | `GET /v2/species` or `/v2/projects/{project}/species` | Requires `prefix` or `page` (page size capped at 20). `images=true` is refused — illustrations are a pro feature |
+| `GET /plants/diseases` | `GET /v2/diseases` | Optional `prefix`, `lang` |
+| `GET /plants/varieties` | `GET /v2/varieties` | Optional `prefix`, `lang` |
+| `GET /plants/quota` | `GET /v2/quota` and `/v2/quota/daily` | `?history=1` adds `/v2/quota/history` |
+
+`POST /v2/embeddings` and `GET /v2/subscription` are not proxied. Embeddings
+spend quota without helping a care scan, and subscription is the pro contract.
+
+Submitted photos are still uploaded to cloud storage in the background
+(`GenerateImageKey("plants", filename)`). That upload is not part of the
+identification response.

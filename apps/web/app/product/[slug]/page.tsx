@@ -4,8 +4,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductPageClient from "./productClient";
 import JsonLd from "../../../components/seo/JsonLd";
-import { apiFetch } from "../../../lib/api";
+import { apiFetch, readJson } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
+import {
+  REVIEWS_PAGE_SIZE,
+  productReviewsPath,
+  type ProductReviewsResponse,
+} from "../../../lib/reviews";
 import {
   createBreadcrumbs,
   createProductMetadata,
@@ -32,6 +37,26 @@ const getProduct = cache(async (slug: string): Promise<Product | null> => {
     return null;
   }
 });
+
+/**
+ * First page of approved reviews, rendered server-side so the review text is
+ * in the HTML that the Review structured data below describes.
+ */
+const getProductReviews = cache(
+  async (slug: string): Promise<ProductReviewsResponse | null> => {
+    try {
+      const response = await apiFetch(
+        productReviewsPath(slug, REVIEWS_PAGE_SIZE, 0),
+        { cache: "no-store" },
+      );
+      if (!response.ok) return null;
+      return await readJson<ProductReviewsResponse>(response);
+    } catch (error) {
+      console.warn(`Failed to load reviews for "${slug}":`, error);
+      return null;
+    }
+  },
+);
 
 export async function generateMetadata({
   params,
@@ -69,6 +94,8 @@ export default async function Page({
     notFound();
   }
 
+  const reviews = await getProductReviews(resolvedParams.slug);
+
   const breadcrumbs = createBreadcrumbs([
     { name: "Plants", path: "/categories" },
     ...(product.category
@@ -95,7 +122,7 @@ export default async function Page({
       <JsonLd
         id="product-jsonld"
         data={[
-          createProductJsonLd(product),
+          createProductJsonLd(product, reviews?.reviews ?? []),
           createBreadcrumbJsonLd(breadcrumbs),
         ]}
       />
@@ -103,6 +130,7 @@ export default async function Page({
         product={product}
         searchParams={resolvedSearchParams}
         productSlug={resolvedParams.slug}
+        initialReviews={reviews}
       />
     </>
   );

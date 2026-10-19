@@ -648,22 +648,23 @@ Authorization: Bearer <token>
 ```
 
 **Get Order**
+
+Takes either an opaque token, for a guest reading back the order they just
+placed, or an id plus a bearer token proving ownership. An order that does
+not exist and an order that is not yours both return 404, so the response
+cannot be used to discover which ids are real.
 ```
-GET /api/v1/order?razorpayOrderId=order_xxxxx
+GET /api/v1/order?token=<64 hex characters>
+GET /api/v1/order?id=123        # requires Authorization: Bearer <jwt>
 ```
 
 #### Payments
 
-**Create Razorpay Order** (Legacy)
-```
-POST /api/v1/razorpay/order
-Content-Type: application/json
-
-{
-  "amount": 1999.99,
-  "currency": "INR"
-}
-```
+Razorpay orders are created only by `POST /api/v1/checkout/create-order`.
+There is no endpoint that takes an amount and returns a Razorpay order:
+one existed, and it built the order from whatever amount the client sent,
+with no cart validation, no stock reservation and no email verification. It
+was a complete path around every check the real checkout performs.
 
 **Verify Payment**
 ```

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { MessageCircle, Search } from "lucide-react";
-import { apiFetch, searchProducts } from "../../lib/api";
+import { apiFetch, readJson, searchProducts } from "../../lib/api";
 import type { Product } from "../../lib/types";
 import ProductCard from "../../components/productspage/ProductCard";
 import { ProductCardSkeleton } from "../../components/loading/SkeletonLoader";
@@ -14,6 +14,12 @@ import { useAuthStore } from "../../lib/store/authStore";
 const GRID = "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5";
 const FIELD =
   "w-full rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm text-green-900 placeholder:text-gray-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20";
+
+type ProfileResponse = {
+  name?: string;
+  email?: string;
+  phone?: string;
+};
 
 export default function Searchcomponent() {
   const searchParams = useSearchParams();
@@ -48,7 +54,7 @@ export default function Searchcomponent() {
       try {
         const response = await apiFetch("/auth/me");
         if (!response.ok) return;
-        const user = await response.json();
+        const user = await readJson<ProfileResponse>(response);
         setRequesterName(user?.name || "");
         setRequesterEmail(user?.email || "");
         setRequesterPhone(user?.phone || "");

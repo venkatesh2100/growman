@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Loader2, Camera, Package, Leaf } from "lucide-react";
-import { apiFetch, getApiUrl, resolveAuthToken } from "../../lib/api";
+import { apiFetch, getApiUrl, readJson, resolveAuthToken } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import OptimizedImage from "../ui/OptimizedImage";
 import Thumbnail from "../ui/Thumbnail";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { toast } from "../../lib/toast";
+import { readApiError, UserFacingError, userMessage } from "../../lib/errors";
 import { useAuthStore } from "../../lib/store/authStore";
 
 interface Message {
@@ -32,6 +33,92 @@ interface Message {
     itemPreview: string;
     imageUrl?: string;
   }>;
+}
+
+type ChatResponse = {
+  response?: string;
+  recommendedProducts?: NonNullable<Message["products"]>;
+  /** Left raw: the mapper below reads both camelCase and snake_case keys. */
+  orders?: Array<Record<string, unknown>>;
+};
+
+type PlantIdentificationResponse = {
+  bestMatch?: string;
+  results?: Array<{
+    species?: {
+      scientificName?: string;
+      commonNames?: string[];
+    };
+  }>;
+  species?: {
+    scientificName?: string;
+    scientificNameWithoutAuthor?: string;
+    commonNames?: string[];
+    score?: number;
+  };
+  origin?: { summary?: string };
+  care?: {
+    origin?: string;
+    light?: string;
+    water?: string;
+    soil?: string;
+    temperature?: string;
+    fertilizer?: string;
+    pests?: string[];
+    diseases?: string[];
+  };
+  health?: {
+    ran?: boolean;
+    skipped?: string;
+    results?: Array<{ name?: string; description?: string; label?: string; score?: number }>;
+  };
+  varieties?: {
+    results?: Array<{ name?: string }>;
+  };
+};
+
+function formatScan(data: PlantIdentificationResponse): string | null {
+  const scientific =
+    data.species?.scientificNameWithoutAuthor ||
+    data.species?.scientificName ||
+    data.bestMatch ||
+    data.results?.[0]?.species?.scientificName;
+  if (!scientific) return null;
+
+  const common = data.species?.commonNames?.[0] || data.results?.[0]?.species?.commonNames?.[0];
+  const lines = [common ? `**${common}** (*${scientific}*)` : `**${scientific}**`];
+  if (typeof data.species?.score === "number") {
+    lines.push(`${Math.round(data.species.score * 100)}% match`);
+  }
+
+  const origin = data.origin?.summary || data.care?.origin;
+  if (origin) lines.push("", `**Origin:** ${origin}`);
+
+  const careLines = [
+    data.care?.light ? `- **Light:** ${data.care.light}` : "",
+    data.care?.water ? `- **Water:** ${data.care.water}` : "",
+    data.care?.soil ? `- **Soil:** ${data.care.soil}` : "",
+    data.care?.temperature ? `- **Temperature:** ${data.care.temperature}` : "",
+    data.care?.fertilizer ? `- **Feeding:** ${data.care.fertilizer}` : "",
+  ].filter(Boolean);
+  if (careLines.length) lines.push("", "**Care**", ...careLines);
+
+  const seen = (data.health?.results ?? [])
+    .map((hit) => hit.description || hit.label || hit.name)
+    .filter((name): name is string => Boolean(name))
+    .slice(0, 3);
+  if (seen.length) {
+    lines.push("", "**From this photo**", ...seen.map((name) => `- ${name}`));
+  } else if (data.health?.skipped === "quota_reserve") {
+    lines.push("", "Health scan skipped so today's identification quota stays available.");
+  }
+
+  if (data.care?.pests?.length) lines.push("", `**Typical pests:** ${data.care.pests.join(", ")}`);
+  if (data.care?.diseases?.length) lines.push(`**Typical problems:** ${data.care.diseases.join(", ")}`);
+  const varieties = (data.varieties?.results ?? []).map((v) => v.name).filter(Boolean).slice(0, 3);
+  if (varieties.length) lines.push("", `**Variety:** ${varieties.join(", ")}`);
+  lines.push("", "_Care notes are guidance for Indian homes, not a diagnosis._");
+  return lines.join("\n");
 }
 
 const STORAGE_KEY_MESSAGES = "plant-chatbot-messages";
@@ -205,7 +292,7 @@ export default function PlantChatbot() {
         throw new Error(errorText);
       }
 
-      const data = await response.json();
+      const data = await readJson<ChatResponse>(response);
 
       if (!data || !data.response) {
         console.error("Invalid response data:", data);
@@ -257,6 +344,8 @@ export default function PlantChatbot() {
       const token = useAuthStore.getState().token || localStorage.getItem("token");
       const formData = new FormData();
       formData.append("image", file);
+      formData.append("focus", "care");
+      formData.append("lang", "en");
 
       const response = await fetch(url, {
         method: "POST",
@@ -265,24 +354,24 @@ export default function PlantChatbot() {
       });
 
       if (!response.ok) {
-        throw new Error("Plant identification failed");
+        const apiErr = await readApiError(response);
+        throw new UserFacingError(apiErr.code || "Plant identification failed");
       }
 
-      const data = await response.json();
-      const name =
-        data?.bestMatch ||
-        data?.results?.[0]?.species?.scientificName ||
-        data?.results?.[0]?.species?.commonNames?.[0];
-
-      if (name) {
-        setInput(`What is ${name} and how do I care for it?`);
-        toast("Plant identified. Review the message, then send it.", "success");
+      const data = await readJson<PlantIdentificationResponse>(response);
+      const summary = data ? formatScan(data) : null;
+      if (summary) {
+        setMessages((prev) => [
+          ...prev,
+          { id: (Date.now() + 1).toString(), role: "dootha", content: summary },
+        ]);
+        toast("Plant identified.", "success");
       } else {
         toast("Could not identify plant. Try a clearer photo.", "error");
       }
     } catch (error) {
       console.error("Plant identification error:", error);
-      toast("Couldn't identify the plant. Please try again.", "error");
+      toast(userMessage(error, "Couldn't identify the plant. Please try again."), "error");
     } finally {
       setIsScanning(false);
     }
@@ -458,15 +547,15 @@ export default function PlantChatbot() {
                               className="h-[164px] w-[112px] shrink-0 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/80 transition-opacity active:opacity-90"
                             >
                               {product.imageUrl ? (
-                                <OptimizedImage
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  width={112}
-                                  height={92}
-                                  sizes="112px"
-                                  loading="lazy"
-                                  className="h-[92px] w-full bg-gray-100 object-cover"
-                                />
+                                <div className="relative h-[92px] w-full bg-gray-100">
+                                  <OptimizedImage
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    fill
+                                    sizes="112px"
+                                    className="object-cover"
+                                  />
+                                </div>
                               ) : (
                                 <div className="flex h-[92px] items-center justify-center bg-emerald-100 text-emerald-600">
                                   <Leaf className="h-6 w-6" />

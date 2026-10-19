@@ -36,8 +36,16 @@ func (h *Handler) ListWishlist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	products := make([]models.Product, len(items))
+	uid := claims.UserID
 	for i, item := range items {
 		products[i] = item.Product
+		if item.PriceAtAdd > 0 && item.Product.Price > 0 && item.Product.Price < item.PriceAtAdd-1 {
+			pid := item.ProductID
+			h.pushNotice(r.Context(), &uid, "offer", "Price drop on your wishlist",
+				item.Product.Name+" is now lower than when you saved it.", "/product/"+item.Product.Slug,
+				"drop:"+strconv.FormatUint(uint64(item.ProductID), 10)+":"+strconv.FormatInt(int64(item.Product.Price), 10),
+				nil, &pid, nil)
+		}
 	}
 	h.ResolveProductImageURLsSlice(products)
 
@@ -89,7 +97,7 @@ func (h *Handler) AddToWishlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wishlist := models.Wishlist{UserID: claims.UserID, ProductID: req.ProductID}
+	wishlist := models.Wishlist{UserID: claims.UserID, ProductID: req.ProductID, PriceAtAdd: product.Price}
 	if err := h.DB.Create(&wishlist).Error; err != nil {
 		// Duplicate key = row exists (e.g. soft-deleted); find and restore
 		if isDuplicateKey(err) {

@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X, Smartphone } from "lucide-react";
 import { openPlayStore, PLAY_STORE_URL } from "../../lib/appLinks";
+import {
+  CONSENT_DECIDED_EVENT,
+  needsConsentDecision,
+} from "../../lib/consent";
 
 const DISMISS_KEY = "growman-app-install-dismissed";
 
@@ -27,10 +31,28 @@ export default function InstallPrompt() {
       if (daysSince < 7) return;
     }
 
-    if (!standalone) {
-      const timer = window.setTimeout(() => setVisible(true), 2500);
-      return () => window.clearTimeout(timer);
+    if (standalone) return;
+
+    let timer = 0;
+    const schedule = () => {
+      timer = window.setTimeout(() => setVisible(true), 2500);
+    };
+
+    // The consent notice owns the bottom of the screen on a first visit, and
+    // two stacked banners would cover each other.
+    if (needsConsentDecision()) {
+      const onDecided = () => schedule();
+      window.addEventListener(CONSENT_DECIDED_EVENT, onDecided, {
+        once: true,
+      });
+      return () => {
+        window.removeEventListener(CONSENT_DECIDED_EVENT, onDecided);
+        window.clearTimeout(timer);
+      };
     }
+
+    schedule();
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleDismiss = () => {

@@ -2,7 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    // The build fails on a type error. Turning this back on would let a
+    // broken API contract — a renamed response field, a changed payload —
+    // ship to production and only surface as a runtime crash in a
+    // customer's browser.
+    ignoreBuildErrors: false,
   },
   images: {
     // Serve AVIF/WebP at the display size instead of streaming full originals

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, X } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { UserFacingError, userMessage } from "../../lib/errors";
 import { useAuthStore } from "../../lib/store/authStore";
 import { Button } from "../ui/Button";
@@ -49,6 +49,14 @@ const SLIDES = [
 const SLIDE_MS = 3800;
 
 type Details = { name: string; phone: string; email: string; address: string };
+
+/** The parts of the signed-in profile this form prefills from. */
+type ProfileResponse = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: { line?: string; city?: string; pincode?: string } | null;
+};
 
 const EMPTY: Details = { name: "", phone: "", email: "", address: "" };
 
@@ -205,7 +213,7 @@ export default function DoothaWaitlistPopup() {
       try {
         const res = await apiFetch("/auth/me");
         if (!res.ok) return;
-        const me = await res.json();
+        const me = await readJson<ProfileResponse>(res);
         const address = [me.address?.line, me.address?.city, me.address?.pincode]
           .filter(Boolean)
           .join(", ");

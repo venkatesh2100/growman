@@ -45,16 +45,19 @@
     {
       "binding": "RATE_LIMIT",
       "id": "7d1c239b89c04e70badd4d156d61e931"
+    },
+    // OpenNext incremental cache (see open-next.config.ts). Created with:
+    //   npx wrangler kv namespace create growman-next-cache
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "e904bff7ace147bb957f0aba939fb22f"
     }
   ],
 
-  // OpenNext incremental cache (see open-next.config.ts). Create once with:
-  //   npx wrangler r2 bucket create growman-next-cache
-  "r2_buckets": [
-    {
-      "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      "bucket_name": "growman-next-cache"
-    }
+  // DOQueueHandler revalidates by calling back into this worker; OpenNext
+  // requires this exact binding name and the service must match "name" above.
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "growman-web" }
   ],
 
   // ISR revalidation queue. DOQueueHandler is re-exported from worker.ts.

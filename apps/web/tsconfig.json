@@ -14,5 +14,8 @@
     "next.config.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  // .open-next is OpenNext's build output. It is generated JavaScript that
+  // we neither write nor review, and it does not satisfy our compiler
+  // options, so type-checking it only produces noise.
+  "exclude": ["node_modules", ".open-next", ".next"]
 }

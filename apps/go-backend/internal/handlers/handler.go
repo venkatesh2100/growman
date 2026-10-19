@@ -58,6 +58,25 @@ func (h *Handler) AutoMigrate() error {
 		&models.RequestedProduct{},
 		&models.OrderSupportRequest{},
 		&models.DoothaWaitlist{},
+		&models.WebhookEvent{},
+		&models.Refund{},
+		&models.Coupon{},
+		&models.CouponRedemption{},
+		&models.Address{},
+		&models.ConsentRecord{},
+		&models.BackInStockRequest{},
+		&models.OwnedPlant{},
+		&models.PlantHealthLog{},
+		&models.NotificationPreference{},
+		&models.AppNotification{},
+		&models.SavedItem{},
+		&models.StoreCredit{},
+		&models.CreditEntry{},
+		&models.SavedPaymentMethod{},
+		&models.RecentView{},
+		&models.CartSnapshot{},
+		&models.ChatTurn{},
+		&models.QuoteRequest{},
 	); err != nil {
 		return err
 	}
@@ -83,6 +102,13 @@ func (h *Handler) EnsureSearchIndexes() {
 		`CREATE INDEX IF NOT EXISTS idx_products_featured_created ON products (created_at DESC) WHERE featured = true AND deleted_at IS NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_products_category_created ON products (category_id, created_at DESC) WHERE deleted_at IS NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_products_created ON products (created_at DESC) WHERE deleted_at IS NULL`,
+		// Approved reviews are the only ones read publicly, so the
+		// product-detail and rating-recalculation queries both filter on it.
+		`CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews (product_id, created_at DESC) WHERE status = 'approved' AND deleted_at IS NULL`,
+		// The abandoned-reservation sweep scans unpaid orders by age.
+		`CREATE INDEX IF NOT EXISTS idx_orders_unpaid_created ON orders (created_at) WHERE payment_status = 'created' AND inventory_released = false AND deleted_at IS NULL`,
+		// Coupon lookup is by uppercase code on every checkout quote.
+		`CREATE INDEX IF NOT EXISTS idx_coupons_code_active ON coupons (code) WHERE active = true AND deleted_at IS NULL`,
 	}
 	for _, stmt := range stmts {
 		if err := h.DB.Exec(stmt).Error; err != nil {

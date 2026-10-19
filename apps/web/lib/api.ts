@@ -108,6 +108,58 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
   }
 }
 
+/**
+ * Read a JSON response body as `T`.
+ *
+ * `Response.json()` resolves to `unknown`, which is accurate — nothing
+ * validates the bytes on the wire — but it makes every call site an error.
+ * This centralises the assertion so each caller states the shape it
+ * expects in one place, instead of sprinkling `any` through the handlers.
+ *
+ * It is an assertion, not validation: a backend that changes a field name
+ * will still compile. Use it for shapes we control; parse defensively
+ * where the response is genuinely variable.
+ */
+export async function readJson<T>(response: Response): Promise<T> {
+  return (await response.json()) as T;
+}
+
+/**
+ * apiFetch plus a typed JSON parse, for the common case where a non-2xx
+ * response should throw rather than be inspected.
+ */
+export async function apiJson<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await apiFetch(path, options);
+  if (!response.ok) {
+    throw new Error(`Request to ${path} failed with ${response.status}`);
+  }
+  return readJson<T>(response);
+}
+
+/** The error envelope the Go backend returns on a 4xx/5xx. */
+export type ApiError = {
+  error?: string;
+  reason?: string;
+  message?: string;
+};
+
+/**
+ * Pull a human-readable message out of a failed response, falling back to
+ * a generic one. Never throws: it is called on paths that are already
+ * handling an error.
+ */
+export async function readApiError(
+  response: Response,
+  fallback = 'Something went wrong. Please try again.',
+): Promise<string> {
+  try {
+    const body = await readJson<ApiError>(response);
+    return body.reason || body.message || body.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export type SearchPagination = {
   page: number;
   pageSize: number;
@@ -148,8 +200,10 @@ export async function searchProducts(
     if (!res.ok) {
       throw new Error('Failed to search products');
     }
-    const result = await res.json();
-    if (result.data && result.pagination) {
+    // Deliberately loose: this endpoint has returned both a paginated
+    // envelope and a bare array across backend versions.
+    const result = await readJson<Partial<SearchProductsResult> | Product[]>(res);
+    if (!Array.isArray(result) && result.data && result.pagination) {
       return result as SearchProductsResult;
     }
     const data = Array.isArray(result) ? result : [];

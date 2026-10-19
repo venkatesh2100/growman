@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import {
   Mail,
@@ -24,6 +24,10 @@ import {
 import { readApiError } from "../../lib/errors";
 import { PillField, OtpField } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+
+type SignupResponse = {
+  token: string;
+};
 
 function mapSignupError(code: string, status: number): string {
   const key = code.toLowerCase();
@@ -234,7 +238,7 @@ function SignupPageContent({ googleClientId }: { googleClientId: string }) {
         return;
       }
 
-      const data = await res.json();
+      const data = await readJson<SignupResponse>(res);
       setToken(data.token);
       toast("Account created.", "success");
       setSuccess(true);

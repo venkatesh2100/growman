@@ -1,5 +1,6 @@
 // Geolocation utility functions
 
+import { readJson } from "../api";
 import { UserFacingError } from "../errors";
 
 export interface LocationData {
@@ -11,6 +12,29 @@ export interface LocationData {
   latitude?: number;
   longitude?: number;
 }
+
+type NominatimAddress = {
+  house_number?: string;
+  building?: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
+  city?: string;
+  municipality?: string;
+  county?: string;
+  state_district?: string;
+  region?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+};
+
+type NominatimResponse = {
+  address?: NominatimAddress;
+  display_name?: string;
+};
 
 function getPosition(options: PositionOptions): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) =>
@@ -105,8 +129,8 @@ async function reverseGeocode(
       throw new Error("Reverse geocoding failed");
     }
 
-    const data = await response.json();
-    const address = data.address || {};
+    const data = await readJson<NominatimResponse>(response);
+    const address: NominatimAddress = data.address || {};
     const displayName = data.display_name || "";
 
     // Map OpenStreetMap address fields to our format
@@ -178,7 +202,7 @@ async function reverseGeocode(
       const parts = displayName.split(",");
       // Usually city is in the middle parts of the address
       for (let i = 1; i < parts.length - 2; i++) {
-        const part = parts[i].trim();
+        const part = parts[i]!.trim();
         // Check if this part matches any Indian city (basic check)
         if (part && part.length > 2) {
           locationData.city = part;
@@ -192,7 +216,7 @@ async function reverseGeocode(
       const parts = displayName.split(",");
       // State is usually near the end
       for (let i = parts.length - 2; i >= 0; i--) {
-        const part = parts[i].trim();
+        const part = parts[i]!.trim();
         // Check if this part could be a state (longer than 3 chars, not a number)
         if (part && part.length > 3 && !/^\d+$/.test(part)) {
           locationData.state = part;

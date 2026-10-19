@@ -1,0 +1,96 @@
+name: CI
+
+# Runs on every pull request and on main. The deploy workflow (cd.yml) is
+# separate and triggers on a push to main; this one is what should gate a
+# merge.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to a branch makes the previous run's result irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Go backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/go-backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # Read from go.mod so this never drifts from what the code needs.
+          go-version-file: apps/go-backend/go.mod
+          cache-dependency-path: apps/go-backend/go.sum
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Check formatting
+        # gofmt -l prints files that need formatting and exits 0, so the
+        # output has to be the failure signal.
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        # -race catches the concurrency bugs that matter most here: the
+        # webhook dedup claim, inventory reservation and the cache's
+        # singleflight all rely on correct synchronisation.
+        run: go test -race -timeout 5m ./...
+
+  frontend:
+    name: Next.js web
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        # next.config.ts has ignoreBuildErrors: false, so a type error also
+        # fails the build. This step runs first because it reports every
+        # error at once instead of stopping at the first module.
+        run: pnpm --filter web check-types
+
+      - name: Lint
+        run: pnpm --filter web lint
+
+      - name: Unit tests
+        run: pnpm --filter web test
+
+      - name: Build
+        env:
+          # Build-time placeholders. The real values come from the
+          # Cloudflare environment at deploy time; these only need to exist
+          # so the build doesn't fail on a missing variable.
+          NEXT_PUBLIC_API_URL: https://api.example.invalid/api/v1
+          NEXT_PUBLIC_GO_API_URL: https://api.example.invalid/api/v1
+        run: pnpm --filter web build

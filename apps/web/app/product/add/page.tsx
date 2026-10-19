@@ -1,7 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
-import { apiFetch } from '../../../lib/api';
+import { ChangeEvent, FormEvent, ReactNode, useEffect, useState } from 'react';
+import { apiFetch, readJson } from '../../../lib/api';
 
 /** Shared input/select/textarea styling for this form, with an error-highlight state. */
 function fieldClass(hasError?: boolean, extra = '') {
@@ -18,12 +18,19 @@ function FieldLabel({ children }: { children: ReactNode }) {
   return <label className="block text-green-700 font-medium mb-2 flex items-center">{children}</label>;
 }
 
+/** The subset of the catalog taxonomy this form needs from the API. */
+type TaxonomyOption = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 export default function AddPlant() {
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
+  const [categories, setCategories] = useState<TaxonomyOption[]>([]);
+  const [subcategories, setSubcategories] = useState<TaxonomyOption[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [brands, setBrands] = useState<[]>([]);
+  const [brands, setBrands] = useState<TaxonomyOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -52,17 +59,17 @@ export default function AddPlant() {
 
   useEffect(() => {
     apiFetch('/categories')
-      .then(res => res.json())
+      .then(res => readJson<TaxonomyOption[]>(res))
       .then(setCategories)
       .catch(() => setErrors({ fetch: 'Failed to load categories' }));
 
     apiFetch('/tags')
-      .then(res => res.json())
+      .then(res => readJson<string[]>(res))
       .then(setAllTags)
       .catch(() => setErrors({ fetch: 'Failed to load tags' }));
 
     apiFetch('/brands')
-      .then(res => res.json())
+      .then(res => readJson<TaxonomyOption[]>(res))
       .then(setBrands)
       .catch(() => setErrors({ fetch: 'Failed to load brands' }));
   }, []);
@@ -70,10 +77,12 @@ export default function AddPlant() {
   useEffect(() => {
     if (formData.categoryId && formData.categoryId !== '' && formData.categoryId !== '0') {
       // Find the category slug from the categories list
-      const selectedCategory = categories.find((cat: any) => cat.id.toString() === formData.categoryId.toString());
-      if (selectedCategory && selectedCategory.slug) {
+      const selectedCategory = categories.find(
+        (cat) => cat.id.toString() === formData.categoryId.toString(),
+      );
+      if (selectedCategory?.slug) {
         apiFetch(`/categories/${selectedCategory.slug}/subcategories`)
-          .then(res => res.json())
+          .then(res => readJson<TaxonomyOption[]>(res))
           .then(setSubcategories)
           .catch(() => {
             setSubcategories([]);
@@ -87,7 +96,7 @@ export default function AddPlant() {
     }
   }, [formData.categoryId, categories]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
 
@@ -206,14 +215,14 @@ export default function AddPlant() {
           try {
             const errorData = JSON.parse(text);
             errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch (e) {
+          } catch {
             // If not JSON, use the text as error message
             errorMessage = text.substring(0, 100);
           }
         } else {
           errorMessage = res.statusText || errorMessage;
         }
-      } catch (e) {
+      } catch {
         errorMessage = res.statusText || errorMessage;
       }
       throw new Error(errorMessage);
@@ -305,7 +314,7 @@ export default function AddPlant() {
       .substring(0, 60);
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrors({});
@@ -415,7 +424,7 @@ export default function AddPlant() {
           } else {
             errorMessage = res.statusText || errorMessage;
           }
-        } catch (e) {
+        } catch {
           // If not JSON, use response text or status text
           errorMessage = responseText || res.statusText || errorMessage;
         }
@@ -423,12 +432,11 @@ export default function AddPlant() {
       }
 
       // Parse successful response
-      let data;
       try {
         if (!responseText || responseText.trim() === '') {
           throw new Error('Empty response from server');
         }
-        data = JSON.parse(responseText);
+        JSON.parse(responseText);
       } catch (e) {
         console.error('Failed to parse JSON response:', e, 'Response text:', responseText.substring(0, 100));
         throw new Error('Invalid response from server. Please try again.');
@@ -562,7 +570,7 @@ export default function AddPlant() {
               className={fieldClass()}
             >
               <option value="">Select brand</option>
-              {brands && Array.isArray(brands) && brands.map((brand: any) => (
+              {brands && Array.isArray(brands) && brands.map((brand) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}
                 </option>
@@ -747,7 +755,7 @@ export default function AddPlant() {
               className={fieldClass(!!errors.category)}
             >
               <option value="">Select existing category</option>
-              {categories.map((cat: any) => (
+              {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
@@ -779,7 +787,7 @@ export default function AddPlant() {
               className={fieldClass(false, !formData.categoryId ? 'bg-gray-100' : '')}
             >
               <option value="">Select existing subcategory</option>
-              {subcategories.map((sub: any) => (
+              {subcategories.map((sub) => (
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>

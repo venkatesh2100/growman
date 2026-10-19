@@ -75,6 +75,9 @@ export interface Product extends Base {
   sizes: ProductSize[];
   attributes: Attribute[];
   reviews: Review[];
+  /** Denormalised by the backend from approved reviews only. */
+  ratingAverage?: number;
+  ratingCount?: number;
   mrp?: number;
   taxInfo?: string;
 }

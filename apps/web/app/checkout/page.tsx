@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readApiError, readJson } from "../../lib/api";
 import {
   ShoppingBag,
   Check,
@@ -103,6 +103,58 @@ const emptyCustomer: CustomerInfo = {
   country: "India",
 };
 
+/** `/auth/me`, used to prefill the form for a signed-in shopper. */
+type ProfileResponse = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    line?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+  } | null;
+};
+
+type CheckUserResponse = {
+  exists?: boolean;
+};
+
+/** `/checkout/create-order` on success. */
+type CreateOrderResponse = {
+  /** Razorpay's order id, passed to their widget. */
+  id?: string;
+  /** Our own order id, shown to the customer. */
+  orderId: number;
+  /** Opaque handle that lets a guest read this order back. */
+  publicToken?: string;
+  amount: number;
+};
+
+/**
+ * The 409/422 shape the server uses to refuse an order it has repriced or
+ * cannot fulfil. `error` names the reason so checkout can explain the
+ * specific problem instead of showing one generic failure.
+ */
+type CreateOrderRejection = {
+  error?: string;
+  reason?: string;
+  quote?: FulfillmentQuote;
+  /** Present on `out_of_stock`: the lines that could not be reserved. */
+  items?: Array<{ productId?: number; name?: string; available?: number }>;
+};
+
+type VerifyEmailOtpResponse = {
+  verificationToken?: string;
+};
+
+type CouponPreview = {
+  code: string;
+  discount: number;
+  description?: string;
+};
+
 function validateCustomer(info: CustomerInfo): string | null {
   if (!info.name.trim()) return "Please enter your full name.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email.trim())) {
@@ -145,6 +197,25 @@ export default function CheckoutPage() {
     null,
   );
 
+  // Guest email verification. The server will not create an order for a
+  // guest without a proof token, so this is a required step rather than a
+  // nicety — it stops an order being placed against someone else's address
+  // and makes the confirmation email reach a mailbox the buyer controls.
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [verificationToken, setVerificationToken] = useState<string | null>(
+    null,
+  );
+  // The token is bound to one address, so changing the email invalidates it.
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+
   const subtotal = getSubtotal();
   // Coordinates alone are enough for the server to measure the distance, so
   // a shopper whose browser filled in a position but no address still gets
@@ -156,7 +227,10 @@ export default function CheckoutPage() {
   const deliveryOption = useMemo(() => pickDeliveryOption(quote), [quote]);
   const channel = deliveryOption?.channel ?? null;
   const deliveryFee = deliveryOption?.fee ?? 0;
-  const total = subtotal + deliveryFee;
+  const discount = coupon?.discount ?? 0;
+  // Never let a coupon drive the payable amount below zero; the server
+  // caps it the same way and would reject a mismatch.
+  const total = Math.max(0, subtotal + deliveryFee - discount);
   const itemCount = useMemo(
     () => cart.reduce((sum, item) => sum + item.quantity, 0),
     [cart],
@@ -270,6 +344,14 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated]);
 
+  // A coupon's discount depends on what is in the cart, so a cart edit
+  // makes the applied figure stale. Dropping it is safer than showing a
+  // discount the server will recompute and reject at order creation.
+  useEffect(() => {
+    setCoupon(null);
+    setCouponError(null);
+  }, [cartSignature]);
+
   const updateField = <K extends keyof CustomerInfo>(
     key: K,
     value: CustomerInfo[K],
@@ -282,7 +364,7 @@ export default function CheckoutPage() {
     try {
       const res = await apiFetch("/auth/me");
       if (!res.ok) return;
-      const data = await res.json();
+      const data = await readJson<ProfileResponse>(res);
       setCustomerInfo({
         name: data.name || "",
         email: data.email || "",
@@ -382,7 +464,7 @@ export default function CheckoutPage() {
 
       const res = await apiFetch(`/auth/check-user?${params.toString()}`);
       if (res.ok) {
-        const data = await res.json();
+        const data = await readJson<CheckUserResponse>(res);
         if (data.exists && !isAuthenticated) {
           setShowLoginPrompt(true);
           return true;
@@ -392,6 +474,142 @@ export default function CheckoutPage() {
       console.error("Error checking user:", err);
     }
     return false;
+  };
+
+  // A signed-in shopper's email is already verified on their account, so
+  // only guests see the OTP step.
+  const emailVerified =
+    isAuthenticated ||
+    (verificationToken !== null &&
+      verifiedEmail === customerInfo.email.trim().toLowerCase());
+
+  const handleSendEmailOtp = async () => {
+    const email = customerInfo.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      const msg = "Enter a valid email address first.";
+      setError(msg);
+      toast(msg, "error");
+      return;
+    }
+
+    setOtpSending(true);
+    setError(null);
+    try {
+      const res = await apiFetch("/checkout/send-email-otp", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const msg = await readApiError(
+          res,
+          "We couldn't send the code. Please try again in a moment.",
+        );
+        setError(msg);
+        toast(msg, "error");
+        return;
+      }
+      setOtpSent(true);
+      toast(`We sent a 6-digit code to ${email}`, "success");
+    } catch {
+      const msg = "We couldn't send the code. Please check your connection.";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const email = customerInfo.email.trim();
+    const code = otpCode.trim();
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+
+    setOtpVerifying(true);
+    setError(null);
+    try {
+      const res = await apiFetch("/checkout/verify-email-otp", {
+        method: "POST",
+        body: JSON.stringify({ email, otp: code }),
+      });
+      if (!res.ok) {
+        const msg = await readApiError(
+          res,
+          "That code didn't match. Please check it and try again.",
+        );
+        setError(msg);
+        toast(msg, "error");
+        return;
+      }
+
+      const data = await readJson<VerifyEmailOtpResponse>(res);
+      if (!data.verificationToken) {
+        // Verification without a token would leave the shopper stuck at
+        // the payment step with no way to see why.
+        const msg = "We couldn't confirm your email. Please request a new code.";
+        setError(msg);
+        toast(msg, "error");
+        setOtpSent(false);
+        return;
+      }
+
+      setVerificationToken(data.verificationToken);
+      setVerifiedEmail(email.toLowerCase());
+      setOtpCode("");
+      toast("Email verified", "success");
+    } catch {
+      const msg = "We couldn't confirm your email. Please try again.";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const res = await apiFetch("/checkout/validate-coupon", {
+        method: "POST",
+        body: JSON.stringify({
+          code,
+          items: toOrderItems(cart),
+          subtotal,
+          email: customerInfo.email.trim() || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        // The server owns coupon eligibility, so show its reason verbatim
+        // rather than guessing at one here.
+        setCouponError(
+          await readApiError(res, "That code can't be used on this order."),
+        );
+        setCoupon(null);
+        return;
+      }
+
+      const data = await readJson<CouponPreview>(res);
+      setCoupon(data);
+      toast(`Coupon ${data.code} applied`, "success");
+    } catch {
+      setCouponError("We couldn't check that code. Please try again.");
+      setCoupon(null);
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
   };
 
   const loadRazorpay = () =>
@@ -435,6 +653,15 @@ export default function CheckoutPage() {
         customerInfo.phone,
       );
       if (exists) return;
+
+      if (!emailVerified) {
+        const msg = "Please verify your email address to place the order.";
+        setError(msg);
+        toast(msg, "error");
+        // Surface the step rather than just complaining about it.
+        if (!otpSent) void handleSendEmailOtp();
+        return;
+      }
     }
 
     setLoading(true);
@@ -469,6 +696,10 @@ export default function CheckoutPage() {
           fulfillmentChannel: channel,
           latitude: coords?.lat,
           longitude: coords?.lng,
+          couponCode: coupon?.code,
+          // Guests only; the server reads the signed-in user's verified
+          // address from their account instead.
+          verificationToken: verificationToken ?? undefined,
         }),
       });
 
@@ -477,18 +708,42 @@ export default function CheckoutPage() {
       // shown here. It answers 409 with the current quote; adopt it and let
       // the shopper confirm the new figure rather than charging either
       // amount silently.
-      if (orderRes.status === 409) {
-        const conflict = (await orderRes.json().catch(() => ({}))) as {
-          error?: string;
-          quote?: FulfillmentQuote;
-        };
+      if (orderRes.status === 409 || orderRes.status === 422) {
+        const conflict = await readJson<CreateOrderRejection>(orderRes).catch(
+          () => ({}) as CreateOrderRejection,
+        );
         // Adopting the server's quote re-derives the delivery and the fee,
         // so the shopper only has to confirm the new total.
         if (conflict.quote) setQuote(conflict.quote);
-        const msg =
-          conflict.error === "channel_unavailable"
-            ? "Delivery for this order has changed. Please check the total and pay again."
-            : "Delivery charges have changed. Please check the total and pay again.";
+
+        let msg: string;
+        switch (conflict.error) {
+          case "out_of_stock": {
+            // Name the items. "Something is out of stock" sends the shopper
+            // hunting through their own cart.
+            const names = (conflict.items ?? [])
+              .map((item) => item.name)
+              .filter((name): name is string => Boolean(name));
+            msg =
+              names.length > 0
+                ? `${names.join(", ")} just sold out. Please update your cart and try again.`
+                : "One of your items just sold out. Please update your cart and try again.";
+            break;
+          }
+          case "coupon_rejected":
+            // The coupon is no longer valid for this order, so clear it
+            // rather than leaving a discount on screen that won't apply.
+            setCoupon(null);
+            setCouponError(conflict.reason ?? "That code can't be used on this order.");
+            msg = conflict.reason ?? "Your coupon is no longer valid for this order.";
+            break;
+          case "channel_unavailable":
+            msg = "Delivery for this order has changed. Please check the total and pay again.";
+            break;
+          default:
+            msg = "Delivery charges have changed. Please check the total and pay again.";
+        }
+
         setError(msg);
         toast(msg, "error");
         setPaymentStatus("idle");
@@ -496,13 +751,33 @@ export default function CheckoutPage() {
         return;
       }
 
+      // The guest's proof token expired or was already spent. Reset the
+      // step so they can request a fresh code.
+      if (orderRes.status === 403) {
+        const rejection = await readJson<CreateOrderRejection>(orderRes).catch(
+          () => ({}) as CreateOrderRejection,
+        );
+        if (rejection.error === "email_not_verified") {
+          setVerificationToken(null);
+          setVerifiedEmail(null);
+          setOtpSent(false);
+          const msg =
+            "Your email confirmation expired. Please verify your email again.";
+          setError(msg);
+          toast(msg, "error");
+          setPaymentStatus("idle");
+          setLoading(false);
+          return;
+        }
+      }
+
       if (!orderRes.ok) {
-        const errorData = await orderRes.json().catch(() => ({}));
+        const errorData = await readApiError(orderRes);
         console.error("Create order failed:", orderRes.status, errorData);
         throw new Error("create order failed");
       }
 
-      const orderData = await orderRes.json();
+      const orderData = await readJson<CreateOrderResponse>(orderRes);
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
         amount: orderData.amount,
@@ -522,7 +797,7 @@ export default function CheckoutPage() {
             });
 
             if (!verifyRes.ok) {
-              const errorData = await verifyRes.json().catch(() => ({}));
+              const errorData = await readApiError(verifyRes);
               console.error("Payment verify failed:", verifyRes.status, errorData);
               throw new Error("payment verification failed");
             }
@@ -553,7 +828,16 @@ export default function CheckoutPage() {
 
             useCartStore.getState().clearCart();
             setTimeout(() => {
-              router.push(`/order-success?orderId=${orderData.orderId}`);
+              // The token is what lets the confirmation page read the order
+              // back. Order ids are sequential, so the server no longer
+              // serves an order by id alone to someone who isn't signed in.
+              const params = new URLSearchParams({
+                orderId: String(orderData.orderId),
+              });
+              if (orderData.publicToken) {
+                params.set("token", orderData.publicToken);
+              }
+              router.push(`/order-success?${params.toString()}`);
             }, 1500);
           } catch {
             setError(
@@ -989,6 +1273,19 @@ export default function CheckoutPage() {
                       )}
                     </dd>
                   </div>
+                  {discount > 0 ? (
+                    <div className="flex justify-between text-emerald-700">
+                      <dt>
+                        Discount
+                        {coupon ? (
+                          <span className="ml-1 text-xs text-gray-500">
+                            ({coupon.code})
+                          </span>
+                        ) : null}
+                      </dt>
+                      <dd>−{formatPrice(discount)}</dd>
+                    </div>
+                  ) : null}
                   <div className="flex items-baseline justify-between border-t border-emerald-50 pt-3">
                     <dt className="font-semibold text-green-900">Total</dt>
                     <dd className="font-space text-xl font-semibold text-green-900">
@@ -996,6 +1293,138 @@ export default function CheckoutPage() {
                     </dd>
                   </div>
                 </dl>
+
+                <div className="border-t border-emerald-50 px-5 py-4">
+                  {coupon ? (
+                    <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-green-900">
+                          {coupon.code} applied
+                        </p>
+                        {coupon.description ? (
+                          <p className="truncate text-xs text-gray-600">
+                            {coupon.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="ml-3 shrink-0 text-sm font-medium text-gray-600 underline hover:text-green-900"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <label
+                        htmlFor="coupon"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Have a coupon?
+                      </label>
+                      <div className="mt-1.5 flex gap-2">
+                        <input
+                          id="coupon"
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value.toUpperCase());
+                            if (couponError) setCouponError(null);
+                          }}
+                          placeholder="Enter code"
+                          autoComplete="off"
+                          spellCheck={false}
+                          className="min-w-0 flex-1 rounded-lg border border-green-200 px-3 py-2 text-sm uppercase focus:border-green-500 focus:ring-2 focus:ring-green-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={couponChecking || !couponInput.trim()}
+                          className="shrink-0 rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-900 hover:bg-emerald-50 disabled:opacity-50"
+                        >
+                          {couponChecking ? "Checking…" : "Apply"}
+                        </button>
+                      </div>
+                      {couponError ? (
+                        <p role="alert" className="mt-1.5 text-sm text-green-950/70">
+                          {couponError}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+
+                {/* Guests verify their email before paying. The server
+                    requires the resulting token, so this step is not
+                    skippable — see CreateCheckoutOrder. */}
+                {!isAuthenticated ? (
+                  <div className="border-t border-emerald-50 px-5 py-4">
+                    {emailVerified ? (
+                      <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                        <ShieldCheck className="h-4 w-4" aria-hidden />
+                        Email verified
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-gray-700">
+                          Verify your email
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          We&rsquo;ll send your order confirmation and invoice
+                          here.
+                        </p>
+
+                        {!otpSent ? (
+                          <button
+                            type="button"
+                            onClick={handleSendEmailOtp}
+                            disabled={otpSending || !customerInfo.email.trim()}
+                            className="mt-2.5 w-full rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-900 hover:bg-emerald-50 disabled:opacity-50"
+                          >
+                            {otpSending ? "Sending…" : "Send verification code"}
+                          </button>
+                        ) : (
+                          <>
+                            <div className="mt-2.5 flex gap-2">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                value={otpCode}
+                                onChange={(e) =>
+                                  setOtpCode(
+                                    e.target.value.replace(/\D/g, "").slice(0, 6),
+                                  )
+                                }
+                                placeholder="6-digit code"
+                                aria-label="Email verification code"
+                                className="min-w-0 flex-1 rounded-lg border border-green-200 px-3 py-2 text-sm tracking-[0.2em] focus:border-green-500 focus:ring-2 focus:ring-green-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyEmailOtp}
+                                disabled={otpVerifying || otpCode.length !== 6}
+                                className="shrink-0 rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
+                              >
+                                {otpVerifying ? "Verifying…" : "Verify"}
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleSendEmailOtp}
+                              disabled={otpSending}
+                              className="mt-2 text-xs font-medium text-gray-600 underline hover:text-green-900 disabled:opacity-50"
+                            >
+                              {otpSending ? "Sending…" : "Resend code"}
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="px-5 pb-5">
                   {error ? (

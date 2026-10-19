@@ -95,6 +95,26 @@ func OnboardingAuthMiddleware(secret string) func(http.Handler) http.Handler {
 	return requireScope(secret, ScopeOnboarding)
 }
 
+// OptionalAuthMiddleware populates request context when a valid Bearer JWT
+// is present and otherwise passes the request through unauthenticated. For
+// endpoints that serve both signed-in users and guests holding a
+// capability token, where the handler itself decides what access the
+// caller has — a missing or bad token must not be a 401 there, because the
+// guest path is legitimate.
+func OptionalAuthMiddleware(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			parts := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+			if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+				if claims, err := ParseToken(secret, parts[1]); err == nil {
+					r = r.WithContext(SetUserContext(r.Context(), claims))
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireScope(secret, required string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +153,10 @@ func requireScope(secret, required string) func(http.Handler) http.Handler {
 
 // AdminMiddleware requires a valid JWT with an admin role.
 func AdminMiddleware(secret string) func(http.Handler) http.Handler {
-	auth := AuthMiddleware(secret)
+	// FullAuthMiddleware, not AuthMiddleware: an onboarding-scope token
+	// carries a half-finished registration, and nothing with admin reach
+	// should be reachable from one regardless of what role it claims.
+	auth := FullAuthMiddleware(secret)
 	return func(next http.Handler) http.Handler {
 		return auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := FromContext(r.Context())

@@ -30,7 +30,7 @@ interface FilterSidebarProps {
     tag?: string | string[];
     minPrice?: string;
     maxPrice?: string;
-    [key: string]: any;
+    [key: string]: string | string[] | undefined;
   };
 }
 

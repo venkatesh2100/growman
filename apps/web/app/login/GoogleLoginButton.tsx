@@ -1,12 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "../../lib/toast";
 import { useGoogleLogin } from "@react-oauth/google";
+
+type GoogleLoginResponse = {
+  token: string;
+};
 
 export default function GoogleLoginButton() {
   const router = useRouter();
@@ -28,7 +32,7 @@ export default function GoogleLoginButton() {
           return;
         }
 
-        const data = await res.json();
+        const data = await readJson<GoogleLoginResponse>(res);
         setToken(data.token);
         toast("Signed in", "success");
         router.push("/");

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import { LogIn, Mail, Lock, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +16,15 @@ import {
 } from "../../components/TurnstileGate";
 import { PillField } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+
+type LoginErrorResponse = {
+  error?: string;
+  message?: string;
+};
+
+type LoginResponse = {
+  token: string;
+};
 
 function LoginPageContent({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
@@ -68,7 +77,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
         try {
           const contentType = res.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
-            const errorData = await res.json();
+            const errorData = await readJson<LoginErrorResponse>(res);
             const apiError = String(errorData.error || errorData.message || "").toLowerCase();
 
             if (res.status === 429) {
@@ -100,7 +109,7 @@ function LoginPageContent({ googleClientId }: { googleClientId: string }) {
         return;
       }
 
-      const data = await res.json();
+      const data = await readJson<LoginResponse>(res);
       setToken(data.token);
       toast("Signed in.", "success");
       setSuccess(true);

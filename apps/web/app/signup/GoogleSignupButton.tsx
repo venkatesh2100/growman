@@ -2,10 +2,14 @@
 
 import { useGoogleLogin } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+
+type GoogleSignupResponse = {
+  token: string;
+};
 
 export default function GoogleSignupButton() {
   const router = useRouter();
@@ -26,7 +30,7 @@ export default function GoogleSignupButton() {
           throw new Error("Google signup failed");
         }
 
-        const data = await res.json();
+        const data = await readJson<GoogleSignupResponse>(res);
         // Update auth store (which also updates localStorage)
         setToken(data.token);
         router.push("/shop");

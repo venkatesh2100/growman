@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Heart, X } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { Product } from "../../lib/types";
 import { useAuthStore } from "../../lib/store/authStore";
 import { toast } from "../../lib/toast";
 import AccountShell from "../../components/account/AccountShell";
 import ProductGrid from "../../components/productspage/ProductGrid";
 import ButtonLink from "../../components/ui/ButtonLink";
+
+type WishlistResponse = Product[] | { data?: Product[] };
 
 export default function WishlistPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -22,7 +24,7 @@ export default function WishlistPage() {
       try {
         const res = await apiFetch("/wishlist");
         if (!res.ok) throw new Error("Failed to fetch wishlist");
-        const data = await res.json();
+        const data = await readJson<WishlistResponse>(res);
         setProducts(Array.isArray(data) ? data : data.data || []);
       } catch (err) {
         console.error(err);

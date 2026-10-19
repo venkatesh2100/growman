@@ -4,12 +4,14 @@ import { ChevronRight, CreditCard, Star, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import ImageGallery from "./ImageGallery";
 import ProductTabs from "./ProductTabs";
+import ProductReviews from "./ProductReviews";
 import AddToCart from "./AddCart";
 import SizeSelector from "./sizeSelector";
 import RelatedProducts from "./RealatedProducts";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../../lib/api";
 import type { Product } from "../../../lib/types";
+import type { ProductReviewsResponse } from "../../../lib/reviews";
 import { ProductCareTips } from "../../../lib/careTips";
 import { formatPrice } from "../../../lib/format";
 import { buildFilterHref, tagLabel } from "../../../lib/shopFilters";
@@ -20,11 +22,13 @@ const LOW_STOCK_THRESHOLD = 5;
 export default function ProductPageClient({
   product,
   searchParams,
-  productSlug
+  productSlug,
+  initialReviews,
 }: {
   product: Product;
   searchParams: { size?: string };
   productSlug: string;
+  initialReviews: ProductReviewsResponse | null;
 }) {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(true);
@@ -44,13 +48,10 @@ export default function ProductPageClient({
     return [];
   }, [selectedSize?.images, product.imageUrl]);
 
-  // Null when the product has no reviews, so the UI never shows a rating the
+  // Null when nothing has been rated, so the UI never shows a rating the
   // product has not actually earned.
-  const reviews = product.reviews ?? [];
-  const avgRating =
-    reviews.length > 0
-      ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
-      : null;
+  const ratingCount = product.ratingCount ?? 0;
+  const avgRating = ratingCount > 0 ? (product.ratingAverage ?? 0) : null;
 
   const discountPercent =
     product.mrp && selectedSize && product.mrp > selectedSize.price
@@ -157,7 +158,13 @@ export default function ProductPageClient({
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {avgRating !== null && (
-              <span className="inline-flex items-center gap-1.5" aria-label={`Rated ${avgRating.toFixed(1)} out of 5`}>
+              <a
+                href="#reviews"
+                className="inline-flex items-center gap-1.5 hover:underline"
+                aria-label={`Rated ${avgRating.toFixed(1)} out of 5 from ${ratingCount} ${
+                  ratingCount === 1 ? "review" : "reviews"
+                }. Read the reviews`}
+              >
                 <span className="flex" aria-hidden="true">
                   {[...Array(5)].map((_, i) => (
                     <Star
@@ -168,9 +175,9 @@ export default function ProductPageClient({
                 </span>
                 <span className="font-medium text-green-900">{avgRating.toFixed(1)}</span>
                 <span className="text-gray-500">
-                  ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+                  ({ratingCount} {ratingCount === 1 ? "review" : "reviews"})
                 </span>
-              </span>
+              </a>
             )}
             {product.brand && (
               <span className="text-gray-500">
@@ -309,8 +316,9 @@ export default function ProductPageClient({
       <ProductTabs
         fullDescription={product.fullDescription || product.description || ""}
         specifications={product.specifications}
-        reviews={reviews}
       />
+
+      <ProductReviews productSlug={productSlug} initialReviews={initialReviews} />
 
       {loadingRelated ? (
         <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">

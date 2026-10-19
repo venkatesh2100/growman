@@ -104,7 +104,7 @@ export default function HomeHero() {
                   width={1920}
                   height={1508}
                   sizes="(max-width: 768px) 45vw, 256px"
-                  className="h-34 w-full rounded-xl object-cover sm:h-44"
+                  className="h-36 w-full rounded-xl object-cover sm:h-44"
                 />
               </div>
             </div>

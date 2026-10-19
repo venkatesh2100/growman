@@ -1,4 +1,5 @@
-import type { Product, Review } from "../types";
+import type { Product } from "../types";
+import type { ProductReview } from "../reviews";
 import { business, siteConfig } from "./site";
 import {
   absoluteUrl,
@@ -146,27 +147,30 @@ function availabilityUrl(inStock: boolean): string {
 }
 
 /**
- * Rating summary derived strictly from reviews the backend returned. Returns
- * null when there are none, so no page ever claims a rating it doesn't have.
+ * Rating summary taken from the product's own aggregate, which the backend
+ * recomputes from approved reviews only.
+ *
+ * Returns null unless at least one review has been counted: Google treats an
+ * aggregateRating whose ratingValue is zero or missing as invalid, so an
+ * unrated product must omit the node rather than publish a zero.
  */
-function createAggregateRating(reviews: Review[]): JsonLdObject | null {
-  const rated = reviews.filter(
-    (review) => Number.isFinite(Number(review.rating)) && Number(review.rating) > 0
-  );
-  if (rated.length === 0) return null;
+function createAggregateRating(product: Product): JsonLdObject | null {
+  const count = Number(product.ratingCount ?? 0);
+  const average = Number(product.ratingAverage ?? 0);
+  if (!Number.isFinite(count) || count < 1) return null;
+  if (!Number.isFinite(average) || average <= 0) return null;
 
-  const total = rated.reduce((sum, review) => sum + Number(review.rating), 0);
   return {
     "@type": "AggregateRating",
-    ratingValue: Number((total / rated.length).toFixed(1)),
-    reviewCount: rated.length,
+    ratingValue: Number(average.toFixed(1)),
+    reviewCount: Math.round(count),
     bestRating: 5,
     worstRating: 1,
   };
 }
 
 /** Review nodes for genuine reviews only; empty array when there are none. */
-function createReviewNodes(reviews: Review[]): JsonLdObject[] {
+function createReviewNodes(reviews: ProductReview[]): JsonLdObject[] {
   return reviews
     .filter((review) => Number(review.rating) > 0 && review.comment?.trim())
     .slice(0, 10)
@@ -178,10 +182,11 @@ function createReviewNodes(reviews: Review[]): JsonLdObject[] {
         bestRating: 5,
         worstRating: 1,
       },
+      ...(review.title ? { name: review.title } : {}),
       reviewBody: review.comment,
       datePublished: review.createdAt,
-      ...(review.user?.name
-        ? { author: { "@type": "Person", name: review.user.name } }
+      ...(review.author
+        ? { author: { "@type": "Person", name: review.author } }
         : {}),
     }));
 }
@@ -190,8 +195,14 @@ function createReviewNodes(reviews: Review[]): JsonLdObject[] {
  * Product structured data built only from fields the catalog actually
  * provides. Sizes become an AggregateOffer when they are priced differently,
  * which is how Google expects variant pricing to be expressed.
+ *
+ * `publishedReviews` must be the approved reviews the page renders: Google
+ * requires review markup to match what a visitor can read.
  */
-export function createProductJsonLd(product: Product): JsonLdObject {
+export function createProductJsonLd(
+  product: Product,
+  publishedReviews: ProductReview[] = []
+): JsonLdObject {
   const url = buildCanonicalUrl(`/product/${product.slug}`);
   const images = getProductImages(product).map((image) => absoluteUrl(image));
   const currency = product.currency || "INR";
@@ -231,8 +242,8 @@ export function createProductJsonLd(product: Product): JsonLdObject {
           seller: { "@id": `${siteConfig.url}/#organization` },
         };
 
-  const aggregateRating = createAggregateRating(product.reviews ?? []);
-  const reviews = createReviewNodes(product.reviews ?? []);
+  const aggregateRating = createAggregateRating(product);
+  const reviews = createReviewNodes(publishedReviews);
 
   return {
     "@context": SCHEMA_CONTEXT,

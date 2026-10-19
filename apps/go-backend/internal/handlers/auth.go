@@ -651,14 +651,12 @@ func (h *Handler) findOrCreateByPhone(tenDigit string, profile ...phoneAuthProfi
 	return user, true, nil
 }
 
-// CompletePhoneProfile finalizes a new phone user's name/email and upgrades JWT scope.
+// CompletePhoneProfile finalizes a new phone user's name/email and upgrades
+// JWT scope. The onboarding-scope requirement is enforced by
+// OnboardingAuthMiddleware on the route (see internal/server/router.go).
 func (h *Handler) CompletePhoneProfile(w http.ResponseWriter, r *http.Request) {
 	claims, ok := appauth.Require(w, r)
 	if !ok {
-		return
-	}
-	if claims.Scope != appauth.ScopeOnboarding {
-		httpjson.Error(w, http.StatusForbidden, "invalid token scope")
 		return
 	}
 

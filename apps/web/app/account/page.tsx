@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Navigation, Pencil } from "lucide-react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, readJson } from "../../lib/api";
 import { useAuthStore } from "../../lib/store/authStore";
 import { indianStates, getAllStateNames } from "../../lib/data/indianStatesCities";
 import { getCurrentLocation } from "../../lib/utils/geolocation";
@@ -33,13 +33,19 @@ const emptyAddress: Address = { line: "", city: "", state: "", pincode: "", coun
 
 const emptyUser: UserInfo = { name: "", email: "", phone: "", address: emptyAddress };
 
-/** Normalises the /auth/me and /auth/profile user shape. */
-function toUserInfo(data: {
+type UserResponse = {
   name?: string;
   email?: string;
   phone?: string;
   address?: Partial<Address> | null;
-}): UserInfo {
+};
+
+type SaveProfileResponse = {
+  user?: UserResponse;
+};
+
+/** Normalises the /auth/me and /auth/profile user shape. */
+function toUserInfo(data: UserResponse): UserInfo {
   return {
     name: data.name || "",
     email: data.email || "",
@@ -84,7 +90,7 @@ export default function AccountPage() {
       try {
         const res = await apiFetch("/auth/me");
         if (!res.ok) throw new Error("Failed to fetch user info");
-        const info = toUserInfo(await res.json());
+        const info = toUserInfo(await readJson<UserResponse>(res));
         setUserInfo(info);
         setFormData(info);
       } catch (error) {
@@ -122,7 +128,7 @@ export default function AccountPage() {
         throw new Error("save profile failed");
       }
 
-      const data = await res.json();
+      const data = await readJson<SaveProfileResponse>(res);
       const saved = data.user ? toUserInfo(data.user) : formData;
       setUserInfo(saved);
       setFormData(saved);
@@ -354,6 +360,18 @@ export default function AccountPage() {
                 No address saved yet. Add one to fill in checkout automatically.
               </p>
             )}
+
+            {editing ? null : (
+              <p className="mt-4 text-xs text-gray-500">
+                Deliver to more than one place?{" "}
+                <Link
+                  href="/account/addresses"
+                  className="font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-900"
+                >
+                  Manage your address book
+                </Link>
+              </p>
+            )}
           </section>
 
           {editing ? (
@@ -376,12 +394,12 @@ export default function AccountPage() {
             </div>
           ) : (
             <p className="pt-2 text-xs text-gray-500">
-              Want to close your account?{" "}
+              Want a copy of your data, or to close your account?{" "}
               <Link
-                href="/delete-account"
+                href="/account/privacy"
                 className="font-medium text-gray-700 underline underline-offset-2 hover:text-green-900"
               >
-                Request account deletion
+                Download or erase your data
               </Link>
             </p>
           )}

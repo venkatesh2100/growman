@@ -33,6 +33,15 @@ type ChatResponse struct {
 	Response            string                  `json:"response"`
 	RecommendedProducts []ProductRecommendation `json:"recommendedProducts,omitempty"`
 	Orders              []OrderChatCard         `json:"orders,omitempty"`
+	CareHint            *ChatCareHint           `json:"careHint,omitempty"`
+	Handoff             bool                    `json:"handoff,omitempty"`
+}
+
+type ChatCareHint struct {
+	Status          string `json:"status,omitempty"`
+	SuggestReminder bool   `json:"suggestReminder"`
+	SuggestAddPlant bool   `json:"suggestAddPlant"`
+	PlantName       string `json:"plantName,omitempty"`
 }
 
 type OrderChatCard struct {
@@ -131,10 +140,12 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 			claimsPtr = claims
 		}
 		result := h.handleOrderSupportChat(req.Message, claimsPtr, loggedIn)
+		h.finishChat(r, claims, loggedIn, req.Message, result.text, true)
 		httpjson.JSON(w, http.StatusOK, ChatResponse{
 			Response:            result.text,
 			RecommendedProducts: result.products,
 			Orders:              result.orders,
+			Handoff:             true,
 		})
 		return
 	}
@@ -172,6 +183,12 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	// Build context from products relevant to this question (single DB query)
 	relevantProducts := h.findRelevantProducts(req.Message, 6)
 	systemPrompt := h.buildSystemPrompt(req.Message, relevantProducts)
+	if loggedIn {
+		systemPrompt += h.customerContext(r.Context(), claims.UserID)
+		if len(req.ConversationHistory) == 0 {
+			req.ConversationHistory = h.recentChat(r.Context(), claims.UserID)
+		}
+	}
 
 	// Prepare messages for AI
 	messages := []ChatMessage{
@@ -214,19 +231,65 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	// Resolve image URLs for recommended products
 	for i := range recommendedProducts {
 		if recommendedProducts[i].ImageURL == "" {
-			var product models.Product
-			if err := h.DB.Select("image_key").Where("id = ?", recommendedProducts[i].ID).First(&product).Error; err == nil {
-				recommendedProducts[i].ImageURL = h.ImageService.ResolveImageURL(product.ImageKey)
-			}
+			recommendedProducts[i].ImageURL = h.displayPhotoURL(recommendedProducts[i].ID, "")
 		}
 	}
 
 	response := ChatResponse{
 		Response:            aiResponse,
 		RecommendedProducts: recommendedProducts,
+		CareHint:            careHintFor(req.Message),
 	}
+	h.finishChat(r, claims, loggedIn, req.Message, aiResponse, false)
 
 	httpjson.JSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) finishChat(r *http.Request, claims *appauth.Claims, loggedIn bool, userMessage, reply string, handoff bool) {
+	if !loggedIn || claims == nil {
+		return
+	}
+	h.saveChatTurn(r.Context(), claims.UserID, "user", userMessage)
+	h.saveChatTurn(r.Context(), claims.UserID, "assistant", reply)
+	uid := claims.UserID
+	if handoff {
+		h.pushNotice(r.Context(), &uid, "dootha", "A person will follow up",
+			"Your order question was passed to the Growman team.", "/support",
+			"handoff:"+time.Now().Format("2006-01-02T15"), nil, nil, nil)
+		return
+	}
+	h.pushNotice(r.Context(), &uid, "dootha", "Dootha replied", clipText(reply, 180), "/chat",
+		"dootha:"+time.Now().Format("2006-01-02T15:04"), nil, nil, nil)
+}
+
+func careHintFor(message string) *ChatCareHint {
+	lower := strings.ToLower(message)
+	hint := &ChatCareHint{}
+	switch {
+	case strings.Contains(lower, "pest") || strings.Contains(lower, "bug"):
+		hint.Status = "pests"
+	case strings.Contains(lower, "yellow"):
+		hint.Status = "yellowing"
+	case strings.Contains(lower, "rot") || strings.Contains(lower, "wilt"):
+		hint.Status = "wilting"
+	}
+	if hint.Status != "" {
+		hint.SuggestReminder = true
+	}
+	if strings.Contains(lower, "balcony") || strings.Contains(lower, "what should i buy") || strings.Contains(lower, "recommend") || strings.HasPrefix(lower, "what is ") {
+		hint.SuggestAddPlant = true
+		if strings.HasPrefix(lower, "what is ") {
+			name := strings.TrimPrefix(lower, "what is ")
+			if cut := strings.Index(name, " and "); cut > 0 {
+				name = name[:cut]
+			}
+			hint.PlantName = clipText(name, 80)
+		}
+	}
+	if hint.Status == "" && !hint.SuggestAddPlant {
+		return nil
+	}
+	return hint
 }
 
 func (h *Handler) optionalClaimsFromRequest(r *http.Request, bodyToken string) (*appauth.Claims, bool) {
@@ -569,7 +632,7 @@ func (h *Handler) buildWishlistChatResponse(userID uint) (string, []ProductRecom
 				Name:     p.Name,
 				Slug:     p.Slug,
 				Price:    p.Price,
-				ImageURL: h.ImageService.ResolveImageURL(p.ImageKey),
+				ImageURL: h.displayPhotoURL(p.ID, p.ImageKey),
 			})
 		}
 	}
@@ -997,7 +1060,7 @@ func (h *Handler) extractProductRecommendations(userMessage, aiResponse string, 
 			Name:     p.Name,
 			Slug:     p.Slug,
 			Price:    p.Price,
-			ImageURL: h.ImageService.ResolveImageURL(p.ImageKey),
+			ImageURL: h.displayPhotoURL(p.ID, p.ImageKey),
 		})
 	}
 

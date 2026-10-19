@@ -1,12 +1,19 @@
-// Package shiprocket is a thin client for the Shiprocket aggregator API,
-// used at checkout to answer two questions about a delivery pincode: will
-// any courier actually service it, and what would they charge Growman?
+// Package shiprocket is a thin client for the Shiprocket aggregator API.
 //
-// Only the read-only serviceability endpoint is implemented. Growman does
-// not quote Shiprocket's rate to the customer — the customer-facing fee
-// comes from the zone bands in internal/fulfillment — so the rate returned
-// here is recorded as the order's cost, which is what makes the delivery
-// subsidy measurable.
+// It serves two distinct purposes, and they fail differently on purpose:
+//
+// At checkout, serviceability (this file) answers whether any courier will
+// service a pincode and what they would charge Growman. Growman does not
+// quote Shiprocket's rate to the customer — the customer-facing fee comes
+// from the zone bands in internal/fulfillment — so the rate returned here
+// is recorded as the order's cost, which is what makes the delivery subsidy
+// measurable. This path fails soft behind a circuit breaker: a courier API
+// outage must not stop people buying plants.
+//
+// After payment, booking (shipments.go) creates the courier order, assigns
+// an AWB and requests pickup. That path fails loud and deliberately stays
+// outside the circuit breaker, since a validation error on one order should
+// not pause bookings for every other order.
 package shiprocket
 
 import (

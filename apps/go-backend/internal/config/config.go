@@ -16,24 +16,32 @@ import (
 
 // Config holds runtime configuration for the API server.
 type Config struct {
-	Port                string
-	DatabaseURL         string // Direct database URL (fallback)
-	HyperdriveURL       string // Cloudflare Hyperdrive connection string
-	JWTSecret           string
-	AllowedOrigins      []string
-	AppEnv              string
-	AutoMigrate         bool
-	REDIS_URL           string
-	SeedOnStartup       bool
-	RazorpayKeyID       string
-	RazorpayKeySecret   string
-	SMTPEmail           string
-	SMTPPassword        string
-	SMTPHost            string
-	SMTPPort            string
-	MerchantNotifyEmail string // Internal ops alerts (signups, orders, long browse)
-	QuotationEmail      string // Inbox that receives bulk quotation enquiries
-	WaitlistEmail       string // Inbox that receives Dootha Care waiting list sign-ups
+	Port              string
+	DatabaseURL       string // Direct database URL (fallback)
+	HyperdriveURL     string // Cloudflare Hyperdrive connection string
+	JWTSecret         string
+	AllowedOrigins    []string
+	AppEnv            string
+	AutoMigrate       bool
+	REDIS_URL         string
+	SeedOnStartup     bool
+	RazorpayKeyID     string
+	RazorpayKeySecret string
+	// RazorpayWebhookSecret signs webhook bodies and is a *different*
+	// value from RazorpayKeySecret — Razorpay generates it when you create
+	// the webhook in the dashboard. Using the key secret here makes every
+	// delivery fail its signature check.
+	RazorpayWebhookSecret string
+	SMTPEmail             string
+	SMTPPassword          string
+	SMTPHost              string
+	SMTPPort              string
+	MerchantNotifyEmail   string // Internal ops alerts when Discord is not configured
+	// DiscordWebhookURL receives ops alerts (signups, paid orders, checkout
+	// drop-offs, long browsing). When set, those alerts are not also emailed.
+	DiscordWebhookURL string
+	QuotationEmail    string // Inbox that receives bulk quotation enquiries
+	WaitlistEmail     string // Inbox that receives Dootha Care waiting list sign-ups
 	// Image storage configuration (Google Cloud Storage)
 	ImageBaseURL       string // Base URL for image storage (e.g., "https://storage.googleapis.com/your-bucket")
 	GCSBucketName      string // Google Cloud Storage bucket name
@@ -47,8 +55,18 @@ type Config struct {
 	OpenAIAPIKey string // OpenAI API key for chat functionality
 	GeminiAPIKey string // Google Gemini API key for chat functionality
 	AIProvider   string // AI provider: "openai", "gemini", "anthropic", or "custom"
-	// Pl@ntNet API for plant identification
-	PlantNetAPIKey string // Pl@ntNet API key from https://my.plantnet.org
+	// Pl@ntNet API for plant identification.
+	// Free plan: 500 identifications/day, shared by species, disease, and
+	// variety scans. PlantNetProject is the flora used when the request
+	// has no coordinates ("all" lets Pl@ntNet choose). PlantNetReserve is
+	// how many identify credits to keep back for species scans; health and
+	// variety calls stop once the day's remaining balance is at or below it.
+	PlantNetAPIKey  string
+	PlantNetProject string
+	PlantNetReserve int
+	// PlantNetBaseURL overrides the API host. Empty uses my-api.plantnet.org.
+	// Tests point this at a local server.
+	PlantNetBaseURL string
 	// Google OAuth - Web Client ID for verifying id_token from mobile/web
 	GoogleClientID string // Web client ID (same as EXPO_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_GOOGLE_CLIENT_ID)
 	// Cloudflare analytics configuration (dashboard map)
@@ -77,9 +95,17 @@ type Config struct {
 	// dedicated API user, exchanged for a 10-day JWT. ShiprocketToken can
 	// be supplied instead to avoid storing a password, at the cost of
 	// manual rotation every 10 days.
-	ShiprocketEmail         string
-	ShiprocketPassword      string
-	ShiprocketToken         string
+	ShiprocketEmail    string
+	ShiprocketPassword string
+	ShiprocketToken    string
+	// ShiprocketPickupLocation is the nickname of the pickup address
+	// registered in the Shiprocket dashboard. Bookings are rejected if it
+	// does not match one of them exactly.
+	ShiprocketPickupLocation string
+	// ShiprocketWebhookToken is the shared secret Shiprocket sends in the
+	// x-api-key header on tracking webhooks. Without it shipment webhooks
+	// are refused rather than trusted.
+	ShiprocketWebhookToken  string
 	FreeDeliveryMinSubtotal float64
 	OwnVehicleMinSubtotal   float64
 	BulkMinUnits            int
@@ -117,23 +143,25 @@ func Load() (Config, error) {
 	_ = godotenv.Load()
 
 	cfg := Config{
-		Port:                getenv("GO_PORT", ":8080"),
-		DatabaseURL:         os.Getenv("DATABASE_URL"),
-		HyperdriveURL:       os.Getenv("HYPERDRIVE_URL"),
-		JWTSecret:           getenv("JWT_SECRET", "dev-secret-change-me"),
-		AppEnv:              getenv("GO_ENV", getenv("APP_ENV", "development")),
-		AutoMigrate:         getenv("AUTO_MIGRATE", "true") == "true",
-		REDIS_URL:           os.Getenv("REDIS_URL"),
-		SeedOnStartup:       getenv("SEED_ON_STARTUP", "false") == "true",
-		RazorpayKeyID:       os.Getenv("RAZORPAY_KEY_ID"),
-		RazorpayKeySecret:   os.Getenv("RAZORPAY_KEY_SECRET"),
-		SMTPEmail:           os.Getenv("SMTP_EMAIL"),
-		SMTPPassword:        os.Getenv("SMTP_PASSWORD"),
-		SMTPHost:            getenv("SMTP_HOST", "smtp.gmail.com"),
-		SMTPPort:            getenv("SMTP_PORT", "587"),
-		MerchantNotifyEmail: getenv("MERCHANT_NOTIFY_EMAIL", "zoroboro.ynm@gmail.com"),
-		QuotationEmail:      getenv("QUOTATION_EMAIL", "growman.live@gmail.com"),
-		WaitlistEmail:       getenv("WAITLIST_EMAIL", "growman.live@gmail.com"),
+		Port:                  getenv("GO_PORT", ":8080"),
+		DatabaseURL:           os.Getenv("DATABASE_URL"),
+		HyperdriveURL:         os.Getenv("HYPERDRIVE_URL"),
+		JWTSecret:             getenv("JWT_SECRET", "dev-secret-change-me"),
+		AppEnv:                getenv("GO_ENV", getenv("APP_ENV", "development")),
+		AutoMigrate:           getenv("AUTO_MIGRATE", "true") == "true",
+		REDIS_URL:             os.Getenv("REDIS_URL"),
+		SeedOnStartup:         getenv("SEED_ON_STARTUP", "false") == "true",
+		RazorpayKeyID:         os.Getenv("RAZORPAY_KEY_ID"),
+		RazorpayKeySecret:     os.Getenv("RAZORPAY_KEY_SECRET"),
+		RazorpayWebhookSecret: os.Getenv("RAZORPAY_WEBHOOK_SECRET"),
+		SMTPEmail:             os.Getenv("SMTP_EMAIL"),
+		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
+		SMTPHost:              getenv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:              getenv("SMTP_PORT", "587"),
+		MerchantNotifyEmail:   getenv("MERCHANT_NOTIFY_EMAIL", "zoroboro.ynm@gmail.com"),
+		DiscordWebhookURL:     strings.TrimSpace(os.Getenv("DISCORD_WEBHOOK_URL")),
+		QuotationEmail:        getenv("QUOTATION_EMAIL", "growman.live@gmail.com"),
+		WaitlistEmail:         getenv("WAITLIST_EMAIL", "growman.live@gmail.com"),
 		// Image storage configuration (Google Cloud Storage)
 		ImageBaseURL:       os.Getenv("IMAGE_BASE_URL"),
 		GCSBucketName:      os.Getenv("GCS_BUCKET_NAME"),
@@ -144,25 +172,29 @@ func Load() (Config, error) {
 		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
 		AIProvider:   getenv("AI_PROVIDER", "openai"),
 		// Pl@ntNet API
-		PlantNetAPIKey: os.Getenv("PLANTNET_API_KEY"),
+		PlantNetAPIKey:  os.Getenv("PLANTNET_API_KEY"),
+		PlantNetProject: getenv("PLANTNET_PROJECT", "all"),
+		PlantNetReserve: getenvInt("PLANTNET_RESERVE", 40),
 		// Google OAuth - Web Client ID for id_token verification (same as mobile/web apps)
-		GoogleClientID:      firstNonEmpty(os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("NEXT_PUBLIC_GOOGLE_CLIENT_ID")),
-		CloudflareAPIToken:  os.Getenv("CLOUDFLARE_API_TOKEN"),
-		CloudflareZoneID:    os.Getenv("CLOUDFLARE_ZONE_ID"),
-		CloudflareAccountID: strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
-		MSG91AuthKey:        os.Getenv("MSG91_AUTH_KEY"),
-		MSG91TemplateID:     os.Getenv("MSG91_TEMPLATE_ID"),
-		MSG91WidgetID:       os.Getenv("MSG91_WIDGET_ID"),
-		MSG91TokenAuth:      os.Getenv("MSG91_TOKEN_AUTH"),
-		TruecallerClientID:  firstNonEmpty(os.Getenv("TRUECALLER_CLIENT_ID"), os.Getenv("TRUECALLER_ANDROID_CLIENT_ID")),
-		StoreLatitude:       getenvFloat("STORE_LATITUDE", 0),
-		StoreLongitude:      getenvFloat("STORE_LONGITUDE", 0),
-		StorePincode:        strings.TrimSpace(os.Getenv("STORE_PINCODE")),
-		CourierProvider:     getenv("COURIER_PROVIDER", "Shiprocket"),
-		RetailMaxZone:       os.Getenv("RETAIL_MAX_ZONE"),
-		ShiprocketEmail:     os.Getenv("SHIPROCKET_EMAIL"),
-		ShiprocketPassword:  os.Getenv("SHIPROCKET_PASSWORD"),
-		ShiprocketToken:     strings.TrimSpace(os.Getenv("SHIPROCKET_TOKEN")),
+		GoogleClientID:           firstNonEmpty(os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("NEXT_PUBLIC_GOOGLE_CLIENT_ID")),
+		CloudflareAPIToken:       os.Getenv("CLOUDFLARE_API_TOKEN"),
+		CloudflareZoneID:         os.Getenv("CLOUDFLARE_ZONE_ID"),
+		CloudflareAccountID:      strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
+		MSG91AuthKey:             os.Getenv("MSG91_AUTH_KEY"),
+		MSG91TemplateID:          os.Getenv("MSG91_TEMPLATE_ID"),
+		MSG91WidgetID:            os.Getenv("MSG91_WIDGET_ID"),
+		MSG91TokenAuth:           os.Getenv("MSG91_TOKEN_AUTH"),
+		TruecallerClientID:       firstNonEmpty(os.Getenv("TRUECALLER_CLIENT_ID"), os.Getenv("TRUECALLER_ANDROID_CLIENT_ID")),
+		StoreLatitude:            getenvFloat("STORE_LATITUDE", 0),
+		StoreLongitude:           getenvFloat("STORE_LONGITUDE", 0),
+		StorePincode:             strings.TrimSpace(os.Getenv("STORE_PINCODE")),
+		CourierProvider:          getenv("COURIER_PROVIDER", "Shiprocket"),
+		RetailMaxZone:            os.Getenv("RETAIL_MAX_ZONE"),
+		ShiprocketEmail:          os.Getenv("SHIPROCKET_EMAIL"),
+		ShiprocketPassword:       os.Getenv("SHIPROCKET_PASSWORD"),
+		ShiprocketToken:          strings.TrimSpace(os.Getenv("SHIPROCKET_TOKEN")),
+		ShiprocketPickupLocation: strings.TrimSpace(os.Getenv("SHIPROCKET_PICKUP_LOCATION")),
+		ShiprocketWebhookToken:   strings.TrimSpace(os.Getenv("SHIPROCKET_WEBHOOK_TOKEN")),
 		// Off by default: charge the real cost until there is enough order
 		// data to know what a waiver costs per order.
 		FreeDeliveryMinSubtotal: getenvFloat("FREE_DELIVERY_MIN_SUBTOTAL", 0),
@@ -184,6 +216,18 @@ func Load() (Config, error) {
 
 	if isProd(cfg.AppEnv) && (cfg.JWTSecret == "" || cfg.JWTSecret == "dev-secret-change-me") {
 		return cfg, errors.New("JWT_SECRET must be set to a strong secret in production")
+	}
+
+	// Payment integrity depends on these secrets being present: without
+	// them signature verification cannot run, and an unverifiable payment
+	// must never be accepted. Fail at boot rather than at checkout.
+	if isProd(cfg.AppEnv) {
+		if cfg.RazorpayKeySecret == "" {
+			return cfg, errors.New("RAZORPAY_KEY_SECRET is required in production to verify payment signatures")
+		}
+		if cfg.RazorpayWebhookSecret == "" {
+			return cfg, errors.New("RAZORPAY_WEBHOOK_SECRET is required in production to verify webhook signatures (this is the dashboard webhook secret, not the API key secret)")
+		}
 	}
 
 	return cfg, nil

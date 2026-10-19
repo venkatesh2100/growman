@@ -493,5 +493,13 @@ func (h *Handler) CreateQuotation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	summary := requester.Name
+	if len(q.Lines) > 0 {
+		summary = q.Lines[0].Name
+		if len(q.Lines) > 1 {
+			summary = fmt.Sprintf("%s and %d more", q.Lines[0].Name, len(q.Lines)-1)
+		}
+	}
+	h.saveQuoteRequest(r, requester.Name, requester.Phone, requester.Email, summary, q.EstimateNo, q.Total)
 	httpjson.JSON(w, http.StatusCreated, q)
 }

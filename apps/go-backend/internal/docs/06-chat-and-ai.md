@@ -4,9 +4,9 @@
 
 `POST /api/v1/chat` (`internal/handlers/chat.go`) is a single endpoint that
 serves several very different purposes behind one conversational interface:
-general plant-care Q&A (LLM-backed), order-status/wishlist lookups from the
+general plant-care and shop questions (answered by the RAG service), order-status/wishlist lookups from the
 user's own account, and support-ticket escalation — routed by keyword/regex
-intent detection *before* any LLM call is made. It's rate-limited to 30
+intent detection *before* any model call is made. It's rate-limited to 30
 requests/minute per IP (`internal/server/router.go`, group `"chat"`).
 
 ## Request shape
@@ -31,7 +31,7 @@ the account-aware branches.
 1. detectOrderSupportIntent(msg)        → escalate to a support ticket
 2. detectAccountIntent(msg)             → "wishlist" | "order_status" | "orders"
 3. (logged-in only) detectLooseOrderIntent(msg)  → catches short/vague order asks
-4. otherwise                             → general LLM chat with product context
+4. otherwise                             → Python RAG service (or canned reply)
 ```
 
 - **Order-support escalation** (`detectOrderSupportIntent`,
@@ -78,57 +78,27 @@ the account-aware branches.
   Confirmed / …) — the same status-normalization logic used for
   order-support ticket replies (`displayOrderStatusFromFields`).
 
-## General LLM chat
+## Care, policy, and catalog questions
 
-For everything else, the handler builds a **grounded system prompt**:
+Everything that is not an order, wishlist, or support handoff goes to the
+Python RAG service (`apps/ai`). The full path — routing, hybrid search,
+live prices, guardrails, and when Gemini is skipped — is in
+[../../../../docs/rag.md](../../../../docs/rag.md).
 
-1. `findRelevantProducts(message, 6)` — extracts search terms from the
-   user's message (`extractSearchTerms`: lowercases, splits on non-alnum,
-   drops a stopword list that includes generic chat words like "help",
-   "plant", "growman", filters words <3 chars, caps at 6 terms), then does an
-   `ILIKE`-based OR search across name/short_desc/description/tags. Falls
-   back to featured active products if no terms or no matches — the LLM
-   always gets *some* catalog context to ground product mentions in.
-2. `buildSystemPrompt` — a template that: names the assistant "Dootha",
-   instructs a direct-answer-then-bullets format, caps the response at ~110
-   words, requires markdown formatting, nudges toward Indian context
-   (monsoon humidity, AC dryness, ₹ prices), explicitly tells the model
-   **not** to guess order/tracking/wishlist info (that's handled by the
-   intent-routing above, never by the LLM), and appends the matched catalog
-   products as a bullet list. `detectQuestionFocus` picks one line of
-   guidance (watering / light / soil / pests / symptoms / recommendations)
-   based on keywords, folded into the prompt's "answer this specifically"
-   instruction.
-3. Last 6 turns of conversation history are appended, then the current
-   message.
+`RAG_SERVICE_URL` empty means this process never calls that service.
+`getFallbackResponse` then answers with the keyword canned replies
+(watering, light, leaf problems, soil, fertilizer, pests, beginner picks),
+and product cards still come from `findRelevantProducts`.
 
-### Provider selection (`callAI`)
+When the URL is set, `askRAG` posts the message and the last six turns to
+`POST /v1/answer` with `X-Growman-RAG-Secret`. A timeout, a non-200, or an
+empty reply uses the same canned fallback. A successful reply's
+`productSlugs` are loaded from Postgres (`productsBySlugs`) so the cards
+show the current price and image. The widget contract does not change.
 
-```
-AI_PROVIDER=gemini  → Gemini if GEMINI_API_KEY set, else canned fallback
-AI_PROVIDER=openai  → OpenAI if OPENAI_API_KEY set, else canned fallback
-(anything else)     → Gemini if configured, else OpenAI if configured, else fallback
-```
-
-- **Gemini** (`callGeminiAPI`) — `gemini-flash-latest` (the free-tier model),
-  system instruction passed via the `systemInstruction` field (not folded
-  into `contents`), temperature 0.35, max 350 output tokens.
-- **OpenAI** (`callOpenAIAPI`) — `gpt-3.5-turbo`, temperature 0.35, max 280
-  tokens, system prompt as a normal `system`-role message.
-- Both go through a shared `postJSON` helper (25s client timeout) and treat
-  a non-200 response or malformed body as "fall back," never as a hard
-  error surfaced to the user — `getFallbackResponse` provides
-  keyword-matched canned advice (watering/light/leaf-problems/soil/
-  fertilizer/pests/beginner-picks) so the chat still answers *something*
-  useful if no AI provider is configured or a provider call fails.
-
-### Product recommendations from the reply
-
-`extractProductRecommendations` re-uses the products already matched for the
-system prompt, **boosts** ones whose exact name appears in the AI's reply
-text, and if fewer than 3 are found, does a couple of small supplementary
-DB searches using terms extracted from the *AI's own reply* — capped at 3
-recommendations total, each with a resolved image URL.
+Photo care sheets (`careGuide` in `plants_care.go`) call `POST /v1/care`
+on the same service and stay cached per species for 14 days. This process
+does not call Gemini or OpenAI.
 
 ### Auto-creating "requested products"
 
@@ -169,8 +139,8 @@ handler spends them as follows:
 Pl@ntNet does not return origin or care text. Origin is the species' GBIF
 native countries, using the GBIF id already inside the identify response
 (no extra identify credit). Care (light, water, soil, typical pests and
-diseases) comes from the configured chat model and is cached per species
-for 14 days. The raw identify fields `bestMatch` and `results` are unchanged.
+diseases) comes from the RAG service and is cached per species for 14 days.
+The raw identify fields `bestMatch` and `results` are unchanged.
 
 `health.skipped` / `varieties.skipped` explain a call that did not run:
 `not_requested`, `quota_reserve`, `not_in_catalog`, `no_species`, `failed`.

@@ -12,7 +12,6 @@ import (
 
 	appauth "github.com/venkatesh2100/growman/apps/go-backend/internal/auth"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/metrics"
-	"github.com/venkatesh2100/growman/apps/go-backend/internal/middlewares"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/models"
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/services"
 )
@@ -47,19 +46,14 @@ func (h *Handler) dispatchMerchant(msg services.DiscordMessage) {
 func (h *Handler) dispatchMerchantTo(emailTo string, msg services.DiscordMessage, footer string) {
 	webhook := strings.TrimSpace(h.Cfg.DiscordWebhookURL)
 	if webhook != "" {
-		go func(footer string) {
-			if footer == "" {
-				ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-				footer = h.activityFooter(ctx)
-				cancel()
-			}
-			msg.Footer = footer
-			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
-			defer cancel()
-			if err := services.PostDiscord(ctx, webhook, msg); err != nil {
-				log.Printf("[DISCORD] %s: %v", clipText(msg.Title, 80), err)
-			}
-		}(footer)
+		// Return immediately. Geolocation and the webhook run after the
+		// response, so this work does not stretch the Cloud Run request.
+		go h.postDiscord(webhook, msg, footer)
+		return
+	}
+	// Visitor profiles are posted to Discord only. Without a webhook there
+	// is nothing to send and no geolocation lookup to pay for.
+	if msg.VisitorsOnly {
 		return
 	}
 
@@ -75,10 +69,64 @@ func (h *Handler) dispatchMerchantTo(emailTo string, msg services.DiscordMessage
 	}()
 }
 
-// activityFooter is the day's shopper counts, in India time, attached to
-// every ops alert.
-func (h *Handler) activityFooter(ctx context.Context) string {
-	if h == nil || h.DB == nil {
+// postDiscord fills the location block and posts the embed. It runs off the
+// request. A visitor alert is dropped here when the IP is a datacenter or
+// the lookup cannot produce coordinates. The shop-stats query is skipped
+// for visitors and reused from memory for other alerts.
+func (h *Handler) postDiscord(webhook string, msg services.DiscordMessage, footer string) {
+	ip := strings.TrimSpace(msg.Network.IP)
+	if msg.VisitorsOnly && ip == "" {
+		return
+	}
+	if ip != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+		place, err := services.LookupPlace(ctx, ip)
+		cancel()
+		if msg.VisitorsOnly && !services.AllowVisitorAlert(place, err) {
+			return
+		}
+		detail := []services.DiscordField{services.Field("Exact IP", ip, true)}
+		if err == nil {
+			detail = append(detail, services.LocationFields(place)...)
+			if strings.TrimSpace(msg.URL) == "" && place.HasCoord {
+				msg.URL = place.MapsLink()
+			}
+		}
+		detail = append(detail, msg.Detail...)
+		msg.Detail = detail
+	}
+	if footer == "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+		footer = h.activityFooter(ctx, !msg.VisitorsOnly)
+		cancel()
+	}
+	msg.Footer = footer
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	if err := services.PostDiscord(ctx, webhook, msg); err != nil {
+		log.Printf("[DISCORD] %s: %v", clipText(msg.Title, 80), err)
+	}
+}
+
+var (
+	activityMu   sync.Mutex
+	activityText string
+	activityAt   time.Time
+)
+
+// activityFooter is the day's shopper counts, in India time. The snapshot is
+// reused for ten minutes so a burst of alerts does not run the same six
+// counts against Postgres on every send. query false returns the cached
+// line or nothing, which is what visitor alerts use.
+func (h *Handler) activityFooter(ctx context.Context, query bool) string {
+	activityMu.Lock()
+	if activityText != "" && time.Since(activityAt) < 10*time.Minute {
+		text := activityText
+		activityMu.Unlock()
+		return text
+	}
+	activityMu.Unlock()
+	if !query || h == nil || h.DB == nil {
 		return ""
 	}
 	now := time.Now().In(istZone)
@@ -102,10 +150,20 @@ func (h *Handler) activityFooter(ctx context.Context) string {
 	`, start, start, start, start, start, start).Scan(&row).Error
 	if err != nil {
 		log.Printf("[DISCORD] activity snapshot: %v", err)
-		return "Today (IST) · activity unavailable"
+		text := "Today (IST) · activity unavailable"
+		activityMu.Lock()
+		activityText = text
+		activityAt = time.Now()
+		activityMu.Unlock()
+		return text
 	}
-	return fmt.Sprintf("Today (IST) · %d signups · %d checkouts · %d dropped · %d paid · %d payment failed · ₹%.0f revenue",
+	text := fmt.Sprintf("Today (IST) · %d signups · %d checkouts · %d dropped · %d paid · %d payment failed · ₹%.0f revenue",
 		row.Signups, row.Checkouts, row.Dropped, row.Paid, row.Failed, row.Revenue)
+	activityMu.Lock()
+	activityText = text
+	activityAt = time.Now()
+	activityMu.Unlock()
+	return text
 }
 
 // deliverAbandonedCartEmail sends one abandoned-checkout nudge. The sweep
@@ -176,12 +234,13 @@ func (h *Handler) sendOrderShippedEmail(order models.Order) {
 	}
 }
 
-func (h *Handler) notifyMerchantNewUser(user models.User, source, ip, userAgent string) {
+func (h *Handler) notifyMerchantNewUser(user models.User, source string, net services.NetHint) {
 	place := formatPlace(user.AddressLine, user.City, user.State, user.Pincode, user.Country)
 	h.dispatchMerchant(services.DiscordMessage{
-		Title: fmt.Sprintf("New user #%d · %s", user.ID, orDash(user.Name)),
-		URL:   services.MapsURL(user.Latitude, user.Longitude, place),
-		Color: services.ColorBlue,
+		Title:   fmt.Sprintf("New user #%d · %s", user.ID, orDash(user.Name)),
+		URL:     services.MapsURL(user.Latitude, user.Longitude, place),
+		Color:   services.ColorBlue,
+		Network: net,
 		Fields: []services.DiscordField{
 			services.Field("Name", user.Name, true),
 			services.Field("Phone", user.PhoneOrEmpty(), true),
@@ -191,16 +250,18 @@ func (h *Handler) notifyMerchantNewUser(user models.User, source, ip, userAgent 
 			services.Field("Role", user.Role, true),
 			services.Field("Address", place, false),
 			services.Field("Map", services.MapsURL(user.Latitude, user.Longitude, place), false),
-			services.Field("IP", ip, true),
-			services.Field("Device", clipText(userAgent, 300), false),
+			services.Field("Device", services.DeviceText(net), false),
 			services.Field("Signed up", user.CreatedAt.In(istZone).Format("02 Jan 2006 15:04 IST"), true),
 		},
+		Detail: networkExtra(net),
 	})
 }
 
 func (h *Handler) notifyMerchantPaidOrder(order models.Order) {
 	place := formatPlace(order.AddressLine, order.City, order.State, order.Pincode, "")
-	h.dispatchMerchant(orderAlert("Order paid", services.ColorGreen, order, place))
+	msg := orderAlert("Order paid", services.ColorGreen, order, place)
+	msg.Network = services.NetHint{IP: order.ClientIP, UserAgent: order.UserAgent}
+	h.dispatchMerchant(msg)
 }
 
 // notifyAbandonedCheckouts tells ops which unpaid checkouts just expired.
@@ -231,14 +292,16 @@ func (h *Handler) notifyAbandonedCheckouts(ctx context.Context, claimed []abando
 	for _, order := range orders {
 		byID[order.ID] = order
 	}
-	footer := h.activityFooter(ctx)
+	footer := h.activityFooter(ctx, true)
 	for _, pick := range picks {
 		order, ok := byID[pick.ID]
 		if !ok {
 			continue
 		}
 		place := formatPlace(order.AddressLine, order.City, order.State, order.Pincode, "")
-		h.dispatchMerchantTo("", orderAlert("Checkout dropped", services.ColorOrange, order, place), footer)
+		msg := orderAlert("Checkout dropped", services.ColorOrange, order, place)
+		msg.Network = services.NetHint{IP: order.ClientIP, UserAgent: order.UserAgent}
+		h.dispatchMerchantTo("", msg, footer)
 	}
 }
 
@@ -271,7 +334,6 @@ func orderAlert(kind string, color int, order models.Order, place string) servic
 			services.Field("User", userID, true),
 			services.Field("Address", place, false),
 			services.Field("Map", mapURL, false),
-			services.Field("IP", order.ClientIP, true),
 			services.Field("Amount", money, false),
 			services.Field("Items", orderItemsText(order.Items), false),
 			services.Field("Delivery", delivery, false),
@@ -349,73 +411,157 @@ type browseAlertRequest struct {
 	Path        string   `json:"path"`
 	Paths       []string `json:"paths"`
 	Referrer    string   `json:"referrer"`
-	Name        string   `json:"name"`
-	Email       string   `json:"email"`
-	Phone       string   `json:"phone"`
+	Screen      string   `json:"screen"`
+	Viewport    string   `json:"viewport"`
+	Timezone    string   `json:"timezone"`
+	Languages   string   `json:"languages"`
+	Platform    string   `json:"platform"`
+	Cores       int      `json:"cores"`
+	Touch       int      `json:"touch"`
 }
 
-// ReportLongBrowse notifies the merchant when a visitor browses 10+ minutes.
-// Responds 204 and never surfaces UI feedback.
+// ReportLongBrowse notifies the merchant when a person has been on the shop
+// for at least ten minutes. Bots and datacenter calls are ignored before any
+// Redis, database, or geolocation work. The handler always answers 204 and
+// never stores the network profile.
 func (h *Handler) ReportLongBrowse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	var req browseAlertRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if req.DurationMin < 10 {
+	if req.DurationMin < 10 || req.DurationMin > 24*60 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if req.SessionID == "" {
-		req.SessionID = middlewares.ClientIP(r)
-	}
 
+	net := services.Capture(r)
+	net.Screen = clipText(req.Screen, 40)
+	net.Viewport = clipText(req.Viewport, 40)
+	net.Timezone = clipText(req.Timezone, 60)
+	net.Languages = clipText(req.Languages, 120)
+	if platform := clipText(req.Platform, 60); platform != "" {
+		net.Platform = platform
+	}
+	if req.Cores > 0 && req.Cores < 128 {
+		net.Cores = req.Cores
+	}
+	if req.Touch > 0 && req.Touch < 32 {
+		net.Touch = req.Touch
+	}
+	if services.AutomatedVisitor(net) || net.IP == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if strings.TrimSpace(h.Cfg.DiscordWebhookURL) == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// One alert per network per day, decided in memory so a repeat hit does
+	// not touch Redis or start a goroutine.
+	if !services.ClaimVisitor(net.IP) {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if h.Redis != nil {
-		key := "merchant:browse:" + req.SessionID
-		ok, err := h.Redis.SetNX(r.Context(), key, "1", 24*time.Hour).Result()
+		ok, err := h.Redis.SetNX(r.Context(), "merchant:browse:"+net.IP, "1", 24*time.Hour).Result()
 		if err == nil && !ok {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 	}
 
-	name, email, phone := req.Name, req.Email, req.Phone
-	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
-		if claims, err := appauth.ParseToken(h.Cfg.JWTSecret, strings.TrimPrefix(auth, "Bearer ")); err == nil && claims != nil {
-			var user models.User
-			if err := h.DB.WithContext(r.Context()).First(&user, claims.UserID).Error; err == nil {
-				if name == "" {
-					name = user.Name
-				}
-				if email == "" {
-					email = user.EmailOrEmpty()
-				}
-				if phone == "" {
-					phone = user.PhoneOrEmpty()
-				}
+	var user models.User
+	if h.DB != nil {
+		if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+			if claims, err := appauth.ParseToken(h.Cfg.JWTSecret, strings.TrimPrefix(auth, "Bearer ")); err == nil && claims != nil {
+				_ = h.DB.WithContext(r.Context()).First(&user, claims.UserID).Error
 			}
 		}
 	}
 
-	paths := strings.Join(req.Paths, "\n")
-	if paths == "" {
-		paths = req.Path
+	name := user.Name
+	page := clipText(req.Path, 300)
+	referrer := clipText(req.Referrer, 300)
+	if referrer == "" {
+		referrer = clipText(net.Referer, 300)
 	}
 	h.dispatchMerchant(services.DiscordMessage{
-		Title: fmt.Sprintf("Browsing %d min · %s", req.DurationMin, orDash(name)),
-		Color: services.ColorPurple,
+		Title:        fmt.Sprintf("Browsing %d min · %s", req.DurationMin, orDash(name)),
+		Color:        services.ColorPurple,
+		VisitorsOnly: true,
+		Network:      net,
 		Fields: []services.DiscordField{
 			services.Field("Name", name, true),
-			services.Field("Phone", phone, true),
-			services.Field("Email", email, true),
+			services.Field("Phone", user.PhoneOrEmpty(), true),
+			services.Field("Email", user.EmailOrEmpty(), true),
 			services.Field("Duration", fmt.Sprintf("~%d minutes", req.DurationMin), true),
-			services.Field("IP", middlewares.ClientIP(r), true),
-			services.Field("Session", req.SessionID, true),
-			services.Field("Page", req.Path, false),
-			services.Field("Referrer", req.Referrer, false),
-			services.Field("Paths", paths, false),
-			services.Field("Device", clipText(r.UserAgent(), 300), false),
+			services.Field("Page", page, false),
 		},
+		Detail: browseDetail(user, net, referrer, req.Paths, page, req.SessionID),
 	})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func browseDetail(user models.User, net services.NetHint, referrer string, paths []string, page, sessionID string) []services.DiscordField {
+	var detail []services.DiscordField
+	if user.ID != 0 {
+		account := fmt.Sprintf("#%d · %s · %s", user.ID, orDash(user.Role), orDash(user.Provider))
+		if !user.CreatedAt.IsZero() {
+			account += " · since " + user.CreatedAt.In(istZone).Format("02 Jan 2006")
+		}
+		detail = append(detail, services.Field("Account", account, false))
+		if place := formatPlace(user.AddressLine, user.City, user.State, user.Pincode, user.Country); place != "" {
+			detail = append(detail, services.Field("Saved address", place, false))
+		}
+		if link := services.MapsURL(user.Latitude, user.Longitude, ""); link != "" {
+			detail = append(detail, services.Field("Saved map", link, false))
+		}
+	}
+	if text := services.DeviceText(net); text != "" {
+		detail = append(detail, services.Field("Device", text, false))
+	}
+	if referrer != "" {
+		detail = append(detail, services.Field("Came from", referrer, false))
+	}
+	if walked := browsePaths(paths, page); walked != "" {
+		detail = append(detail, services.Field("Pages", walked, false))
+	}
+	if sessionID != "" {
+		detail = append(detail, services.Field("Session", clipText(sessionID, 80), true))
+	}
+	detail = append(detail, networkExtra(net)...)
+	return detail
+}
+
+func browsePaths(paths []string, page string) string {
+	var lines []string
+	for _, path := range paths {
+		path = clipText(path, 160)
+		if path == "" {
+			continue
+		}
+		lines = append(lines, path)
+		if len(lines) == 12 {
+			break
+		}
+	}
+	if len(lines) == 0 {
+		return page
+	}
+	return strings.Join(lines, "\n")
+}
+
+func networkExtra(net services.NetHint) []services.DiscordField {
+	var detail []services.DiscordField
+	if ua := strings.TrimSpace(net.UserAgent); ua != "" {
+		detail = append(detail, services.Field("User-Agent", clipText(ua, 400), false))
+	}
+	fwd := strings.TrimSpace(net.ForwardedFor)
+	if fwd != "" && fwd != net.IP {
+		detail = append(detail, services.Field("Forwarded", clipText(fwd, 200), false))
+	}
+	return detail
 }

@@ -1,5 +1,7 @@
 # Chatbot Troubleshooting Guide
 
+Dootha no longer calls Gemini or OpenAI from the Go process. If chat answers are canned or empty, check `RAG_SERVICE_URL` and `RAG_SHARED_SECRET` and that the Python service is up (`GET /health` on port 8090). The current path is [docs/rag.md](../../docs/rag.md). The API-key steps below are the old direct-provider setup.
+
 ## Common Errors and Solutions
 
 ### "I'm sorry, I encountered an error. Please try again later."

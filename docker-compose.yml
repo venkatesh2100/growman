@@ -48,11 +48,38 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}
+      RAG_SERVICE_URL: ${RAG_SERVICE_URL:-http://ai:8090}
+      RAG_SHARED_SECRET: ${RAG_SHARED_SECRET:-dev-rag-secret}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - growman-network
+    restart: unless-stopped
+
+  ai:
+    build:
+      context: ./apps/ai
+      dockerfile: Dockerfile
+    container_name: growman-ai
+    environment:
+      RAG_SHARED_SECRET: ${RAG_SHARED_SECRET:-dev-rag-secret}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CATALOG_API_URL: http://backend:8080/api/v1
+      REDIS_URL: redis://redis:6379/0
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-hash}
+      RERANK_BACKEND: ${RERANK_BACKEND:-overlap}
+      PORT: "8090"
+    ports:
+      - "8090:8090"
+    depends_on:
+      backend:
+        condition: service_started
       redis:
         condition: service_healthy
     networks:

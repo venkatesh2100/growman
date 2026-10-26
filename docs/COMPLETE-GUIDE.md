@@ -168,7 +168,7 @@ Workers, same process, cancelled on SIGINT/SIGTERM:
 - Wishlist: `GET/POST /wishlist`, `DELETE /wishlist/:id`.
 - Reviews: `POST /products/{slug}/reviews`, moderated, verified-purchase flag. Admin approves. Product rating is denormalized back onto the product.
 - My plants: `/me/plants` CRUD, water, fertilize, health log, care calendar, import from past orders. Season copy comes from `internal/care` (no database).
-- Dootha: `POST /chat`. Provider is Gemini or OpenAI (`AI_PROVIDER`). History is `GET /me/chat`.
+- Dootha: `POST /chat`. Care and catalog questions go to the Python RAG service (`docs/rag.md`). Orders and wishlist stay in Go. History is `GET /me/chat`.
 
 ### 4.5 Privacy
 
@@ -377,7 +377,7 @@ No values belong in this doc. Names only.
 - Money: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
 - Mail and ops: `SMTP_*`, `MERCHANT_NOTIFY_EMAIL`, `DISCORD_WEBHOOK_URL`, `QUOTATION_EMAIL`
 - Images: `IMAGE_BASE_URL`, `GCS_BUCKET_NAME`, `GCS_PROJECT_ID`, `GCS_CREDENTIALS_JSON`
-- AI: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `AI_PROVIDER`, `PLANTNET_API_KEY`, `PLANTNET_PROJECT`, `PLANTNET_RESERVE`
+- AI: `RAG_SERVICE_URL`, `RAG_SHARED_SECRET`, `GEMINI_API_KEY` (read by `apps/ai`, not by Go chat), `PLANTNET_API_KEY`, `PLANTNET_PROJECT`, `PLANTNET_RESERVE`
 - Phone: `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID`, `MSG91_WIDGET_ID`, `MSG91_TOKEN_AUTH`, `TRUECALLER_CLIENT_ID`
 - Delivery: `STORE_LATITUDE`, `STORE_LONGITUDE`, `STORE_PINCODE`, `COURIER_PROVIDER`, `SHIPROCKET_*`, fee thresholds
 - Admin map: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_ACCOUNT_ID`
@@ -405,6 +405,7 @@ Tests that exist today sit beside the package: payments, inventory, invoicing, f
 | Cache keys and invalidation | `04-caching.md` |
 | Checkout, stock, refunds, GST, shipping | `05-orders-checkout-payments.md` |
 | Dootha and account chat | `06-chat-and-ai.md` |
+| How the RAG service answers | `docs/rag.md` |
 | Image keys | `07-images-and-storage.md` |
 | Rate limits, webhook auth, metrics | `08-middleware-and-security.md` |
 | Razorpay, Shiprocket, MSG91, the rest | `09-external-integrations.md` |
@@ -815,7 +816,7 @@ The site is read-mostly HTML, images, and edge caching. Workers + OpenNext fit t
 Same API and same JWT shape. Mobile adds phone OTP, Truecaller, SMS autofill, a local notification schedule for plant care, and a camera flow for Pl@ntNet. Navigation is Expo Router file routes instead of the App Router. Styling is NativeWind (Tailwind 3) instead of Tailwind 4. There is no server-side render and no edge cache; the catalog cache is in memory for 10 minutes.
 
 **What is Dootha?**  
-The chat assistant. `POST /chat` classifies intent, answers care questions, can attach products, and, when the JWT is present, can read that user’s orders and wishlist. The provider is configurable (Gemini by default, for cost). It is a sheet on mobile (the tab only opens it) and `PlantChatbot` on web. It does not place orders by itself.
+The chat assistant. `POST /chat` classifies intent, answers care and catalog questions from the RAG service, can attach products, and, when the JWT is present, can read that user’s orders and wishlist. Gemini runs only inside that service, and only for comparisons. It is a sheet on mobile (the tab only opens it) and `PlantChatbot` on web. It does not place orders by itself.
 
 **How do you handle Indian specifics?**  
 Razorpay, MSG91, phone normalization, GST-inclusive invoices numbered on the April–March year, Shiprocket pincodes, delivery zones from the nursery’s own coordinates, ₹ formatting on the clients.

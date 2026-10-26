@@ -1,0 +1,1200 @@
+GROWMAN (growman.live) — PLANT KNOWLEDGE BASE FOR RAG
+=====================================================
+Snapshot date: 4 October 2026
+Primary source: growman.live (catalog, category pages, help center, about page, gifting, bulk orders, care guides)
+Supplementary source: general horticultural knowledge, added so each plant entry can answer care and selection questions. Where a statement is general plant knowledge rather than something stated on growman.live, it appears under the heading "General plant knowledge".
+
+HOW THIS FILE IS ORGANIZED (for chunking)
+- Each section starts with a line of "=====" and a section title.
+- Each plant entry starts with "### PLANT:" and repeats the plant name and category in every sub-block, so any chunk is understandable on its own.
+- Prices are INR (Indian Rupees) and are a snapshot. Prices, stock and discounts change. The first price is the current selling price and the second is the struck-through original (MRP) price shown on the site.
+- "Size label" is exactly the label shown on the site (examples: "13 X 13", "18 X 18", "POT", "10'", "12\"", "6\""). The site does not explain the unit; treat it as a nursery size/pot label.
+
+=====================================================
+SECTION 1: ABOUT GROWMAN AND THE NURSERY
+=====================================================
+
+What is Growman?
+Growman (growman.live) is an online plant store and nursery based in Hyderabad, Telangana, India. It is backed by Shiridi Sai Nursery. Growman sells indoor, outdoor, flowering, ornamental, fruit and medicinal plants. Plants are grown at the nursery in Hyderabad, selected there, and shipped to customers across India. There is also a Growman Android app on Google Play (app id com.venky2100.growman).
+
+Catalog size
+The catalog has 60 plants in 6 categories (the bulk-order page lists 67 purchasable varieties, because several plants come in more than one size and each size is a separate variety).
+
+The 6 categories and plant counts:
+- Outdoor Plants: 23 plants
+- Indoor Plants: 15 plants
+- Avenue: 7 plants
+- Medicinal: 6 plants
+- Ornamental Plants: 6 plants
+- Fruit Plants: 3 plants
+
+Plant types (sub-categories) shown on the site:
+- Indoor Plants: Air Purifying (9 plants), Foliage Plants (3), Outdoor Bonsai (1), Low Light Plants (1), Bonsai (1)
+- Outdoor Plants: Garden (9), Decorational (6), Flowering (3), Large Plants (2), Bonsai (2), Seasonal (1)
+- Avenue: Flowering (5), Decorational (2)
+- Medicinal: Herbal (4), Flowering (1), Succulent (1)
+- Fruit Plants: Tropical (2), Garden (1)
+- Ornamental Plants: Foliage Plants (6)
+
+Shopping filters on the site (tags): Indoor, Outdoor, Air-purifying, Low light, Easy care, Balcony, Flowering, Gift plants, Bonsai, Medicinal, Fruit, Bulk orders.
+
+Contact and location
+- Nursery: Shiridi Sai Nursery, Hyderabad, Telangana, India
+- Phone: +91 95535 70568
+- WhatsApp: +91 95535 70568
+- Email: growman.live@gmail.com
+- Instagram: @growman.live
+- Hours: 9 AM to 7 PM IST, all seven days a week
+- Planned future locations ("coming soon" on the About page): Pune, Amaravati, Bengaluru, Chennai
+
+Ways to buy
+1. Order online for delivery anywhere in India.
+2. Pick up at the nursery in Hyderabad: choose "Pick up at the nursery" in the cart; the store calls to confirm the amount and a pickup time; nothing is paid online.
+3. Bulk and corporate orders: request an itemised quotation.
+
+=====================================================
+SECTION 2: HELP CENTER (ORDERING, PAYMENT, DELIVERY, RETURNS)
+=====================================================
+
+Q: How do I pay on Growman?
+A: Pay online at checkout by UPI, debit card, credit card, netbanking or wallet. Payments are processed by Razorpay. Growman does not store card details.
+
+Q: Do I need an account to order?
+A: No. You can check out as a guest with name, mobile number, email and address. Signing in saves your address and keeps all orders in one place.
+
+Q: Will I get an order confirmation?
+A: Yes. A confirmation email is sent to the address entered at checkout as soon as payment goes through.
+
+Q: Where does Growman deliver?
+A: Across India. The delivery fee depends on the delivery address and the size of the plants and is shown at checkout before payment. For some addresses and for very large orders a fixed fee cannot be shown online; in that case checkout lets you send a quotation request and the team calls you with a price.
+
+Q: How long does delivery take?
+A: It depends on the pincode. Where a courier estimate is available, checkout shows it. After the order is scheduled, the expected delivery date appears under Orders.
+
+Q: How do I track my order?
+A: Sign in and open Orders. Each order shows its status: confirmed, shipped, out for delivery or delivered.
+
+Q: Can I collect plants from the nursery instead?
+A: Yes. In the cart choose "Pick up at the nursery". Plants are set aside at the Hyderabad nursery. The store calls to confirm the amount and pickup time. Nothing is paid online. Pickup hours are 9 AM to 7 PM IST on all days.
+
+Q: What if a plant arrives damaged?
+A: Plants are living products, so each case is reviewed individually. Contact Growman within 48 hours of delivery with your order number and, if possible, a photo.
+
+Q: How do I look after my plant?
+A: Each product page lists care basics such as light and watering. For specific questions, use Dootha, the Growman plant assistant (chat button), or read the plant care guides (Section 3).
+
+Q: Can Growman identify a plant from a photo?
+A: Yes. Tap the camera icon in the search bar and upload a photo of the plant.
+
+Q: Does Growman take bulk and corporate orders?
+A: Yes, for landscaping, offices, events and resellers. List plants and quantities on the bulk orders page and the nursery replies with an itemised quotation. Add a GSTIN to the request if it is needed on the quotation.
+
+Q: How do I delete my account?
+A: Email growman.live@gmail.com from the email address or phone number registered with the account, with the subject "Account Deletion Request". Requests are processed within 7 business days.
+
+=====================================================
+SECTION 3: BULK ORDERS AND GIFTING
+=====================================================
+
+Bulk orders (wholesale)
+Bulk orders are for landscaping projects, offices, events and resellers. Process: (1) choose varieties and quantities, (2) send the quotation request, (3) the nursery team calls to confirm pricing, availability and delivery. Quick quantity buttons on the page add +10, +50 or +100 units. The page lists 67 varieties; each variety shows its category, size label, a SKU code (format GM00xxxxxx) and a per-unit price. Customers can also request a plant that is not listed, call the nursery with a list, or visit the nursery to see plants before ordering.
+
+Plant gifting
+Growman offers plants as gifts for birthdays, weddings, housewarmings, festivals and client gifts. How it works: choose a plant (or send the occasion and budget and the team suggests options); share the planter choice and the message for a handwritten card by WhatsApp or phone; the plant is packed for transit and delivered anywhere in India, to the recipient or to the buyer. Gift collections on the site: All gift plants (27 plants), Festivals and good luck (27), Office and desk (22), Easy care (23), Air-purifying (22), Bonsai (8). Corporate gifting covers client gifts, employee welcome kits, festive hampers and event giveaways, with volume pricing confirmed by the nursery, delivery to one or several addresses, and planters, presentation and branding agreed per order.
+
+=====================================================
+SECTION 4: GROWMAN PLANT CARE GUIDES (INDIA-SPECIFIC)
+=====================================================
+
+---- GUIDE 1: Best Indoor Plants for Indian Homes (published 12 January 2026, 6 min read, by the Growman team) ----
+Summary: How to choose indoor plants that cope with Indian light, heat and humidity, and where to place them in a flat or house.
+
+Start with the light you actually have.
+The most common reason an indoor plant fails is not neglect; it is being placed somewhere it was never going to survive. Before buying, spend a day noticing how light moves through the room. A spot two metres back from a south- or west-facing window in most Indian cities receives bright indirect light for several hours, which suits the widest range of foliage plants. A north-facing room, an internal corridor, or a bathroom with a small high window is a genuinely low-light position, and only a narrow set of plants will hold their leaves there. Light also changes with the season: a balcony door that gives gentle morning sun in December can deliver harsh direct heat by April. If a plant scorches or pales every summer, the fix is usually to move it a metre further from the glass rather than to water it more.
+
+Match the plant to the room.
+- Bright indirect light, away from direct sun: most foliage plants do well; this is where a feature plant earns its place.
+- Low light (north-facing rooms, corridors): choose plants specifically sold as low-light tolerant and expect slower growth rather than none.
+- Air-conditioned rooms: air conditioning dries the air considerably. Plants here need less frequent but more thorough watering and should be kept out of the direct airflow.
+
+Give new plants two weeks to settle.
+A plant that has just moved from a nursery to a living room is adjusting to different light, humidity and airflow all at once. Losing a leaf or two in the first fortnight is normal. During that time keep it in its intended position, water only when the top few centimetres of soil are dry, and do not repot or fertilise. Repotting a plant that is already stressed is the fastest way to lose it. After a month, if the plant is pushing out new growth it has accepted the position. If it is still dropping leaves, change the light before changing anything else.
+
+Plan for the summer and the monsoon.
+Indian indoor growing has two demanding seasons. In the hot, dry pre-monsoon months pots dry out far faster and most plants need checking every two or three days. Once the monsoon arrives humidity climbs and the same pot may stay damp for a week; continuing a summer watering routine into the monsoon is one of the most reliable ways to cause root rot. Water by checking the soil, not by the calendar: push a finger two to three centimetres into the pot; if soil clings to the finger, wait.
+
+---- GUIDE 2: How Often to Water Indoor Plants (published 20 January 2026, 5 min read, by the Growman team) ----
+Summary: A practical watering method for Indian conditions: how to check the soil, how the seasons change the routine, and how to spot over- and under-watering.
+
+Stop watering on a schedule.
+Fixed routines (every Sunday, twice a week) fail because they ignore what actually determines how fast a pot dries: pot size and material, soil mix, room temperature, humidity and how much light the plant gets. The same plant may need water twice a week in May and once a fortnight in August. Replace the schedule with a check: push a finger two to three centimetres into the soil, or lift the pot and note its weight. Dry soil at that depth, or a noticeably light pot, means water. Damp soil means wait and check again in two days.
+
+Water thoroughly, then let it drain.
+Add water slowly across the whole surface until it runs out of the drainage hole, which wets the whole root ball. Small daily splashes encourage roots to stay near the surface where they dry out fastest. Then remove the runoff: a pot left standing in a saucer of water keeps the lower roots waterlogged and starved of air, and that, not dryness, is what kills most indoor plants. Tip the saucer out ten minutes after watering.
+
+Read the symptoms correctly.
+- Under-watered: leaves go limp but stay dry and papery, edges turn crisp and brown, and the soil pulls away from the sides of the pot.
+- Over-watered: lower leaves turn yellow and drop while still soft, the soil stays wet for days, and the base of the stem may feel soft or smell sour.
+- Both can cause drooping. Check the soil before deciding; drooping in wet soil means the roots are struggling and more water will finish them off.
+
+Adjust for the pot and the season.
+Terracotta breathes and dries faster than plastic or ceramic, so check terracotta pots more often. Large pots hold moisture far longer than small ones, so a newly potted-up plant often needs less frequent watering than before. In the monsoon, reduce watering markedly and improve airflow around plants. In the hot months, check more often and water early in the morning or after sunset so less is lost to evaporation.
+
+---- GUIDE 3: Outdoor and Balcony Plant Care in India (published 3 February 2026, 6 min read, by the Growman team) ----
+Summary: Caring for outdoor and balcony plants through Indian summers and monsoons: sun exposure, watering, wind, drainage and seasonal repotting.
+
+Work out your real sun exposure.
+Balconies vary enormously. A west-facing balcony above the third floor can take six hours of hard afternoon sun plus reflected heat from the building, which is a genuinely harsh position. An east-facing balcony gets gentler morning light and is far more forgiving. Watch where the shadow line falls at 11 AM and again at 4 PM to know what you can grow. Full-sun outdoor plants need that exposure to grow well and become sparse and leggy in shade. Conversely, moving a plant grown under nursery shade netting straight into full afternoon sun will scorch its leaves; introduce it over a week or two, increasing exposure gradually.
+
+Drainage matters more outdoors.
+Outdoor pots catch the full monsoon. A pot without a clear drainage path holds water for days during heavy rain and few plants tolerate that. Check that every drainage hole is open and not sitting flush against the floor; raising pots on feet or a couple of tiles makes a real difference. During extended heavy rain, move smaller pots under cover if possible. It is far easier to water a sheltered plant than to recover one whose roots have sat in water for a week.
+
+Account for wind and heat.
+Wind is the factor most people overlook on higher floors. It dries soil and leaves faster than sun alone and can snap tall stems. Group pots together so they shelter each other, place heavier pots on the exposed side, and stake anything tall before the pre-monsoon winds arrive rather than after. In peak summer a layer of mulch on the soil surface noticeably slows evaporation and keeps root temperatures down. Watering early in the morning gives the plant the whole day to use the water.
+
+Repot and prune at the right time.
+The best time to repot or hard-prune most outdoor plants is at the start of a growing season when the plant has the vigour to recover, typically as the weather turns after summer or early in the monsoon. Repotting in the middle of a heatwave asks a plant to rebuild its roots at exactly the moment it is under the most stress. Signs a plant is ready for a bigger pot: roots emerging from the drainage holes, water running straight through without wetting the soil, and growth slowing despite good conditions. Increase the pot diameter by a few centimetres rather than moving to something much larger.
+
+=====================================================
+SECTION 5: CATEGORY DESCRIPTIONS (AS STATED ON GROWMAN)
+=====================================================
+
+Indoor Plants (15 plants)
+Indoor plants bring greenery into rooms, offices and balconies that get little or no direct sun. The main thing to get right is light: most foliage plants want bright but indirect light, while a smaller group genuinely tolerates a north-facing room or a dim corner. Choose based on the spot you have in mind, and remember that pots indoors dry out far more slowly during the monsoon than through summer.
+
+Outdoor Plants (23 plants)
+Outdoor plants are grown for terraces, gardens, balconies and boundaries where they get several hours of direct sun. Check your real sun exposure before choosing; a west-facing balcony above the third floor is a much harsher position than an east-facing one. Good drainage matters more outdoors than anywhere else, because pots here take the full monsoon.
+
+Avenue (7 plants)
+Avenue plants are the tall, columnar and canopy species used along driveways, boundaries, roads and large landscapes. They are selected for height, uniform shape and low maintenance once established, and are usually planted directly into the ground rather than kept in pots.
+
+Fruit Plants (3 plants)
+Fruit plants can be grown in pots on a terrace or balcony as well as in the ground. They need more sun, more root space and more consistent feeding than ornamental plants, so pick a position that gets direct light for most of the day and plan to move up a pot size as the plant establishes.
+
+Medicinal (6 plants)
+Medicinal and herbal plants are grown for their leaves, roots and traditional household uses. Most are hardy, tolerate containers well and prefer a sunny spot with free-draining soil. Consult a qualified practitioner before using any plant medicinally.
+
+Ornamental Plants (6 plants)
+Ornamental plants are chosen for their foliage, form and structure rather than their flowers: variegated leaves, sculpted shapes and plants that hold their look through the year. They work well as feature plants in entrances, living rooms and landscaped beds.
+
+=====================================================
+SECTION 6: INDOOR PLANTS CATALOG (15 plants)
+=====================================================
+Category description: Indoor plants bring greenery into rooms, offices and balconies that get little or no direct sun. Most foliage plants want bright indirect light; a smaller group tolerates a north-facing room or dim corner. Indoor pots dry out far more slowly during the monsoon than in summer.
+
+### PLANT: Parlor Palm (Chamaedorea elegans)
+Category: Indoor Plants
+Botanical name: Chamaedorea elegans
+Common names: Parlor palm, Parlour palm, neanthe bella palm
+Growman price (snapshot 4 Oct 2026): Rs 300 (original Rs 1,100). Size label: 6". Status on site: SOLD OUT at the time of the snapshot.
+Product URL: https://growman.live/product/parlor-palm-chamaedorea-elegans
+General plant knowledge:
+- Light: bright indirect light to moderate shade; tolerates lower light than most palms. Direct afternoon sun scorches the fronds.
+- Water: keep lightly moist, let the top 2-3 cm of soil dry between waterings; never leave standing in water.
+- Growth: slow, compact, usually reaches 60-90 cm indoors. Good for desks, shelves and corners.
+- Pets: widely listed as non-toxic to cats and dogs.
+- Common problems: brown leaf tips from dry air, fluoride/salts in water or irritation from AC airflow; spider mites in dry rooms.
+Search keywords: parlor palm, parlour palm, small palm for indoors, pet safe palm, low light palm, desk plant
+
+### PLANT: Parlour Palm - Chamaedorea elegans (larger/second listing)
+Category: Indoor Plants
+Botanical name: Chamaedorea elegans
+Growman price (snapshot 4 Oct 2026): Rs 1,100 (original Rs 1,600), 31% off.
+Product URL: https://growman.live/product/parlour-palm-chamaedorea-elegans
+Note: This is a second Growman listing of the same species as the "Parlor Palm" entry above, priced higher, which suggests a larger or fuller plant. Care is identical (bright indirect light, moderate water, non-toxic to pets).
+Search keywords: parlour palm, chamaedorea elegans price, indoor palm plant buy
+
+### PLANT: Aglaonema (Aglaonema spp.)
+Category: Indoor Plants
+Botanical name: Aglaonema species (variety not specified on the listing)
+Common names: Chinese evergreen
+Growman price (snapshot 4 Oct 2026): Rs 499 (original Rs 700), 29% off.
+Product URL: https://growman.live/product/aglaonema-aglaonema-spp
+General plant knowledge:
+- Light: one of the most low-light-tolerant foliage plants; best in medium to bright indirect light. Colourful (pink/red) varieties need brighter light to hold colour.
+- Water: water when the top few cm are dry; sensitive to overwatering and cold water. Roughly every 5-7 days in summer, much less in the monsoon (check the soil, not the calendar).
+- Growth: slow to moderate; 40-90 cm indoors.
+- Pets/people: contains calcium oxalate crystals; toxic if chewed (mouth irritation). Keep away from pets and children.
+- Easy-care plant often chosen for offices and gifting.
+Search keywords: aglaonema, chinese evergreen, low light indoor plant, easy care indoor plant, office plant
+
+### PLANT: Aglaonema Golden Madonna - Chinese Evergreen
+Category: Indoor Plants (also shown in the Featured plants section on the Growman homepage)
+Botanical name: Aglaonema 'Golden Madonna'
+Common names: Chinese evergreen 'Golden Madonna'
+Growman price (snapshot 4 Oct 2026): Rs 299 (original Rs 700), 57% off.
+Product URL: https://growman.live/product/aglaonema-golden-madonna-chinese-evergreen
+General plant knowledge:
+- Known for bright yellow-green and cream variegation; brighter light keeps the variegation vivid, deep shade makes leaves greener.
+- Light: medium to bright indirect; avoid direct midday sun. Water: when top 3 cm is dry. Prefers warmth; avoid cold draughts and AC blasts.
+- Toxic if ingested (calcium oxalate). Good for bedrooms and offices with decent daylight.
+Search keywords: golden madonna, aglaonema golden madonna, yellow chinese evergreen, variegated indoor plant
+
+### PLANT: Sunny Star Croton (Codiaeum variegatum 'Sunny Star')
+Category: Indoor Plants
+Botanical name: Codiaeum variegatum 'Sunny Star'
+Common names: Croton, Sunny Star croton
+Growman price (snapshot 4 Oct 2026): Rs 399 (original Rs 799), 50% off.
+Product URL: https://growman.live/product/sunny-star-croton-codiaeum-variegatum-sunny-star
+General plant knowledge:
+- Light: needs bright light, including some direct morning sun, to keep yellow/orange/green colours; fades to plain green in low light.
+- Water: keep evenly moist but not soggy; dropping leaves usually signal a sudden change in light, cold draught or overwatering.
+- Sap is an irritant and the plant is toxic if eaten. Also does well outdoors in Indian climates in partial to full sun.
+Search keywords: croton, sunny star croton, colourful foliage plant, codiaeum, bright light indoor plant
+
+### PLANT: Philodendron
+Category: Indoor Plants
+Botanical name: Philodendron (species not specified on the listing)
+Growman price (snapshot 4 Oct 2026): Rs 399 (original Rs 700), 43% off.
+Product URL: https://growman.live/product/philodendron
+General plant knowledge:
+- Light: bright indirect to medium light; adaptable. Water when the top 3-4 cm of soil is dry.
+- Vining types do well on a moss pole or trailing from a shelf. Stem cuttings root easily in water or soil.
+- Toxic to pets and people if chewed (calcium oxalate).
+Search keywords: philodendron, trailing indoor plant, vining plant, easy indoor plant
+
+### PLANT: Philodendron 'Burle Marx' (Philodendron burle-marxii)
+Category: Indoor Plants
+Botanical name: Philodendron burle-marxii
+Common names: Burle Marx philodendron
+Growman price (snapshot 4 Oct 2026): Rs 600 (original Rs 1,600), 63% off.
+Product URL: https://growman.live/product/philodendron-burle-marx-philodendron-burlemarxii
+General plant knowledge:
+- Compact philodendron with glossy, heart-shaped, deep green leaves, popular as a tabletop or floor accent.
+- Light: bright indirect light; tolerates medium light with slower growth. Water when top 3-4 cm is dry; avoid soggy soil.
+- Toxic if ingested.
+Search keywords: burle marx, philodendron burle marx, glossy green foliage, compact philodendron
+
+### PLANT: Snake Plant (Dracaena trifasciata)
+Category: Indoor Plants
+Botanical name: Dracaena trifasciata (formerly Sansevieria trifasciata)
+Common names: Snake plant, mother-in-law's tongue
+Growman price (snapshot 4 Oct 2026): Rs 600 (original Rs 1,200), 50% off.
+Product URL: https://growman.live/product/snake-plant-dracaena-trifasciata
+General plant knowledge:
+- Light: tolerates low light to bright light; very forgiving. Slower growth in low light.
+- Water: drought tolerant; water only when soil is fully dry, roughly every 2-3 weeks (less in the monsoon). Overwatering and root rot is the main cause of death.
+- Soil: fast-draining mix (cactus mix or added perlite/sand).
+- Popular for bedrooms, offices and entrances; commonly marketed as air-purifying. Mildly toxic to pets if eaten.
+Search keywords: snake plant, sansevieria, mother in law tongue, low maintenance plant, bedroom plant, beginner plant
+
+### PLANT: Ficus microcarpa (Ginseng Ficus)
+Category: Indoor Plants
+Botanical name: Ficus microcarpa
+Common names: Ginseng ficus, Chinese banyan, Indian laurel
+Growman price (snapshot 4 Oct 2026): Rs 1,450 (original Rs 4,500), 68% off.
+Product URL: https://growman.live/product/ficus-microcarpa-ginseng-ficus-
+General plant knowledge:
+- Recognised by its thick, swollen "ginseng-like" root base; often trained as a bonsai-style specimen.
+- Light: bright indirect light, with a few hours of gentle sun being beneficial. Water when the top 2-3 cm of soil dry; do not let it sit in water.
+- May drop leaves when moved or when conditions change suddenly; keep in one spot. Milky latex sap can irritate skin.
+Search keywords: ginseng ficus, ficus microcarpa, bonsai style indoor plant, chinese banyan indoor
+
+### PLANT: Areca Palm - Dypsis lutescens (listing 1)
+Category: Indoor Plants
+Botanical name: Dypsis lutescens
+Common names: Areca palm, butterfly palm, golden cane palm
+Growman price (snapshot 4 Oct 2026): Rs 1,100 (original Rs 1,300), 15% off.
+Product URL: https://growman.live/product/areca-palm-dypsis-lutescens
+General plant knowledge:
+- Light: bright indirect light; some morning sun is fine. Too little light causes yellowing and thin fronds; harsh afternoon sun scorches.
+- Water: keep evenly moist, not waterlogged; likes humidity. Brown tips come from dry air, salts, or irregular watering.
+- Fast-growing feathery palm, 1.5 m or taller indoors; non-toxic to pets. A classic living-room and office feature plant.
+Search keywords: areca palm, dypsis lutescens, butterfly palm, living room palm, big indoor plant, pet safe palm
+
+### PLANT: Areca Palm (second listing)
+Category: Indoor Plants
+Botanical name: Dypsis lutescens
+Growman price (snapshot 4 Oct 2026): Rs 600 (original Rs 990), 39% off.
+Product URL: https://growman.live/product/areca-palm
+Note: Second Growman listing of Areca palm at a lower price (likely a smaller plant). Care is the same as the Areca Palm entry above.
+Search keywords: areca palm price, cheap areca palm, small areca palm
+
+### PLANT: Sanchezia speciosa - Tiger Plant
+Category: Indoor Plants
+Botanical name: Sanchezia speciosa
+Common names: Sanchezia, tiger plant
+Growman price (snapshot 4 Oct 2026): Rs 350 (original Rs 800), 56% off.
+Product URL: https://growman.live/product/sanchezia-speciosa-tiger-plant
+General plant knowledge:
+- Tropical shrub with dark green leaves marked by bold yellow veins; produces orange-red tubular flowers outdoors.
+- Light: bright indirect light or partial shade; in India it is also grown outdoors in partial sun.
+- Water: keep soil moist and the air humid; reduce watering in cool or rainy weather. Prune to keep it bushy.
+Search keywords: sanchezia, tiger plant, yellow veined leaves, tropical foliage
+
+### PLANT: Dracaena sanderiana - Lucky Bamboo
+Category: Indoor Plants
+Botanical name: Dracaena sanderiana
+Common names: Lucky bamboo (not a true bamboo)
+Growman price (snapshot 4 Oct 2026): Rs 350 (no discount shown).
+Product URL: https://growman.live/product/-dracaena-sanderiana-lucky-bamboo
+General plant knowledge:
+- Grows in water or soil. In water: use filtered, non-chlorinated water (or let tap water stand overnight) and change it every 1-2 weeks; keep roots covered.
+- Light: bright indirect light; direct sun yellows the stalks.
+- Popular as a desk plant and as a good-luck gift. Toxic to cats and dogs if eaten.
+Search keywords: lucky bamboo, dracaena sanderiana, water plant, desk plant, good luck plant, gift plant
+
+### PLANT: Curly-leaf Parsley (Petroselinum crispum)
+Category: Indoor Plants
+Botanical name: Petroselinum crispum
+Common names: Curly parsley, parsley
+Growman price (snapshot 4 Oct 2026): Rs 400 (original Rs 800), 50% off.
+Product URL: https://growman.live/product/curlyleaf-parsley-petroselinum-crispum
+General plant knowledge:
+- Culinary herb. Needs several hours of bright light, ideally 4-6 hours of sun at a bright window or balcony; weak light makes it leggy.
+- Water: keep soil evenly moist but well drained. Harvest outer stems first so new growth continues.
+- It does best in cooler weather and can struggle in peak Indian summer heat.
+Search keywords: parsley, curly parsley, herb plant, kitchen herb, culinary herb
+
+### PLANT: Bonsai - Dragon Roots - Ficus microcarpa
+Category: Indoor Plants (bonsai)
+Botanical name: Ficus microcarpa
+Growman price (snapshot 4 Oct 2026): Rs 98,000 (original Rs 1,54,000), 36% off. Premium specimen bonsai; also shown in the Featured plants section on the Growman homepage.
+Product URL: https://growman.live/product/bonsai-dragoan-roots-ficus-microcarpa
+General plant knowledge:
+- Specimen-grade Ficus microcarpa bonsai with dramatic exposed "dragon" roots. Such plants are the result of many years of training.
+- Care: bright light (gentle sun is beneficial), water when the top soil dries, regular pruning and wiring, feed during the growing season. Avoid sudden relocation.
+Search keywords: dragon roots bonsai, ficus bonsai, premium bonsai, specimen bonsai, luxury plant gift
+
+=====================================================
+SECTION 7: ORNAMENTAL PLANTS CATALOG (6 plants)
+=====================================================
+Category description: Ornamental plants are chosen for foliage, form and structure rather than flowers: variegated leaves, sculpted shapes, plants that hold their look through the year. Good feature plants for entrances, living rooms and landscaped beds. Type on site: Foliage Plants (6 plants).
+
+### PLANT: Golden Thuja (Platycladus orientalis)
+Category: Ornamental Plants
+Botanical name: Platycladus orientalis
+Common names: Golden thuja, golden morpankhi, oriental arborvitae
+Growman price (snapshot 4 Oct 2026): Rs 600 (no discount shown). Size label: 13'.
+Product URL: https://growman.live/product/golden-thuja-platycladus-orientalis
+General plant knowledge:
+- Evergreen conifer with flat, scale-like golden-green foliage in a compact conical form.
+- Light: full sun for best colour. Water: moderate; dislikes waterlogged soil. Used for hedges, topiary and entrance pots.
+- Related Growman listing: Golden Vidya Compacta (same species) under Outdoor Plants.
+Search keywords: golden thuja, thuja, morpankhi, conifer, hedge plant, entrance plant
+
+### PLANT: Foxtail Fern (Asparagus densiflorus 'Myersii')
+Category: Ornamental Plants
+Botanical name: Asparagus densiflorus 'Myersii'
+Common names: Foxtail fern, plume asparagus (not a true fern)
+Growman price (snapshot 4 Oct 2026): Rs 450 (original Rs 1,100), 59% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/foxtail-fern-asparagus-densiflorus-myersii
+General plant knowledge:
+- Dense, upright, fluffy plume-like stems. Thick tuberous roots store water, so it tolerates short dry spells.
+- Light: bright indirect light or morning sun outdoors; harsh afternoon sun can scorch. Water when the top few cm are dry.
+- Berries and foliage are toxic to cats and dogs if eaten.
+Search keywords: foxtail fern, asparagus fern, fluffy foliage plant, ornamental foliage
+
+### PLANT: China Doll Plant (Radermachera sinica) - POT
+Category: Ornamental Plants
+Botanical name: Radermachera sinica
+Common names: China doll, serpent tree
+Growman price (snapshot 4 Oct 2026): Rs 550 (original Rs 1,800), 69% off. Size label: POT.
+Product URL: https://growman.live/product/china-doll-plant-radermachera-sinica
+General plant knowledge:
+- Fine, glossy, fern-like compound leaves on an upright woody stem; popular as an indoor accent.
+- Light: bright indirect light. Water: keep lightly moist; very sensitive to overwatering and sudden changes, which cause leaf drop. Avoid drafts.
+- Verify pet safety before keeping near pets.
+Search keywords: china doll, radermachera, fine leaf indoor plant, bright light plant
+
+### PLANT: Radermachera sinica - China Doll Plant (larger listing)
+Category: Ornamental Plants
+Botanical name: Radermachera sinica
+Growman price (snapshot 4 Oct 2026): Rs 900 (original Rs 1,400), 36% off.
+Product URL: https://growman.live/product/radermachera-sinica-china-doll-plant
+Note: Second Growman listing of China doll plant at a higher price (likely a bigger plant). Same care as the entry above.
+Search keywords: china doll plant price, large china doll
+
+### PLANT: Anthurium (Anthurium andraeanum)
+Category: Ornamental Plants
+Botanical name: Anthurium andraeanum
+Common names: Anthurium, flamingo flower, tailflower
+Growman price (snapshot 4 Oct 2026): Rs 600 (original Rs 1,100), 45% off.
+Product URL: https://growman.live/product/anthurium-anthurium-andraeanum
+General plant knowledge:
+- Grown for glossy, long-lasting heart-shaped spathes (commonly red) held above dark green leaves; can flower repeatedly through the year with good light.
+- Light: bright indirect light; no direct sun. Water: keep lightly moist in a loose, airy, well-draining mix; likes humidity.
+- Toxic if chewed (calcium oxalate). Popular as a gift plant.
+Search keywords: anthurium, flamingo flower, red flower indoor plant, indoor flowering plant, gift plant
+
+### PLANT: Alocasia macrorrhizos - Giant Taro
+Category: Ornamental Plants
+Botanical name: Alocasia macrorrhizos
+Common names: Giant taro, giant elephant ear, upright elephant ear
+Growman price (snapshot 4 Oct 2026): Rs 550 (original Rs 1,300), 58% off.
+Product URL: https://growman.live/product/alocasia-macrorrhizos-giant-taro
+General plant knowledge:
+- Very large, arrow-shaped leaves on thick stalks; a dramatic tropical statement plant for terraces, courtyards and bright, sheltered corners.
+- Light: bright indirect light or partial shade; tolerates morning sun. Water: heavy drinker in the growing season, keep moist but not stagnant; reduce in cool weather.
+- All parts are toxic if eaten (raphides and calcium oxalate); sap can irritate skin.
+Search keywords: alocasia, giant taro, elephant ear plant, big leaf plant, tropical statement plant
+
+=====================================================
+SECTION 8: OUTDOOR PLANTS CATALOG (23 plants)
+=====================================================
+Category description: Outdoor plants are grown for terraces, gardens, balconies and boundaries where they get several hours of direct sun. Check your real sun exposure before choosing. Good drainage matters more outdoors than anywhere else because pots take the full monsoon.
+Types on site: Garden (9), Decorational (6), Flowering (3), Large Plants (2), Bonsai (2), Seasonal (1).
+
+### PLANT: Ashoka Tree (Polyalthia longifolia)
+Category: Outdoor Plants
+Botanical name: Polyalthia longifolia
+Common names: Ashoka tree, false Ashoka, mast tree, Indian mast tree
+Growman price (snapshot 4 Oct 2026): two sizes. Size 13 X 13: Rs 350 (original Rs 1,500), 77% off. Size 18 X 18: Rs 900 (original Rs 1,500), 40% off.
+Product URL: https://growman.live/product/ashoka-tree-polyalthia-longifolia
+General plant knowledge:
+- Tall, narrow, columnar evergreen with drooping, wavy-edged glossy leaves; reaches well over 10 metres in the ground. Widely used for boundaries, driveways, privacy and noise screens and as a formal vertical accent.
+- Light: full sun. Water: regular while young, drought tolerant once established. Fast-growing, low maintenance.
+- Naming note: Polyalthia longifolia is commonly sold in India as "Ashoka", but it is a different species from the sacred Ashoka, Saraca asoca. Buyers looking specifically for Saraca asoca should check the botanical name.
+Search keywords: ashoka tree, ashoka plant, polyalthia longifolia, tall tree for boundary, privacy screen tree, avenue tree, compound wall tree
+
+### PLANT: Golden Vidya Compacta / Golden Morpankhi (Platycladus orientalis)
+Category: Outdoor Plants
+Botanical name: Platycladus orientalis 'Golden' (compact form)
+Common names: Golden Vidya compacta, golden morpankhi, golden thuja
+Growman price (snapshot 4 Oct 2026): two sizes. POT: Rs 350 (original Rs 1,900), 82% off. Size 21 X 21: Rs 900 (original Rs 1,900), 53% off.
+Product URL: https://growman.live/product/golden-vidya-compacta-golden-morpankhi-platycladus-orientali
+General plant knowledge:
+- Compact evergreen conifer with golden-green, flat scale foliage in a neat rounded or conical shape. Good as a potted entrance plant, a low hedge or garden accent.
+- Light: full sun for best colour. Water: moderate; avoid waterlogging, which is the main cause of browning. Needs very good drainage in the monsoon.
+Search keywords: golden vidya, golden morpankhi, thuja plant, conifer for garden, evergreen hedge plant, entrance pot plant
+
+### PLANT: Blue Passiflora / Passion Flower / Krishna Kamal (Passiflora incarnata)
+Category: Outdoor Plants
+Botanical name (as listed): Passiflora incarnata
+Common names: Blue passion flower, passion flower, Krishna Kamal
+Growman price (snapshot 4 Oct 2026): Rs 420 (original Rs 1,300), 68% off. Size label: 13 x 13.
+Product URL: https://growman.live/product/blue-passiflora-passion-flower-krishna-kamal-passiflora-inca
+General plant knowledge:
+- Fast-growing climber with intricate, ornate flowers; needs a trellis, fence or wires to climb.
+- Light: full sun to light afternoon shade. Water: regular, with good drainage. Prune to control spread after flowering.
+- Naming note: "Krishna Kamal" is a common name applied loosely to several Passiflora species in India; the species name shown on the Growman listing is Passiflora incarnata.
+Search keywords: passion flower, passiflora, krishna kamal, blue passion flower, flowering climber, creeper for fence, trellis plant
+
+### PLANT: Krishna Kamal (Passiflora incarnata)
+Category: Outdoor Plants
+Botanical name (as listed): Passiflora incarnata
+Common names: Krishna Kamal, passion flower
+Growman price (snapshot 4 Oct 2026): Rs 350 (original Rs 800), 56% off. Size label: 12".
+Product URL: https://growman.live/product/krishna-kamal-passiflora-incarnata
+Note: A second outdoor listing of Krishna Kamal, in a smaller size label (12"), at a lower price. Care is the same as the Blue Passiflora entry (full sun to light shade, climber that needs support).
+Search keywords: krishna kamal plant, passion flower plant online, small passiflora
+
+### PLANT: Trumpet Vine Plant (Orange Flower)
+Category: Outdoor Plants
+Botanical name: Not stated on the Growman listing
+Common names: Orange trumpet vine
+Growman price (snapshot 4 Oct 2026): Rs 1,600 (original Rs 5,400), 70% off. Size label: 18 X 18.
+Product URL: https://growman.live/product/trumpet-vine-plant-orange-flower
+General plant knowledge:
+- Vigorous flowering climber with clusters of orange, trumpet-shaped flowers; needs a sturdy pergola, fence or wall to climb.
+- Light: full sun for best flowering. Water: regular while establishing; tolerant of dry spells once established. Prune after flowering to keep it in bounds.
+Search keywords: trumpet vine, orange flower climber, pergola climber, fence creeper, flowering vine
+
+### PLANT: Allamanda Creeper (Pentalinon luteum)
+Category: Outdoor Plants
+Botanical name (as listed): Pentalinon luteum
+Common names: Allamanda creeper, yellow mandevilla, hammock viper's tail
+Growman price (snapshot 4 Oct 2026): Rs 550 (original Rs 900), 39% off. Size label: 18 X 18.
+Product URL: https://growman.live/product/allamanda-creeper-pentalinon-luteum
+General plant knowledge:
+- Evergreen climber/trailing vine with glossy leaves and bright yellow trumpet flowers.
+- Light: full sun to light shade. Water: regular; drains well. Needs support to climb. Milky sap is irritating and the plant is toxic if eaten; wear gloves when pruning.
+Search keywords: allamanda, yellow flower creeper, yellow climber, pentalinon, trailing flowering plant
+
+### PLANT: Raat Rani / Night Blooming Jasmine
+Category: Outdoor Plants
+Botanical name: Cestrum nocturnum (this species is the usual Raat Rani; the Growman listing does not state the botanical name)
+Common names: Raat Rani, night-blooming jasmine, lady of the night
+Growman price (snapshot 4 Oct 2026): Rs 680 (original Rs 3,200), 79% off. Size label: 18 X 18.
+Product URL: https://growman.live/product/raat-rani-night-blooming-jasmine-plants
+General plant knowledge:
+- Evergreen shrub whose small greenish-white flowers release a very strong fragrance after dusk.
+- Light: full sun to partial shade. Water: regular, with good drainage. Prune after flowering to keep it bushy.
+- The fragrance is intense; place it away from bedroom windows if it is overpowering. Berries and foliage are toxic if eaten.
+Search keywords: raat rani, night blooming jasmine, fragrant night plant, cestrum, fragrant shrub for balcony
+
+### PLANT: Arabian Jasmine / Mogra (Jasminum sambac)
+Category: Outdoor Plants
+Botanical name: Jasminum sambac
+Common names: Arabian jasmine, mogra, motia
+Growman price (snapshot 4 Oct 2026): two sizes. Size 18 X 18: Rs 680 (original Rs 1,300), 48% off. POT: Rs 400 (original Rs 1,300), 69% off.
+Product URL: https://growman.live/product/arabian-jasmine-jasminum-sambac-plants
+General plant knowledge:
+- Evergreen scrambling shrub with very fragrant white flowers used in garlands, hair adornment and religious offerings; flowers in flushes mainly through the warm season.
+- Light: at least 5-6 hours of direct sun for good flowering. Water: regular watering in the hot season; keep well drained. Feed during the growing season and prune after the main flush.
+Search keywords: mogra, jasmine, jasminum sambac, arabian jasmine, fragrant flower plant, pooja flower plant, balcony flowering plant
+
+### PLANT: Hibiscus Flower Multicolored
+Category: Outdoor Plants
+Botanical name: Hibiscus rosa-sinensis (typical species; not stated on the listing)
+Common names: Hibiscus, gudhal, China rose
+Growman price (snapshot 4 Oct 2026): Rs 350 (original Rs 1,100), 68% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/hibiscus-flower-multicolored-
+General plant knowledge:
+- Flowering shrub with large showy blooms; each flower lasts about a day, but a healthy plant produces them continuously in warm weather.
+- Light: full sun (5-6 hours) for good flowering. Water: regular, never letting the pot dry out completely; good drainage. Feed regularly with a balanced or potassium-rich fertiliser during the growing season.
+- Common pests: aphids and mealybugs on new buds; wash off or treat early.
+Search keywords: hibiscus, gudhal, multicolour hibiscus, flowering shrub, pooja flower, balcony flowering plant
+
+### PLANT: Ixora Red Flower Plant (Ixora coccinea)
+Category: Outdoor Plants
+Botanical name: Ixora coccinea
+Common names: Ixora, jungle geranium, flame of the woods
+Growman price (snapshot 4 Oct 2026): two sizes. Size 13 X 13: Rs 350 (original Rs 3,200), 89% off. Size 18 X 18: Rs 700 (original Rs 3,200), 78% off.
+Product URL: https://growman.live/product/ixora-red-flower-plant-ixora-coccinea
+General plant knowledge:
+- Compact evergreen shrub covered in dense clusters of small red flowers for much of the year; used for hedges and borders.
+- Light: full sun to partial sun. Water: regular; prefers slightly acidic soil. Yellowing of leaves with green veins often signals alkaline soil or iron deficiency; feeding with an acid-loving or chelated-iron fertiliser helps.
+Search keywords: ixora, red flower shrub, jungle geranium, hedge flowering plant, low maintenance flowering plant
+
+### PLANT: Tibouchina (Tibouchina urvilleana) - Princess Bush
+Category: Outdoor Plants
+Botanical name: Tibouchina urvilleana
+Common names: Princess flower, princess bush, glory bush
+Growman price (snapshot 4 Oct 2026): Rs 300 (original Rs 800), 63% off. Size label: 10'.
+Product URL: https://growman.live/product/tibouchina-tibouchina-urvilleana-princess-bush
+General plant knowledge:
+- Shrub with velvety leaves and vivid purple-violet flowers that bloom heavily in warm months.
+- Light: full sun to light shade. Water: regular, moist, well-drained, slightly acidic soil. Frost tender. Prune after flowering to keep it compact.
+Search keywords: tibouchina, princess flower, purple flower shrub, glory bush
+
+### PLANT: Woodrush (Luzula spp.)
+Category: Outdoor Plants
+Botanical name: Luzula species
+Common names: Woodrush
+Growman price (snapshot 4 Oct 2026): Rs 450 (no discount shown). Size label: 10'.
+Product URL: https://growman.live/product/woodrush-luzula-spp
+General plant knowledge:
+- Tufted, grass-like evergreen perennial often used as ground cover or edging in shade and woodland-style beds.
+- Generally prefers cool, moist conditions and part shade; in hot Indian summers keep it shaded, mulched and consistently moist.
+Search keywords: woodrush, luzula, grass-like plant, shade ground cover, edging plant
+
+### PLANT: Sweet Autumn Clematis (Clematis terniflora)
+Category: Outdoor Plants
+Botanical name: Clematis terniflora
+Common names: Sweet autumn clematis
+Growman price (snapshot 4 Oct 2026): Rs 450 (original Rs 600), 25% off. Size label: 10'.
+Product URL: https://growman.live/product/sweet-autumn-clematis-clematis-terniflora
+General plant knowledge:
+- Vigorous climber that carries masses of small, fragrant white star-shaped flowers, typically in late summer to autumn.
+- Light: sun on the foliage with cooler, shaded roots (mulch the base). Water: regular, with good drainage. Needs a trellis or wires. Performance in hot plains climates is variable; give it afternoon protection.
+Search keywords: clematis, sweet autumn clematis, white fragrant climber, trellis climber
+
+### PLANT: Hawaiian Ti Plant (Cordyline fruticosa)
+Category: Outdoor Plants
+Botanical name: Cordyline fruticosa
+Common names: Hawaiian ti plant, ti plant, good luck plant
+Growman price (snapshot 4 Oct 2026): Rs 450 (original Rs 900). Size label: POT. Status on site: SOLD OUT at the time of the snapshot.
+Product URL: https://growman.live/product/hawaiian-ti-plant-cordyline-fruticosa
+General plant knowledge:
+- Upright tropical plant with broad, colourful (green, pink, red, burgundy) leaves; grown outdoors in bright light and as an indoor accent near a bright window.
+- Light: bright light, some morning sun; colour fades in deep shade, scorches in harsh afternoon sun. Water: keep evenly moist, with good humidity. Toxic to cats and dogs if eaten.
+Search keywords: ti plant, cordyline, colourful foliage, tropical foliage plant
+
+### PLANT: Norfolk Island Pine (Araucaria heterophylla)
+Category: Outdoor Plants
+Botanical name: Araucaria heterophylla
+Common names: Norfolk Island pine, star pine
+Growman price (snapshot 4 Oct 2026): Rs 800 (original Rs 990). Size label: 13 x13. Status on site: SOLD OUT at the time of the snapshot.
+Product URL: https://growman.live/product/norfolk-island-pine-araucaria-heterophylla
+General plant knowledge:
+- Symmetrical, tiered conifer with soft needle-like foliage; popular as a potted "living Christmas tree".
+- Light: bright light, including some direct sun. Water: moderate, with good drainage; very sensitive to waterlogging and to being allowed to dry out completely. Prefers milder temperatures; in hot Indian summers protect it from harsh afternoon sun.
+Search keywords: norfolk pine, araucaria, christmas tree plant, living christmas tree
+
+### PLANT: Chinese Banyan Bonsai - Ficus microcarpa
+Category: Outdoor Plants (Bonsai)
+Botanical name: Ficus microcarpa
+Common names: Chinese banyan, Indian laurel fig
+Growman price (snapshot 4 Oct 2026): Rs 1,19,000 (original Rs 1,90,000), 37% off. Premium specimen bonsai.
+Product URL: https://growman.live/product/chinese-banyan-bonsai-ficus-microcarpa-
+General plant knowledge:
+- Mature, trained Ficus bonsai. Grows well outdoors in bright light; tolerates trimming well.
+- Care: bright light, water when the top soil dries, regular trimming and wiring, repot only at the right season (start of growing season).
+Search keywords: chinese banyan bonsai, ficus bonsai, large bonsai, premium bonsai, bonsai for garden
+
+### PLANT: Ficus Air-root Bonsai - Ficus microcarpa
+Category: Outdoor Plants (Bonsai)
+Botanical name: Ficus microcarpa
+Growman price (snapshot 4 Oct 2026): Rs 1,29,990 (original Rs 1,60,000), 19% off. Premium specimen bonsai.
+Product URL: https://growman.live/product/ficus-airroot-bonsai-ficus-microcarpa
+General plant knowledge:
+- Ficus bonsai trained with prominent aerial roots, a style associated with banyan trees. Care is the same as the Chinese banyan bonsai entry.
+Search keywords: air root bonsai, ficus air root, banyan style bonsai, luxury bonsai
+
+### PLANT: Natural Bermuda Grass Roll
+Category: Outdoor Plants (lawn grass)
+Botanical name: Cynodon dactylon (typical Bermuda grass; the listing does not state the species)
+Common names: Bermuda grass, doob, durva, hariyali
+Growman price (snapshot 4 Oct 2026): Rs 15 (original Rs 29), 48% off. The pricing unit (for example per roll or per sq ft) is not stated on the listing.
+Product URL: https://growman.live/product/natural-bermuda-grass-roll
+General plant knowledge:
+- Tough, drought-tolerant, spreading lawn grass that thrives in full sun and handles foot traffic; it goes dormant or thin in shade.
+- Establish by laying rolls tightly on levelled, well-watered soil; water daily at first until rooted, then less often. Mow regularly.
+Search keywords: lawn grass, natural grass, bermuda grass, doob grass, garden lawn, grass roll
+
+### PLANT: OM Shape - Malpighia Plant
+Category: Outdoor Plants (topiary, Decorational)
+Botanical name: Malpighia (as listed; commonly sold as Barbados cherry / acerola for topiary)
+Growman price (snapshot 4 Oct 2026): Rs 3,500 (original Rs 5,550), 37% off.
+Product URL: https://growman.live/product/om-shape-malpighia-plant-
+General plant knowledge:
+- Topiary plant trained into the shape of the sacred "OM" symbol; used as a decorative feature at entrances, gardens and temples.
+- Light: full sun. Water: regular, with good drainage. Needs periodic trimming to keep the shape crisp.
+Search keywords: om shape plant, topiary om, malpighia, shaped plant, decorative garden plant, entrance topiary
+
+### PLANT: Fukien Tea Vessel Tree - Malpighia Plant
+Category: Outdoor Plants (topiary, Decorational)
+Botanical name (as listed): Malpighia plant; sold under the name "Fukien Tea Vessel Tree"
+Growman price (snapshot 4 Oct 2026): Rs 3,800 (original Rs 6,000), 37% off.
+Product URL: https://growman.live/product/fukien-tea-vessel-tree-malpighia-plant-
+General plant knowledge:
+- Decorative trained plant shaped like a vessel or urn on a stem; a topiary feature for gardens and entrances.
+- Light: full sun to bright light. Regular watering with good drainage. Trim regularly to keep the form.
+Search keywords: fukien tea, vessel tree, topiary tree, shaped bonsai style plant
+
+### PLANT: Heart Shape Valentine's - Malpighia Plant
+Category: Outdoor Plants (topiary, Decorational, gift)
+Botanical name (as listed): Malpighia plant
+Growman price (snapshot 4 Oct 2026): Rs 4,250 (original Rs 7,500), 43% off.
+Product URL: https://growman.live/product/heart-shape-valentines-malpighia-plant-
+General plant knowledge:
+- Topiary plant trained into a heart shape; popular as a romantic or Valentine's gift and as a garden feature. Same care as other Malpighia topiary: full sun, regular watering with good drainage, regular trimming.
+Search keywords: heart shape plant, valentine plant gift, topiary heart, romantic plant gift
+
+### PLANT: Shivling Shape Malpighia Plant
+Category: Outdoor Plants (topiary, Decorational)
+Botanical name (as listed): Malpighia plant
+Growman price (snapshot 4 Oct 2026): Rs 1,900 (original Rs 4,000), 53% off. Also shown in the Featured plants section on the homepage.
+Product URL: https://growman.live/product/shivling-shape-malpighia-plant-
+General plant knowledge:
+- Topiary plant trained into a Shivling (lingam) shape, used for temples, home gardens and pooja spaces. Care: full sun, regular watering, periodic trimming.
+Search keywords: shivling plant, shivling shape topiary, pooja garden plant, religious topiary, malpighia
+
+### PLANT: Elephant Shape Malpighia Plant
+Category: Outdoor Plants (topiary, Decorational)
+Botanical name (as listed): Malpighia plant
+Growman price (snapshot 4 Oct 2026): Rs 1,400 (original Rs 3,000), 53% off. Also shown in the Featured plants section on the homepage.
+Product URL: https://growman.live/product/-elephant-shape-malpighia-plant-
+General plant knowledge:
+- Topiary plant trained into an elephant shape; a decorative statement piece for gardens, entrances and kids' play areas. Care: full sun, regular watering with good drainage, regular trimming.
+Search keywords: elephant shape plant, animal topiary, shaped plant, garden decor plant
+
+=====================================================
+SECTION 9: AVENUE PLANTS CATALOG (7 plants)
+=====================================================
+Category description: Avenue plants are the tall, columnar and canopy species used along driveways, boundaries, roads and large landscapes. They are selected for height, uniform shape and low maintenance once established, and are usually planted directly into the ground rather than kept in pots.
+Types on site: Flowering (5 plants), Decorational (2 plants). Most Avenue listings carry the size label 30 X 30.
+
+### PLANT: Morchali / Bakul / Moulsari (Mimusops elengi)
+Category: Avenue
+Botanical name: Mimusops elengi
+Common names: Bakul, Maulsari, Morchali, Spanish cherry
+Growman price (snapshot 4 Oct 2026): Rs 2,500 (original Rs 5,500), 55% off. Size label: 30 X 30.
+Product URL: https://growman.live/product/morchali-bakul-moulsari-mimusops-elengi
+General plant knowledge:
+- Slow-growing, dense evergreen shade tree with small, intensely fragrant star-shaped cream flowers and small orange-red edible fruit. Casts deep shade and suits gardens, avenues and temple grounds.
+- Light: full sun to light shade. Water: regular while young; drought tolerant once established. Long-lived and low maintenance.
+- Traditional use: bark, flowers and fruit feature in traditional Ayurvedic practice. Consult a qualified practitioner before any medicinal use.
+Search keywords: bakul, maulsari, morchali, mimusops elengi, fragrant tree, shade tree, evergreen avenue tree
+
+### PLANT: Pride of India / Jarul (Lagerstroemia speciosa)
+Category: Avenue
+Botanical name: Lagerstroemia speciosa
+Common names: Pride of India, Jarul, queen's crape myrtle, queen's flower
+Growman price (snapshot 4 Oct 2026): Rs 4,200 (no discount shown). Size label: 30 X 30.
+Product URL: https://growman.live/product/pride-of-india-jarul-lagerstroemia-speciosa
+General plant knowledge:
+- Medium to large deciduous flowering tree with big clusters of pink-to-purple crinkled flowers in summer; a showy avenue and garden tree.
+- Light: full sun. Water: regular while establishing; tolerates dry spells later. Sheds leaves for a short period in the dry season.
+Search keywords: jarul, pride of india, queen crape myrtle, lagerstroemia speciosa, pink flowering tree, purple flowering tree
+
+### PLANT: Cassia javanica "Pink Shower Tree"
+Category: Avenue
+Botanical name: Cassia javanica
+Common names: Pink shower tree, Java cassia, apple blossom tree, rainbow shower tree
+Growman price (snapshot 4 Oct 2026): Rs 3,500 (original Rs 5,900), 41% off. Size label: 30 X 30.
+Product URL: https://growman.live/product/cassia-javanica-pink-shower-tree
+General plant knowledge:
+- Medium-sized deciduous tree that flowers in spring and early summer with masses of pale pink to deep pink blooms in drooping clusters. Used along roads, in parks and large gardens.
+- Light: full sun. Water: regular when young; fairly drought tolerant after that.
+Search keywords: pink shower tree, cassia javanica, apple blossom tree, pink flowering avenue tree
+
+### PLANT: Golden Shower Tree / Amaltas (Cassia fistula)
+Category: Avenue
+Botanical name: Cassia fistula
+Common names: Golden shower tree, Amaltas, Indian laburnum, purging cassia
+Growman price (snapshot 4 Oct 2026): Rs 2,500 (original Rs 5,500), 55% off. Size label: 30 X 30.
+Product URL: https://growman.live/product/golden-shower-tree-amaltas-cassia-fistula
+General plant knowledge:
+- Deciduous tree known for long, hanging chains of bright yellow flowers in summer (typically April to June in much of India), followed by long cylindrical pods. A very popular avenue and garden tree.
+- Light: full sun. Water: regular when young; very drought tolerant once established.
+- Traditional use: pod pulp and other parts appear in traditional Ayurvedic practice. Consult a qualified practitioner before medicinal use.
+Search keywords: amaltas, golden shower tree, cassia fistula, yellow flowering tree, indian laburnum
+
+### PLANT: Gulmohar / Royal Poinciana (Delonix regia)
+Category: Avenue
+Botanical name: Delonix regia
+Common names: Gulmohar, royal poinciana, flame tree, flamboyant
+Growman price (snapshot 4 Oct 2026): Rs 3,999 (original Rs 8,500), 53% off. Size label: 30 X 30.
+Product URL: https://growman.live/product/gulmohar-royal-poinciana-delonix-regia
+General plant knowledge:
+- Large, fast-growing, broad umbrella-shaped tree producing masses of fiery red-orange flowers in summer; deciduous for a short time in the dry season.
+- Light: full sun. Water: regular while young; drought tolerant afterwards. Roots spread wide and shallow, so plant well away from buildings, compound walls and underground pipes.
+Search keywords: gulmohar, royal poinciana, flame tree, delonix regia, red flowering tree, big shade tree
+
+### PLANT: Foxtail Palm (Wodyetia bifurcata)
+Category: Avenue (Decorational)
+Botanical name: Wodyetia bifurcata
+Common names: Foxtail palm
+Growman price (snapshot 4 Oct 2026): Rs 850 (original Rs 2,400), 65% off.
+Product URL: https://growman.live/product/foxtail-palm-wodyetia-bifurcata
+General plant knowledge:
+- Tall single-trunk palm with full, bushy fronds that resemble a fox's tail; clean-looking and widely used in landscapes, driveways and large pots.
+- Light: full sun (young plants tolerate bright, partly shaded spots). Water: regular, with good drainage; fairly drought tolerant when established. Frost tender.
+Search keywords: foxtail palm, wodyetia, landscape palm, driveway palm, tall palm
+
+### PLANT: Chinese Banyan - Ficus microcarpa Bonsai (Avenue listing)
+Category: Avenue (Decorational, bonsai)
+Botanical name: Ficus microcarpa
+Growman price (snapshot 4 Oct 2026): Rs 1,25,859 (original Rs 1,52,200), 17% off.
+Product URL: https://growman.live/product/chinese-banyan-ficus-microcarpa-bonsai
+Note: Premium specimen bonsai that Growman lists in the Avenue category. See the Chinese Banyan Bonsai entry in Outdoor Plants for care guidance (bright light, trimming and wiring, water when the top soil dries).
+Search keywords: chinese banyan, ficus bonsai, premium specimen bonsai
+
+=====================================================
+SECTION 10: MEDICINAL PLANTS CATALOG (6 plants)
+=====================================================
+Category description: Medicinal and herbal plants are grown for their leaves, roots and traditional household uses. Most are hardy, tolerate containers well and prefer a sunny spot with free-draining soil. Consult a qualified practitioner before using any plant medicinally.
+Types on site: Herbal (4), Flowering (1), Succulent (1).
+SAFETY NOTE FOR ALL ENTRIES: statements about traditional uses describe folk or traditional practice, not proven medical treatment. They are not medical advice.
+
+### PLANT: Bryophyllum Pinnatum / Patharchatta / Panfuti (Kalanchoe pinnata)
+Category: Medicinal (Succulent)
+Botanical name: Kalanchoe pinnata (syn. Bryophyllum pinnatum)
+Common names: Patharchatta, Panfuti, air plant, miracle leaf, life plant
+Growman price (snapshot 4 Oct 2026): Rs 310 (original Rs 1,100), 72% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/bryophyllum-pinnatum-patharchatta-panfuti-kalanchoe-pinnata
+General plant knowledge:
+- Fleshy succulent whose leaf edges grow tiny plantlets that drop and root, so it spreads very easily; a single leaf placed on soil can start a new plant.
+- Light: bright light to full sun, with some afternoon shade in harsh summers. Water: little; let the soil dry between waterings. Needs free-draining soil; rots in soggy soil.
+- Traditional use: the name Patharchatta ("stone-breaker") reflects its folk association with kidney stones in traditional medicine. This is not proven medical treatment.
+- Safety: the plant contains compounds that are toxic to pets and livestock if eaten.
+Search keywords: patharchatta, panfuti, kalanchoe pinnata, bryophyllum, miracle leaf, succulent medicinal plant
+
+### PLANT: Aloe Vera (Aloe barbadensis miller)
+Category: Medicinal (Succulent / Herbal)
+Botanical name: Aloe barbadensis miller (Aloe vera)
+Common names: Aloe vera, ghritkumari, kumari
+Growman price (snapshot 4 Oct 2026): Rs 300 (original Rs 800), 63% off. Size label: 8 x 10.
+Product URL: https://growman.live/product/aloe-vera-aloe-barbadensis-miller
+General plant knowledge:
+- Rosette-forming succulent with thick, gel-filled leaves; extremely hardy and a staple of home and balcony gardens.
+- Light: bright light to full sun; indoors a very sunny window. Water: infrequent; let soil dry fully between waterings and use a fast-draining pot or cactus mix. Overwatering and poor drainage cause rot.
+- Traditional/household use: the clear inner gel is widely used for soothing the skin. The yellow latex layer under the leaf skin can act as a strong laxative and should not be eaten. Patch-test before skin use.
+- Toxic to cats and dogs if eaten.
+Search keywords: aloe vera, ghritkumari, aloe vera plant, skincare plant, succulent, low water plant, medicinal plant for balcony
+
+### PLANT: Maghai Paan (Piper betel)
+Category: Medicinal (Herbal)
+Botanical name: Piper betel
+Common names: Betel leaf plant, paan, Maghai paan (Magahi variety)
+Growman price (snapshot 4 Oct 2026): two sizes. Size 15 X 16: Rs 450 (original Rs 900), 50% off. POT: Rs 350 (original Rs 900), 61% off.
+Product URL: https://growman.live/product/maghai-paan-piper-betel
+General plant knowledge:
+- Perennial climbing vine grown for its heart-shaped, glossy leaves used in paan and in religious and traditional rituals. "Maghai" (Magahi) refers to a prized variety associated with the Magadh region of Bihar, known for soft, delicately flavoured leaves.
+- Light: bright indirect light or partial shade; harsh sun burns the leaves. Water: keep soil consistently moist but well drained; likes high humidity and protection from strong wind and frost. Give it a support such as a pole or moss stick and pinch tips to keep it bushy.
+Search keywords: paan plant, betel leaf plant, maghai paan, piper betel, nagvel, vine for shade, paan leaf plant online
+
+### PLANT: Red Passion Flower / Krishna Kamal (Passiflora incarnata)
+Category: Medicinal (Flowering)
+Botanical name (as listed): Passiflora incarnata
+Common names: Red passion flower, Krishna Kamal
+Growman price (snapshot 4 Oct 2026): Rs 450 (original Rs 1,600), 72% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/red-passion-flower-krishna-kamal-passiflora-incarnata
+General plant knowledge:
+- Flowering climber with striking red passion flowers (as described by the listing name); needs a trellis or fence, full sun to light shade, regular water and good drainage.
+- Traditional use: Passiflora incarnata is used in herbal tradition for calming teas and tinctures. This is not proven medical treatment; consult a qualified practitioner before using any plant medicinally.
+- Naming note: "Krishna Kamal" is applied to several Passiflora species in India.
+Search keywords: red passion flower, krishna kamal red, passiflora, medicinal flowering climber
+
+### PLANT: Shyama Tulsi / Krishna Tulsi (Ocimum tenuiflorum)
+Category: Medicinal (Herbal)
+Botanical name: Ocimum tenuiflorum (syn. Ocimum sanctum)
+Common names: Shyama tulsi, Krishna tulsi, purple tulsi, holy basil
+Growman price (snapshot 4 Oct 2026): Rs 200 (original Rs 900), 78% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/shyama-tulsi-krishna-tulsi-ocimum-tenuiflorum
+General plant knowledge:
+- Sacred aromatic herb with purple-green leaves, central to Hindu worship and daily household practice; also used in traditional herbal tea.
+- Light: full sun (at least 4-6 hours). Water: regular but well drained; do not let it sit wet. Pinch off the flower spikes (manjari) regularly to keep the plant bushy and leafy; it is naturally short-lived (replace or propagate from seed/cuttings every year or two).
+- Pests: whitefly, mealybugs and leaf-eating caterpillars can be problems; wash leaves and remove pests early.
+Search keywords: tulsi, krishna tulsi, shyama tulsi, holy basil, purple tulsi, pooja plant, herbal plant for kitchen
+
+### PLANT: Rama Tulsi (Ocimum gratissimum)
+Category: Medicinal (Herbal)
+Botanical name (as listed): Ocimum gratissimum
+Common names: Rama tulsi, vana tulsi, clove basil
+Growman price (snapshot 4 Oct 2026): two sizes. POT: Rs 150 (original Rs 700), 79% off. Size 13 X 13: Rs 450 (original Rs 700), 36% off.
+Product URL: https://growman.live/product/rama-tulsi-ocimum-gratissimum
+General plant knowledge:
+- Aromatic, fast-growing shrubby basil with green leaves and a clove-like fragrance. Grows larger and bushier than Shyama tulsi.
+- Light: full sun. Water: regular, with good drainage. Pinch the flower spikes to encourage leaf growth. The POT size is the cheapest plant in the Growman catalog (apart from the Bermuda grass roll).
+- Naming note: in different regions "Rama tulsi" is used for different Ocimum types; the species named on the Growman listing is Ocimum gratissimum.
+Search keywords: rama tulsi, vana tulsi, ocimum gratissimum, clove basil, green tulsi, cheap tulsi plant
+
+=====================================================
+SECTION 11: FRUIT PLANTS CATALOG (3 plants)
+=====================================================
+Category description: Fruit plants can be grown in pots on a terrace or balcony as well as in the ground. They need more sun, more root space and more consistent feeding than ornamental plants, so pick a position that gets direct light for most of the day and plan to move up a pot size as the plant establishes.
+Types on site: Tropical (2), Garden (1).
+
+### PLANT: Grape / Angoor Vine - Grafted Plant (Vitis vinifera)
+Category: Fruit Plants
+Botanical name: Vitis vinifera
+Common names: Grape vine, angoor
+Growman price (snapshot 4 Oct 2026): two listings, both Size 13 X 13. Variant 1: Rs 450 (original Rs 1,299), 65% off. Variant 2 (seedless grape image): Rs 650 (original Rs 1,299), 50% off.
+Product URL: https://growman.live/product/grape-angoor-vine-grafted-plant-vitis-vinifera
+General plant knowledge:
+- Woody climbing vine; grafted plants establish and fruit earlier than seedlings. Needs a strong trellis, pergola or wire support.
+- Light: full sun, 6+ hours. Water: regular in the growing season; keep soil well drained. Needs yearly pruning to control growth and promote fruiting. Fruiting usually begins a couple of years after planting.
+Search keywords: grape plant, angoor plant, grafted grape, seedless grape plant, fruit vine, terrace fruit plant
+
+### PLANT: Pomegranate (Anar) Plant
+Category: Fruit Plants
+Botanical name: Punica granatum
+Common names: Pomegranate, anar
+Growman price (snapshot 4 Oct 2026): Rs 600 (original Rs 1,500), 60% off. Size label: 15 X 16. (The listing is for a dwarf pomegranate.)
+Product URL: https://growman.live/product/-17-buy-dwarf-pomegranate-anar-plant-online-nursery-nisarga-
+General plant knowledge:
+- Deciduous to semi-evergreen shrub or small tree; the dwarf type suits large pots and terraces.
+- Light: full sun. Water: moderate; drought tolerant once established; avoid waterlogging. Feed during the growing season. Fruit usually starts after 2-3 years.
+Search keywords: pomegranate plant, anar plant, dwarf pomegranate, terrace fruit plant, fruit plant for pot
+
+### PLANT: Dragon Fruit Plant (Pitaya / Pitahaya)
+Category: Fruit Plants
+Botanical name: Hylocereus / Selenicereus species (the listing does not state the species)
+Common names: Dragon fruit, pitaya, pitahaya
+Growman price (snapshot 4 Oct 2026): Rs 560 (original Rs 1,900), 71% off. Size label: 13 X 13.
+Product URL: https://growman.live/product/dragon-fruit-plant-pitayapitahaya-plants
+General plant knowledge:
+- Climbing cactus that needs a sturdy post or frame to climb and a hanging canopy. Flowers open at night and the plant can fruit within a year or two of planting.
+- Light: full sun (partial shade in the harshest summers). Water: modest; very fast-draining soil, and do not let it stay wet. Feed with organic manure through the growing season.
+Search keywords: dragon fruit plant, pitaya, cactus fruit plant, terrace fruit plant, climbing cactus
+
+=====================================================
+SECTION 12: PLANT SELECTION GUIDE (WHICH GROWMAN PLANT FOR WHICH NEED)
+=====================================================
+Note: These groupings combine Growman's catalog with general plant knowledge. Growman's own shop filters are: Indoor, Outdoor, Air-purifying, Low light, Easy care, Balcony, Flowering, Gift plants, Bonsai, Fruit, Medicinal.
+
+Low light rooms (north-facing room, corridor, interior):
+Best catalog choices are Snake Plant, Aglaonema (including Golden Madonna) and Parlor Palm. Expect slower growth in low light. Avoid croton, anthurium, flowering shrubs and fruit plants in low light.
+
+Air-conditioned rooms and offices:
+Snake Plant, Aglaonema, Parlor Palm and Lucky Bamboo cope reasonably well. Keep plants out of the direct airflow, and water less often but thoroughly.
+
+Air-purifying plants:
+Growman's Indoor Plants category has an "Air Purifying" type with 9 plants. Commonly marketed air-purifying choices in the catalog include Snake Plant, Areca Palm, Parlor Palm and Aglaonema. Note: while such plants are popular for this reason, their measurable effect on air quality in an ordinary room is modest; ventilation matters far more.
+
+Pet-friendly choices:
+Parlor Palm and Areca Palm are generally listed as non-toxic to cats and dogs. Many other catalog plants are toxic if eaten, including Aglaonema, Philodendron, Croton, Anthurium, Alocasia, Lucky Bamboo, Snake Plant (mildly), Foxtail Fern, Aloe Vera, Bryophyllum, Allamanda creeper, Hawaiian Ti and Raat Rani. Always keep any plant out of reach of pets that chew foliage.
+
+Easy-care plants for beginners:
+Snake Plant, Aglaonema, Aloe Vera, Tulsi (Shyama or Rama), Hibiscus, Ixora, Bryophyllum (Patharchatta), Ashoka tree and Bermuda grass.
+
+Full-sun and hot west-facing balconies and terraces:
+Aloe Vera, Bryophyllum, Hibiscus, Ixora, Arabian Jasmine, Pomegranate, Dragon Fruit, Golden Vidya Compacta (with excellent drainage), Foxtail Palm and Bermuda grass. Introduce plants that were grown under nursery shade netting to full afternoon sun gradually over one to two weeks.
+
+East-facing and partly shaded balconies:
+Maghai Paan (betel), Sanchezia, Hawaiian Ti, Anthurium (bright indirect only), Foxtail Fern, Tibouchina (light shade), Alocasia.
+
+Fragrant plants:
+Raat Rani (strong fragrance at night), Arabian Jasmine / Mogra, Bakul (Mimusops elengi), Sweet Autumn Clematis, Rama Tulsi and Shyama Tulsi (aromatic leaves).
+
+Flowering plants:
+- Shrubs: Hibiscus, Ixora, Tibouchina, Raat Rani, Arabian Jasmine
+- Climbers: Passiflora / Krishna Kamal (blue and red), Trumpet Vine (orange), Allamanda Creeper, Sweet Autumn Clematis
+- Indoor/ornamental: Anthurium
+- Trees: Gulmohar (red-orange), Amaltas (yellow), Cassia javanica (pink), Pride of India / Jarul (pink-purple), Bakul (small fragrant flowers)
+
+Pooja and religious-use plants:
+Shyama Tulsi, Rama Tulsi, Arabian Jasmine (mogra), Hibiscus (gudhal), Krishna Kamal, Maghai Paan (betel leaf), Bakul, Amaltas, plus shaped topiary such as the Shivling and OM shapes.
+
+Climbers for fences, pergolas and trellises:
+Passiflora / Krishna Kamal, Trumpet Vine, Allamanda Creeper, Sweet Autumn Clematis, Grape vine, Dragon Fruit (needs a sturdy post), Maghai Paan (shade).
+
+Hedges, privacy and boundary screens:
+Ashoka tree (tall columnar screen), Golden Vidya / Golden Thuja (conifer hedge), Ixora (flowering hedge), Raat Rani (shrub hedge).
+
+Avenue and large landscape trees:
+Gulmohar, Amaltas, Cassia javanica, Pride of India, Bakul, Ashoka tree and Foxtail Palm. Plant these in the ground, well away from buildings and underground pipes (especially Gulmohar, which has wide shallow roots).
+
+Fruit plants for terraces and pots:
+Pomegranate (dwarf), Dragon Fruit, Grape vine (needs a trellis). All need several hours of direct sun and a larger pot or ground planting over time.
+
+Herbs and kitchen plants:
+Curly-leaf Parsley, Shyama Tulsi, Rama Tulsi, Maghai Paan (betel).
+
+Bonsai and premium specimen plants:
+Bonsai - Dragon Roots Ficus microcarpa (Rs 98,000), Chinese Banyan Bonsai (Rs 1,19,000 in Outdoor; Rs 1,25,859 in Avenue), Ficus air-root bonsai (Rs 1,29,990), Ginseng Ficus (Rs 1,450, bonsai-style but much more affordable).
+
+Topiary and decorative shaped plants:
+OM shape, Shivling shape, Elephant shape, Heart shape (Valentine's) and Fukien Tea Vessel Tree. All are listed as Malpighia plants.
+
+Gift plants (see also the Gifting page):
+Lucky Bamboo (Rs 350), Snake Plant, Aglaonema Golden Madonna, Anthurium, Aloe Vera, Tulsi, Ginseng Ficus, Heart-shape topiary, bonsai for premium gifting. Growman can add a planter and a handwritten message card on request.
+
+Statement and big-leaf plants:
+Alocasia macrorrhizos (Giant Taro), Areca Palm, Foxtail Palm, Philodendron 'Burle Marx'.
+
+=====================================================
+SECTION 13: PRICE INDEX (SNAPSHOT 4 OCTOBER 2026)
+=====================================================
+All prices in INR. Format: Plant name (size label if relevant): current price (original price).
+
+Lowest-priced plants:
+- Natural Bermuda Grass Roll: Rs 15 (Rs 29) - unit not stated on the site
+- Rama Tulsi POT: Rs 150 (Rs 700)
+- Shyama Tulsi 13 X 13: Rs 200 (Rs 900)
+- Aglaonema Golden Madonna: Rs 299 (Rs 700)
+- Aloe Vera 8 x 10: Rs 300 (Rs 800)
+- Tibouchina 10': Rs 300 (Rs 800)
+- Parlor Palm 6": Rs 300 (Rs 1,100) - sold out
+- Bryophyllum / Patharchatta 13 X 13: Rs 310 (Rs 1,100)
+
+Highest-priced plants:
+- Ficus air-root bonsai: Rs 1,29,990 (Rs 1,60,000)
+- Chinese Banyan Bonsai (Avenue listing): Rs 1,25,859 (Rs 1,52,200)
+- Chinese Banyan Bonsai (Outdoor listing): Rs 1,19,000 (Rs 1,90,000)
+- Bonsai - Dragon Roots Ficus microcarpa: Rs 98,000 (Rs 1,54,000)
+- Heart Shape Valentine's Malpighia: Rs 4,250 (Rs 7,500)
+- Pride of India / Jarul: Rs 4,200
+- Gulmohar: Rs 3,999 (Rs 8,500)
+- Fukien Tea Vessel Tree: Rs 3,800 (Rs 6,000)
+- OM Shape Malpighia: Rs 3,500 (Rs 5,550)
+- Cassia javanica: Rs 3,500 (Rs 5,900)
+
+Indoor Plants (15):
+- Aglaonema Golden Madonna: Rs 299 (Rs 700)
+- Parlor Palm 6": Rs 300 (Rs 1,100) sold out
+- Dracaena sanderiana Lucky Bamboo: Rs 350
+- Sanchezia speciosa Tiger Plant: Rs 350 (Rs 800)
+- Sunny Star Croton: Rs 399 (Rs 799)
+- Philodendron: Rs 399 (Rs 700)
+- Curly-leaf Parsley: Rs 400 (Rs 800)
+- Aglaonema (spp.): Rs 499 (Rs 700)
+- Areca Palm (second listing): Rs 600 (Rs 990)
+- Snake Plant: Rs 600 (Rs 1,200)
+- Philodendron 'Burle Marx': Rs 600 (Rs 1,600)
+- Parlour Palm (larger listing): Rs 1,100 (Rs 1,600)
+- Areca Palm - Dypsis lutescens: Rs 1,100 (Rs 1,300)
+- Ficus microcarpa Ginseng Ficus: Rs 1,450 (Rs 4,500)
+- Bonsai - Dragon Roots Ficus microcarpa: Rs 98,000 (Rs 1,54,000)
+
+Ornamental Plants (6):
+- Foxtail Fern 13 X 13: Rs 450 (Rs 1,100)
+- China Doll POT: Rs 550 (Rs 1,800)
+- Alocasia macrorrhizos Giant Taro: Rs 550 (Rs 1,300)
+- Golden Thuja 13': Rs 600
+- Anthurium andraeanum: Rs 600 (Rs 1,100)
+- Radermachera sinica China Doll (larger): Rs 900 (Rs 1,400)
+
+Outdoor Plants (23):
+- Tibouchina 10': Rs 300 (Rs 800)
+- Ashoka Tree 13 X 13: Rs 350 (Rs 1,500); 18 X 18: Rs 900 (Rs 1,500)
+- Golden Vidya Compacta POT: Rs 350 (Rs 1,900); 21 X 21: Rs 900 (Rs 1,900)
+- Hibiscus multicolored 13 X 13: Rs 350 (Rs 1,100)
+- Ixora 13 X 13: Rs 350 (Rs 3,200); 18 X 18: Rs 700 (Rs 3,200)
+- Krishna Kamal 12": Rs 350 (Rs 800)
+- Arabian Jasmine POT: Rs 400 (Rs 1,300); 18 X 18: Rs 680 (Rs 1,300)
+- Blue Passiflora 13 x 13: Rs 420 (Rs 1,300)
+- Woodrush 10': Rs 450
+- Sweet Autumn Clematis 10': Rs 450 (Rs 600)
+- Hawaiian Ti POT: Rs 450 (Rs 900) sold out
+- Allamanda Creeper 18 X 18: Rs 550 (Rs 900)
+- Raat Rani 18 X 18: Rs 680 (Rs 3,200)
+- Norfolk Island Pine 13 x13: Rs 800 (Rs 990) sold out
+- Trumpet Vine (orange) 18 X 18: Rs 1,600 (Rs 5,400)
+- Elephant Shape Malpighia: Rs 1,400 (Rs 3,000)
+- Shivling Shape Malpighia: Rs 1,900 (Rs 4,000)
+- OM Shape Malpighia: Rs 3,500 (Rs 5,550)
+- Fukien Tea Vessel Tree: Rs 3,800 (Rs 6,000)
+- Heart Shape Valentine's Malpighia: Rs 4,250 (Rs 7,500)
+- Chinese Banyan Bonsai: Rs 1,19,000 (Rs 1,90,000)
+- Ficus air-root bonsai: Rs 1,29,990 (Rs 1,60,000)
+- Natural Bermuda Grass Roll: Rs 15 (Rs 29)
+
+Avenue (7):
+- Foxtail Palm: Rs 850 (Rs 2,400)
+- Bakul / Morchali 30 X 30: Rs 2,500 (Rs 5,500)
+- Amaltas 30 X 30: Rs 2,500 (Rs 5,500)
+- Cassia javanica 30 X 30: Rs 3,500 (Rs 5,900)
+- Gulmohar 30 X 30: Rs 3,999 (Rs 8,500)
+- Pride of India / Jarul 30 X 30: Rs 4,200
+- Chinese Banyan Bonsai: Rs 1,25,859 (Rs 1,52,200)
+
+Medicinal (6):
+- Rama Tulsi POT: Rs 150 (Rs 700); 13 X 13: Rs 450 (Rs 700)
+- Shyama Tulsi 13 X 13: Rs 200 (Rs 900)
+- Aloe Vera 8 x 10: Rs 300 (Rs 800)
+- Bryophyllum Pinnatum 13 X 13: Rs 310 (Rs 1,100)
+- Maghai Paan POT: Rs 350 (Rs 900); 15 X 16: Rs 450 (Rs 900)
+- Red Passion Flower 13 X 13: Rs 450 (Rs 1,600)
+
+Fruit Plants (3):
+- Grape / Angoor grafted 13 X 13: Rs 450 (Rs 1,299); second variant Rs 650 (Rs 1,299)
+- Dragon Fruit 13 X 13: Rs 560 (Rs 1,900)
+- Pomegranate (Anar) 15 X 16: Rs 600 (Rs 1,500)
+
+Plants currently sold out (snapshot): Parlor Palm (6"), Hawaiian Ti Plant, Norfolk Island Pine.
+
+Biggest percentage discounts shown: Ixora 13 X 13 (89%), Golden Vidya Compacta POT (82%), Raat Rani (79%), Rama Tulsi POT (79%), Shyama Tulsi (78%), Ixora 18 X 18 (78%), Ashoka 13 X 13 (77%).
+
+=====================================================
+SECTION 14: SEASONAL CALENDAR FOR PLANT CARE IN INDIA
+=====================================================
+General pattern for most of peninsular and central India (Hyderabad-type climate). Local weather varies.
+
+Summer / pre-monsoon (roughly March to early June):
+- Hot and dry. Indoor and outdoor pots dry out fast; check soil every two to three days.
+- Water early in the morning or after sunset. Mulch the soil surface to slow evaporation.
+- Protect plants that came from nursery shade netting from sudden full afternoon sun. Group pots so they shade each other.
+- Do not repot or hard-prune during a heatwave.
+- Flowering trees: Amaltas (golden yellow), Gulmohar (red-orange), Cassia javanica (pink) and Pride of India (pink-purple) bloom in this period or just after.
+- Stake tall plants before pre-monsoon winds arrive.
+
+Monsoon (roughly June to September):
+- Humidity high; pots stay damp. Reduce watering markedly and improve airflow.
+- Make sure drainage holes are open and pots are raised off the floor. Shelter smaller pots during extended heavy rain.
+- Watch for fungal disease, root rot, slugs and snails. Early monsoon is a good time to repot or prune many outdoor plants and to plant trees in the ground.
+
+Post-monsoon / early autumn (roughly October to November, i.e. the current season at the time of this snapshot):
+- A good time to repot, prune and plant out, because plants are at the start of a growing season and recover well.
+- Sweet Autumn Clematis flowers in late summer to autumn.
+
+Winter (roughly December to February):
+- Cooler nights; growth slows. Water less. Protect frost- and cold-sensitive plants (Alocasia, Tibouchina, palms, dragon fruit) from cold draughts or exposure on very cold nights.
+- Bright winter sun is gentle and many indoor plants can sit closer to the window.
+
+=====================================================
+SECTION 15: TROUBLESHOOTING PLANT PROBLEMS
+=====================================================
+Yellow lower leaves, soft stems, soil staying wet: overwatering or poor drainage. Let soil dry, empty the saucer, improve drainage and airflow. Reduce watering in the monsoon.
+
+Brown, crispy leaf edges; limp dry leaves; soil pulling from pot edge: underwatering or very dry air. Water thoroughly until it runs from the drainage hole and check more often in summer.
+
+Drooping in wet soil: roots are struggling from too much water; do not add more water.
+
+Leaf drop right after buying or moving a plant: normal adjustment to new light, humidity and airflow. Leave it in one position for two to four weeks; do not repot or fertilise.
+
+Scorched or bleached patches on leaves: too much direct sun. Move the plant a metre from the glass or give afternoon shade; introduce full sun gradually.
+
+Leggy, sparse growth and pale leaves: not enough light. Move to a brighter spot (for a sun-loving outdoor plant, to a spot with 5-6 hours of direct sun).
+
+Brown tips on palms and dracaenas: dry air, salts or fluoride in the water, or irregular watering; flush the pot occasionally and keep plants away from AC airflow.
+
+Plant not flowering (hibiscus, jasmine, ixora, passiflora): usually not enough direct sun or too much nitrogen; give 5-6 hours of sun and use a flower-friendly fertiliser.
+
+Yellow leaves with green veins on Ixora and other acid-loving plants: iron deficiency or alkaline soil; use an acidifying or chelated-iron feed.
+
+Tiny insects on buds or new growth: aphids, mealybugs or whitefly; wash off with a strong water spray or treat early with a mild soap solution or neem-based spray.
+
+Roots coming out of drainage holes, water running straight through, growth slowing: ready for a pot only a few centimetres wider; repot at the start of a growing season, not in a heatwave.
+
+Plant damaged on arrival from Growman: contact Growman within 48 hours of delivery with the order number and a photo (phone/WhatsApp +91 95535 70568, email growman.live@gmail.com).
+
+=====================================================
+SECTION 16: GLOSSARY OF COMMON INDIAN AND BOTANICAL NAMES
+=====================================================
+Amaltas = Golden shower tree = Cassia fistula = Indian laburnum
+Angoor = Grape = Vitis vinifera
+Anar = Pomegranate = Punica granatum
+Areca palm = Butterfly palm = Dypsis lutescens
+Ashoka (false Ashoka) = Polyalthia longifolia (different from the sacred Ashoka, Saraca asoca)
+Bakul = Maulsari = Morchali = Spanish cherry = Mimusops elengi
+Chinese evergreen = Aglaonema
+Doob / Durva = Bermuda grass = Cynodon dactylon
+Gudhal = Hibiscus = Hibiscus rosa-sinensis
+Gulmohar = Royal poinciana = Flame tree = Delonix regia
+Ghritkumari / Kumari = Aloe vera
+Jarul = Pride of India = Queen's crape myrtle = Lagerstroemia speciosa
+Krishna Kamal = Passion flower = Passiflora (several species)
+Krishna / Shyama tulsi = Purple holy basil = Ocimum tenuiflorum
+Mogra / Motia = Arabian jasmine = Jasminum sambac
+Morpankhi = Thuja = Platycladus orientalis
+Paan / Nagvel = Betel leaf = Piper betel
+Patharchatta / Panfuti = Kalanchoe pinnata = Bryophyllum pinnatum
+Raat Rani = Night-blooming jasmine = Cestrum nocturnum
+Snake plant = Mother-in-law's tongue = Dracaena trifasciata (formerly Sansevieria)
+Vana tulsi / Rama tulsi (Growman listing) = Ocimum gratissimum = Clove basil
+Pitaya / Pitahaya = Dragon fruit
+Lucky bamboo = Dracaena sanderiana (not true bamboo)
+Foxtail fern = Asparagus densiflorus 'Myersii' (not a true fern)
+
+=====================================================
+SECTION 17: FREQUENTLY ASKED PLANT QUESTIONS (GROWMAN CATALOG)
+=====================================================
+
+Q: Which Growman plant is best for a dark room or low-light corner?
+A: Snake Plant, Aglaonema (including the Golden Madonna variety) and Parlor Palm. They tolerate low light, though growth slows. No plant thrives in complete darkness; very dim rooms need a grow light.
+
+Q: What is the cheapest plant on Growman?
+A: The Natural Bermuda Grass Roll at Rs 15 is the lowest listed price (the pricing unit is not stated). Among regular plants, Rama Tulsi in a POT at Rs 150 is the cheapest, followed by Shyama Tulsi at Rs 200.
+
+Q: What is the most expensive plant on Growman?
+A: Premium specimen bonsai: the Ficus air-root bonsai at Rs 1,29,990, the Chinese Banyan Bonsai at Rs 1,25,859 (Avenue listing) or Rs 1,19,000 (Outdoor listing), and the Dragon Roots Ficus bonsai at Rs 98,000.
+
+Q: Which plants are good for a hot, sunny balcony?
+A: Aloe Vera, Bryophyllum, Hibiscus, Ixora, Arabian Jasmine, Pomegranate, Dragon Fruit and Bermuda grass. Introduce them to full afternoon sun gradually and make sure pots drain well for the monsoon.
+
+Q: Which plants are safe for pets?
+A: Parlor Palm and Areca Palm are generally regarded as non-toxic to cats and dogs. Most other plants in the catalog are toxic if eaten. Keep plants out of reach of pets.
+
+Q: Which plants smell good?
+A: Raat Rani (very strong, at night), Arabian Jasmine / Mogra, Bakul, Sweet Autumn Clematis; Tulsi has an aromatic leaf fragrance.
+
+Q: Which flowering plants does Growman sell?
+A: Hibiscus, Ixora, Tibouchina, Arabian Jasmine, Raat Rani, Passiflora / Krishna Kamal, Trumpet Vine, Allamanda Creeper, Sweet Autumn Clematis, Anthurium, and the flowering avenue trees Gulmohar, Amaltas, Cassia javanica and Pride of India.
+
+Q: Which fruit plants does Growman sell?
+A: Grape / Angoor (grafted), Pomegranate (dwarf Anar) and Dragon Fruit (Fruit Plants category, 3 plants).
+
+Q: Which medicinal and herbal plants does Growman sell?
+A: Aloe Vera, Bryophyllum / Patharchatta, Maghai Paan (betel), Red Passion Flower, Shyama Tulsi and Rama Tulsi (Medicinal category, 6 plants). Consult a qualified practitioner before using any plant medicinally.
+
+Q: Can I grow a fruit plant in a pot on a terrace?
+A: Yes. Pomegranate, Dragon Fruit and Grape can be grown in large pots with direct sun for most of the day, regular feeding, and a pot upgrade as the plant grows. Grape and Dragon Fruit need a trellis or sturdy post.
+
+Q: How often should I water indoor plants?
+A: Not on a fixed schedule. Push a finger 2-3 cm into the soil; water only if it is dry, then water thoroughly until it drains and empty the saucer after ten minutes. Water far less in the monsoon and more often in peak summer.
+
+Q: How long does a new plant take to settle in?
+A: About two weeks to a month. Losing a leaf or two is normal. Do not repot or fertilise during that period.
+
+Q: When is the best time to repot outdoor plants in India?
+A: At the start of a growing season: as the weather turns after summer, or early in the monsoon. Avoid repotting during a heatwave.
+
+Q: Is Ashoka tree (Polyalthia longifolia) the same as the sacred Ashoka?
+A: No. The tree sold as Ashoka tree on Growman is Polyalthia longifolia, a tall columnar evergreen commonly called "false Ashoka". The sacred Ashoka is Saraca asoca, a different species.
+
+Q: Which trees does Growman sell for roadsides and large landscapes?
+A: The Avenue category: Bakul, Pride of India (Jarul), Cassia javanica (Pink Shower Tree), Amaltas (Golden Shower Tree), Gulmohar, Foxtail Palm and a Chinese Banyan bonsai. The Ashoka tree in Outdoor Plants is also widely used for boundary and avenue planting.
+
+Q: Does Growman sell gift plants?
+A: Yes. See the Gifting page: gift collections include Festivals and good luck, Office and desk, Easy care, Air-purifying and Bonsai. Planters and handwritten message cards are available on request through phone or WhatsApp (+91 95535 70568).
+
+Q: Can I visit the nursery?
+A: Yes. Shiridi Sai Nursery, Hyderabad, is open 9 AM to 7 PM IST on all days. You can also reserve plants online with "Pick up at the nursery" and the store will call to confirm the amount and pickup time.
+
+Q: Does Growman deliver across India?
+A: Yes. The delivery fee depends on the address and plant size and is shown at checkout; very large or special addresses may need a quotation by phone.
+
+Q: How do I buy plants in bulk for a landscaping project or office?
+A: Use the Bulk orders page on growman.live: choose varieties and quantities (the page lists 67 varieties with per-unit prices) and send a quotation request; the nursery calls to confirm pricing, availability and delivery. Add a GSTIN if you need it on the quotation.
+
+Q: Can I identify a plant from a photo on Growman?
+A: Yes. Tap the camera icon in the search bar and upload a photo. For plant care questions you can also use the Growman plant assistant, Dootha, via the chat button.
+
+=====================================================
+END OF DOCUMENT
+=====================================================
+Source pages used: growman.live (home, /shop, /categories/*, /blog/*, /help-center, /about, /bulk, /gifting). Catalog data is a snapshot taken on 4 October 2026; refresh prices and stock from the live site before relying on them. Care and botanical statements marked "General plant knowledge" are general horticultural information, not claims made on growman.live.

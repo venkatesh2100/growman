@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/venkatesh2100/growman/apps/go-backend/internal/plantnet"
 )
-
-var errNoCareModel = errors.New("care model unavailable")
 
 const gbifUserAgent = "Growman/1.0 (plant-care; +https://growman.live)"
 
@@ -114,9 +111,9 @@ func postJSONContext(ctx context.Context, url string, body any, headers map[stri
 	return resp.StatusCode, respBody, nil
 }
 
-// careGuide asks the configured chat model for a short care sheet.
-// The result is cached per species, so a repeat scan does not call the
-// model again. Pl@ntNet does not provide care or origin text.
+// careGuide asks the RAG service for a short care sheet grounded in the
+// Growman knowledge file. The result is cached per species, so a repeat
+// scan does not call the service again. Pl@ntNet does not provide care text.
 func (h *Handler) careGuide(ctx context.Context, hit plantnet.SpeciesHit, lang string, origin *plantnet.Origin) map[string]any {
 	name := hit.ScientificNameWithoutAuthor
 	if name == "" {
@@ -136,41 +133,28 @@ func (h *Handler) careGuide(ctx context.Context, hit plantnet.SpeciesHit, lang s
 			return cached
 		}
 	}
-	if h.Cfg.GeminiAPIKey == "" && h.Cfg.OpenAIAPIKey == "" {
+	if strings.TrimSpace(h.Cfg.RAGServiceURL) == "" {
 		return nil
 	}
 
-	var b strings.Builder
-	b.WriteString("Species: " + name + "\n")
-	if hit.ScientificName != "" && hit.ScientificName != name {
-		b.WriteString("Full name: " + hit.ScientificName + "\n")
+	var countries []string
+	if origin != nil {
+		countries = origin.NativeCountries
 	}
-	if len(hit.CommonNames) > 0 {
-		b.WriteString("Common names: " + strings.Join(hit.CommonNames, ", ") + "\n")
-	}
-	if hit.Family != "" {
-		b.WriteString("Family: " + hit.Family + "\n")
-	}
-	if origin != nil && len(origin.NativeCountries) > 0 {
-		b.WriteString("GBIF native country codes: " + strings.Join(origin.NativeCountries, ", ") + "\n")
-	}
-	b.WriteString("Language: " + lang + "\n")
-
-	system := `You write a short care sheet for one plant grown in an Indian home or garden.
-Reply with a single JSON object and nothing else.
-Keys: origin, light, water, soil, temperature, fertilizer, pests, diseases.
-origin is one sentence. pests and diseases are arrays of at most 4 short names of typical problems, not a diagnosis of a photo.
-If GBIF native country codes are given, origin must agree with them.
-If you are unsure, say so briefly instead of inventing a precise number.`
-
 	ctx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	text, err := h.completeJSON(ctx, system, b.String())
+	raw, err := h.askRAGCare(ctx, ragCareRequest{
+		Species:         name,
+		CommonNames:     hit.CommonNames,
+		Family:          hit.Family,
+		OriginCountries: countries,
+		Language:        lang,
+	})
 	if err != nil {
 		log.Printf("[plants] care guide unavailable: %v", err)
 		return nil
 	}
-	obj := extractJSONObject(text)
+	obj := extractJSONObject(string(raw))
 	var guide struct {
 		Origin      string   `json:"origin"`
 		Light       string   `json:"light"`
@@ -211,79 +195,6 @@ If you are unsure, say so briefly instead of inventing a precise number.`
 		h.plantSet(ctx, key, raw, 14*24*time.Hour, now)
 	}
 	return out
-}
-
-func (h *Handler) completeJSON(ctx context.Context, system, user string) (string, error) {
-	provider := strings.ToLower(h.Cfg.AIProvider)
-	switch provider {
-	case "gemini":
-		return h.careGemini(ctx, system, user)
-	case "openai":
-		return h.careOpenAI(ctx, system, user)
-	default:
-		if h.Cfg.GeminiAPIKey != "" {
-			return h.careGemini(ctx, system, user)
-		}
-		return h.careOpenAI(ctx, system, user)
-	}
-}
-
-func (h *Handler) careGemini(ctx context.Context, system, user string) (string, error) {
-	if h.Cfg.GeminiAPIKey == "" {
-		return "", errNoCareModel
-	}
-	reqBody := GeminiRequest{
-		SystemInstruction: &GeminiContent{Parts: []GeminiPart{{Text: system}}},
-		Contents: []GeminiContent{{
-			Role:  "user",
-			Parts: []GeminiPart{{Text: user}},
-		}},
-	}
-	reqBody.GenerationConfig.Temperature = 0.2
-	reqBody.GenerationConfig.MaxOutputTokens = 500
-	apiURL := "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
-	status, body, err := postJSONContext(ctx, apiURL, reqBody, map[string]string{"X-goog-api-key": h.Cfg.GeminiAPIKey})
-	if err != nil {
-		return "", err
-	}
-	if status != http.StatusOK {
-		return "", errNoCareModel
-	}
-	var resp GeminiResponse
-	if json.Unmarshal(body, &resp) != nil || len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
-		return "", errNoCareModel
-	}
-	return resp.Candidates[0].Content.Parts[0].Text, nil
-}
-
-func (h *Handler) careOpenAI(ctx context.Context, system, user string) (string, error) {
-	if h.Cfg.OpenAIAPIKey == "" {
-		return "", errNoCareModel
-	}
-	reqBody := map[string]any{
-		"model": "gpt-3.5-turbo",
-		"messages": []ChatMessage{
-			{Role: "system", Content: system},
-			{Role: "user", Content: user},
-		},
-		"max_tokens":      500,
-		"temperature":     0.2,
-		"response_format": map[string]string{"type": "json_object"},
-	}
-	status, body, err := postJSONContext(ctx, "https://api.openai.com/v1/chat/completions", reqBody, map[string]string{
-		"Authorization": "Bearer " + h.Cfg.OpenAIAPIKey,
-	})
-	if err != nil {
-		return "", err
-	}
-	if status != http.StatusOK {
-		return "", errNoCareModel
-	}
-	var resp OpenAIResponse
-	if json.Unmarshal(body, &resp) != nil || len(resp.Choices) == 0 {
-		return "", errNoCareModel
-	}
-	return resp.Choices[0].Message.Content, nil
 }
 
 func extractJSONObject(s string) string {

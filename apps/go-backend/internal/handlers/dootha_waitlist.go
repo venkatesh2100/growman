@@ -75,6 +75,11 @@ func (h *Handler) JoinDoothaWaitlist(w http.ResponseWriter, r *http.Request) {
 		userID = &claims.UserID
 	}
 
+	net := services.Capture(r)
+	ip := net.IP
+	if ip == "" {
+		ip = middlewares.ClientIP(r)
+	}
 	entry := models.DoothaWaitlist{
 		Name:      name,
 		Phone:     phone,
@@ -83,7 +88,7 @@ func (h *Handler) JoinDoothaWaitlist(w http.ResponseWriter, r *http.Request) {
 		Status:    "pending",
 		Source:    source,
 		UserID:    userID,
-		IP:        middlewares.ClientIP(r),
+		IP:        ip,
 		UserAgent: oneLine(r.UserAgent(), 300),
 		Signups:   1,
 	}
@@ -123,7 +128,7 @@ func (h *Handler) JoinDoothaWaitlist(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.notifyWaitlistSignup(entry, r.Referer())
+	h.notifyWaitlistSignup(entry, r.Referer(), net)
 
 	httpjson.JSON(w, http.StatusCreated, map[string]any{
 		"id":     entry.ID,
@@ -136,7 +141,7 @@ func (h *Handler) JoinDoothaWaitlist(w http.ResponseWriter, r *http.Request) {
 // notifyWaitlistSignup emails the sign-up to the waiting-list inbox without
 // blocking the response: the entry is already stored, so a mail failure must
 // not fail the request.
-func (h *Handler) notifyWaitlistSignup(entry models.DoothaWaitlist, referrer string) {
+func (h *Handler) notifyWaitlistSignup(entry models.DoothaWaitlist, referrer string, net services.NetHint) {
 	to := strings.TrimSpace(h.Cfg.WaitlistEmail)
 	if to == "" {
 		to = h.merchantEmail()
@@ -181,10 +186,18 @@ Received: %s
 	)
 
 	subject := fmt.Sprintf("Dootha Care waitlist · %s", entry.Name)
+	if net.IP == "" {
+		net.IP = entry.IP
+	}
+	if net.UserAgent == "" {
+		net.UserAgent = entry.UserAgent
+	}
 	h.dispatchMerchantTo(to, services.DiscordMessage{
 		Title:       subject,
 		Description: body,
 		Color:       services.ColorBlue,
+		Network:     net,
+		Detail:      networkExtra(net),
 	}, "")
 }
 

@@ -37,7 +37,15 @@ type DiscordMessage struct {
 	URL         string
 	Color       int
 	Fields      []DiscordField
-	Footer      string
+	// Detail is attached to the Discord embed only. Email fallbacks stay
+	// on Fields, so the IP location block is not copied into mail.
+	Detail []DiscordField
+	Footer string
+	// Network is resolved in the background, and only when a webhook is set.
+	Network NetHint
+	// VisitorsOnly drops the alert unless the IP is a person on a
+	// non-datacenter network with coordinates.
+	VisitorsOnly bool
 }
 
 type discordStatusError struct{ Code int }
@@ -112,7 +120,15 @@ func ColorFor(subject string) int {
 	}
 }
 
+// ReplaceDiscordDeliver swaps the webhook transport. Tests only.
+func ReplaceDiscordDeliver(fn func(context.Context, string, []byte) error) func() {
+	prev := discordDeliver
+	discordDeliver = fn
+	return func() { discordDeliver = prev }
+}
+
 // Plain renders the alert as text for the email fallback.
+// Detail is omitted: the full network block is Discord-only.
 func (m DiscordMessage) Plain() string {
 	var b strings.Builder
 	if text := strings.TrimSpace(m.Description); text != "" {
@@ -203,8 +219,18 @@ func buildDiscordPayload(msg DiscordMessage) ([]byte, error) {
 	if embed.Color == 0 {
 		embed.Color = ColorGreen
 	}
-	fields := msg.Fields
-	if len(fields) > 25 {
+	fields := append([]DiscordField{}, msg.Fields...)
+	fields = append(fields, msg.Detail...)
+	if len(msg.Detail) > 0 && len(fields) > 25 {
+		// The location block is the part ops asked for. Keep it when the
+		// embed would otherwise overflow Discord's 25-field cap.
+		if len(msg.Detail) >= 25 {
+			fields = msg.Detail[:25]
+		} else {
+			head := 25 - len(msg.Detail)
+			fields = append(append([]DiscordField{}, msg.Fields[:head]...), msg.Detail...)
+		}
+	} else if len(fields) > 25 {
 		fields = fields[:25]
 	}
 	for _, field := range fields {

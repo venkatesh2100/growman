@@ -58,6 +58,15 @@ export default function BrowseEngagementBeacon() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (alreadyAlerted()) return;
+    // Headless browsers and prerender never become a visible shopper, so
+    // they never call the API.
+    if (navigator.webdriver) return;
+
+    let visible = document.visibilityState === "visible";
+    const onVisible = () => {
+      if (document.visibilityState === "visible") visible = true;
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     trackPath(window.location.pathname);
     const onPath = () => trackPath(window.location.pathname);
@@ -65,7 +74,7 @@ export default function BrowseEngagementBeacon() {
 
     const started = Date.now();
     const timer = window.setTimeout(async () => {
-      if (alreadyAlerted()) return;
+      if (!visible || alreadyAlerted()) return;
       markAlerted();
 
       let paths: string[] = [];
@@ -94,6 +103,13 @@ export default function BrowseEngagementBeacon() {
             path: window.location.pathname,
             paths,
             referrer: document.referrer || "",
+            screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            languages: navigator.languages?.join(", ") || navigator.language || "",
+            platform: navigator.platform || "",
+            cores: navigator.hardwareConcurrency || 0,
+            touch: navigator.maxTouchPoints || 0,
           }),
         });
       } catch {
@@ -104,6 +120,7 @@ export default function BrowseEngagementBeacon() {
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("popstate", onPath);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

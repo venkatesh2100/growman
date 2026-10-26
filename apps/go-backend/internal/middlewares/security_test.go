@@ -48,3 +48,23 @@ func TestClientIPPrefersCloudflare(t *testing.T) {
 		t.Fatalf("got %s", got)
 	}
 }
+
+func TestExactIPUsesProxyAppendedAddress(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "169.254.1.1:443"
+	// The first hop is whatever the caller typed. Cloud Run appends the
+	// address it actually accepted the connection from.
+	req.Header.Set("X-Forwarded-For", "8.8.8.8, 10.0.0.4, 49.36.14.20")
+	req.Header.Set("CF-Connecting-IP", "203.0.113.9")
+	if got := ExactIP(req); got != "49.36.14.20" {
+		t.Fatalf("got %s", got)
+	}
+}
+
+func TestExactIPIgnoresPrivatePeer(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "127.0.0.1:4321"
+	if ExactIP(req) != "" {
+		t.Fatal("loopback should not be reported as a visitor IP")
+	}
+}

@@ -225,7 +225,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 		return
 	}
-	h.notifyMerchantNewUser(user, "signup", middlewares.ClientIP(r), r.UserAgent())
+	h.notifyMerchantNewUser(user, "signup", services.Capture(r))
 
 	// Generate token
 	token, err := appauth.GenerateToken(h.Cfg.JWTSecret, user.ID, user.Role, 24*time.Hour)
@@ -380,7 +380,7 @@ func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if accessToken != "" {
-			user, isNew, err := h.findOrCreateByPhone(ten)
+			user, isNew, err := h.findOrCreateByPhone(ten, phoneAuthProfile{Net: services.Capture(r)})
 			if err != nil {
 				httpjson.Error(w, http.StatusInternalServerError, "server error")
 				return
@@ -457,7 +457,7 @@ func (h *Handler) VerifyWidgetOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _, err := h.findOrCreateByPhone(ten)
+	user, _, err := h.findOrCreateByPhone(ten, phoneAuthProfile{Net: services.Capture(r)})
 	if err != nil {
 		log.Printf("[OTP] findOrCreate: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "server error")
@@ -507,7 +507,7 @@ func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, isNew, err := h.findOrCreateByPhone(ten)
+	user, isNew, err := h.findOrCreateByPhone(ten, phoneAuthProfile{Net: services.Capture(r)})
 	if err != nil {
 		log.Printf("[OTP] findOrCreate: %v", err)
 		httpjson.Error(w, http.StatusInternalServerError, "server error")
@@ -562,6 +562,7 @@ func (h *Handler) VerifyTruecaller(w http.ResponseWriter, r *http.Request) {
 		Name:     profile.FullName(),
 		Email:    strings.TrimSpace(profile.Email),
 		Provider: "truecaller",
+		Net:      services.Capture(r),
 	})
 	if err != nil {
 		log.Printf("[Truecaller] findOrCreate: %v", err)
@@ -576,6 +577,7 @@ type phoneAuthProfile struct {
 	Name     string
 	Email    string
 	Provider string
+	Net      services.NetHint
 }
 
 // respondPhoneAuth issues JWT. isNewUser means "needs complete-profile" (missing name),
@@ -647,7 +649,7 @@ func (h *Handler) findOrCreateByPhone(tenDigit string, profile ...phoneAuthProfi
 	if err := h.DB.Create(&user).Error; err != nil {
 		return models.User{}, false, err
 	}
-	h.notifyMerchantNewUser(user, "phone/"+opt.Provider, "", "")
+	h.notifyMerchantNewUser(user, "phone/"+opt.Provider, opt.Net)
 	return user, true, nil
 }
 
@@ -785,7 +787,7 @@ func (h *Handler) Google(w http.ResponseWriter, r *http.Request) {
 			httpjson.Error(w, http.StatusInternalServerError, "failed to create account")
 			return
 		}
-		h.notifyMerchantNewUser(user, "google", middlewares.ClientIP(r), r.UserAgent())
+		h.notifyMerchantNewUser(user, "google", services.Capture(r))
 	} else {
 		// User exists, update provider if needed
 		if user.Provider != "google" {

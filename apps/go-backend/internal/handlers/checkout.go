@@ -333,7 +333,7 @@ func (h *Handler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		CustomerName:    req.Customer.Name,
 		CustomerEmail:   req.Customer.Email,
 		CustomerPhone:   req.Customer.Phone,
-		ClientIP:        middlewares.ClientIP(r),
+		ClientIP:        firstNonEmpty(middlewares.ExactIP(r), middlewares.ClientIP(r)),
 		UserAgent:       clipText(r.UserAgent(), 512),
 		AddressLine:     req.Customer.AddressLine,
 		City:            req.Customer.City,
@@ -529,7 +529,7 @@ func (h *Handler) CreateSoftAccount(email, phone, name, ip, userAgent string) (*
 	if err := h.DB.Create(&user).Error; err != nil {
 		return nil, err
 	}
-	h.notifyMerchantNewUser(user, "checkout-soft-account", ip, userAgent)
+	h.notifyMerchantNewUser(user, "checkout-soft-account", services.NetHint{IP: ip, UserAgent: userAgent})
 
 	go func() {
 		const resetLink = "https://yourdomain.com/reset-password" // TODO: point at the real reset page

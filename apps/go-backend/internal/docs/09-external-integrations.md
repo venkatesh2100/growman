@@ -244,11 +244,12 @@ routes. Requires `PLANTNET_API_KEY`. The free plan is 500 identifications
 per UTC day, shared by species, disease, and variety scans; see
 [06-chat-and-ai.md](./06-chat-and-ai.md) for which calls spend a credit and
 how `PLANTNET_RESERVE` keeps species identification available. Origin is
-read from GBIF with the id Pl@ntNet already returned. Care text uses the
-configured chat model and is cached per species.
+read from GBIF with the id Pl@ntNet already returned. Care text comes from
+the RAG service and is cached per species.
 
-## AI providers (OpenAI / Gemini)
+## Dootha RAG
 
-Covered in [06-chat-and-ai.md](./06-chat-and-ai.md) — selected via
-`AI_PROVIDER`, with automatic fallback to whichever provider key is actually
-present, and a fully-canned response path if neither is configured.
+Chat and photo care sheets are answered by the Python service in `apps/ai`.
+This process calls it with `RAG_SERVICE_URL` and `RAG_SHARED_SECRET`. Gemini
+is used only inside that service, and only for comparisons. See
+[06-chat-and-ai.md](./06-chat-and-ai.md) and [../../../../docs/rag.md](../../../../docs/rag.md).

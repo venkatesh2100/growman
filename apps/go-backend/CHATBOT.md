@@ -1,5 +1,7 @@
 # AI Chatbot Integration
 
+Dootha no longer calls Gemini or OpenAI from this Go process. Care, policy, and catalog questions go to the Python service in `apps/ai`. How that works is [docs/rag.md](../../docs/rag.md). The steps below are the old direct-provider setup and are not the current path.
+
 The Growman platform includes an AI-powered chatbot that helps users with plant care advice and recommends products from the store.
 
 ## Features

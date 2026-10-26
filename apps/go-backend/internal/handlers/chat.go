@@ -1,10 +1,7 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -70,55 +67,6 @@ type ProductRecommendation struct {
 	ImageURL string  `json:"imageUrl,omitempty"`
 }
 
-type OpenAIRequest struct {
-	Model       string        `json:"model"`
-	Messages    []ChatMessage `json:"messages"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Temperature float64       `json:"temperature,omitempty"`
-}
-
-type OpenAIResponse struct {
-	Choices []struct {
-		Message struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
-	Error struct {
-		Message string `json:"message"`
-	} `json:"error,omitempty"`
-}
-
-type GeminiRequest struct {
-	SystemInstruction *GeminiContent  `json:"systemInstruction,omitempty"`
-	Contents          []GeminiContent `json:"contents"`
-	GenerationConfig  struct {
-		Temperature     float64 `json:"temperature,omitempty"`
-		MaxOutputTokens int     `json:"maxOutputTokens,omitempty"`
-	} `json:"generationConfig,omitempty"`
-}
-
-type GeminiContent struct {
-	Parts []GeminiPart `json:"parts"`
-	Role  string       `json:"role,omitempty"`
-}
-
-type GeminiPart struct {
-	Text string `json:"text"`
-}
-
-type GeminiResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []GeminiPart `json:"parts"`
-		} `json:"content"`
-	} `json:"candidates"`
-	Error struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error,omitempty"`
-}
-
 // Chat handles AI chat requests and product recommendations
 func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	var req ChatRequest
@@ -180,52 +128,32 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Build context from products relevant to this question (single DB query)
-	relevantProducts := h.findRelevantProducts(req.Message, 6)
-	systemPrompt := h.buildSystemPrompt(req.Message, relevantProducts)
-	if loggedIn {
-		systemPrompt += h.customerContext(r.Context(), claims.UserID)
-		if len(req.ConversationHistory) == 0 {
-			req.ConversationHistory = h.recentChat(r.Context(), claims.UserID)
+	history := req.ConversationHistory
+	if len(history) > 6 {
+		history = history[len(history)-6:]
+	}
+	if loggedIn && len(history) == 0 {
+		history = h.recentChat(r.Context(), claims.UserID)
+	}
+
+	var aiResponse string
+	var recommendedProducts []ProductRecommendation
+	if strings.TrimSpace(h.Cfg.RAGServiceURL) != "" {
+		ans, err := h.askRAG(r.Context(), req.Message, history)
+		if err != nil || strings.TrimSpace(ans.Response) == "" {
+			log.Printf("[CHAT] RAG unavailable, using canned reply: %v", err)
+			aiResponse = h.getFallbackResponse(req.Message)
+			relevantProducts := h.findRelevantProducts(req.Message, 6)
+			recommendedProducts = h.extractProductRecommendations(req.Message, aiResponse, relevantProducts)
+		} else {
+			aiResponse = ans.Response
+			recommendedProducts = h.productsBySlugs(ans.ProductSlugs)
 		}
-	}
-
-	// Prepare messages for AI
-	messages := []ChatMessage{
-		{Role: "system", Content: systemPrompt},
-	}
-
-	// Add conversation history (last 6 turns — enough context, fewer tokens)
-	if len(req.ConversationHistory) > 0 {
-		start := 0
-		if len(req.ConversationHistory) > 6 {
-			start = len(req.ConversationHistory) - 6
-		}
-		messages = append(messages, req.ConversationHistory[start:]...)
-	}
-
-	// Add current message
-	messages = append(messages, ChatMessage{
-		Role:    "user",
-		Content: req.Message,
-	})
-
-	// Get AI response (pass system prompt separately for Gemini)
-	aiResponse, err := h.callAI(messages, systemPrompt)
-	if err != nil {
-		log.Printf("[CHAT] Error calling AI: %v", err)
-		// Return a more helpful error message
-		httpjson.Error(w, http.StatusInternalServerError, fmt.Sprintf("AI service error: %v", err))
-		return
-	}
-
-	// Ensure we have a response
-	if aiResponse == "" {
+	} else {
 		aiResponse = h.getFallbackResponse(req.Message)
+		relevantProducts := h.findRelevantProducts(req.Message, 6)
+		recommendedProducts = h.extractProductRecommendations(req.Message, aiResponse, relevantProducts)
 	}
-
-	// Match products to the user's question (reuse search; augment from AI reply)
-	recommendedProducts := h.extractProductRecommendations(req.Message, aiResponse, relevantProducts)
 	h.maybeAutoCreateRequestedProduct(req.Message, aiResponse, recommendedProducts)
 
 	// Resolve image URLs for recommended products
@@ -678,53 +606,6 @@ func titleCase(s string) string {
 	return strings.Join(words, " ")
 }
 
-// buildSystemPrompt creates a focused prompt using products matched to the user's question.
-func (h *Handler) buildSystemPrompt(userMessage string, products []models.Product) string {
-	productList := ""
-	for _, p := range products {
-		desc := p.ShortDesc
-		if desc == "" {
-			desc = p.Description
-		}
-		if len(desc) > 90 {
-			desc = desc[:90] + "…"
-		}
-		line := fmt.Sprintf("- %s (₹%.0f): %s", p.Name, p.Price, desc)
-		if len(p.Tags) > 0 {
-			line += fmt.Sprintf(" [tags: %s]", strings.Join(p.Tags, ", "))
-		}
-		productList += line + "\n"
-	}
-	if productList == "" {
-		productList = "(No catalog match — give care advice only; suggest browsing growman.live shop.)\n"
-	}
-
-	focus := detectQuestionFocus(userMessage)
-	summary := truncateText(strings.TrimSpace(userMessage), 180)
-
-	return fmt.Sprintf(`You are Dootha, Growman's plant care assistant for Indian homes and gardens.
-
-Answer the user's question directly. Do not give generic plant lectures.
-
-Response format:
-1. One direct answer (1–2 sentences) addressing: %s
-2. Then 2–4 bullet points with specific, actionable care tips only if relevant
-3. Mention ONE Growman product by exact name only when it clearly helps — from the catalog below
-
-Constraints:
-- Max 110 words total
-- Use markdown: **bold** for labels, bullet lists for steps
-- Indian context: monsoon humidity, AC dryness, balcony/indoor light, ₹ prices
-- Do NOT guess order status, tracking, or wishlist — those come from the user's account when logged in
-- Only for unresolved refund/delivery disputes (after checking orders): email growman.live@gmail.com or https://growman.live/
-- Stay on topic; do not repeat the question
-
-User question: "%s"
-
-Catalog matches for this question:
-%s`, focus, summary, productList)
-}
-
 var chatStopWords = map[string]bool{
 	"the": true, "a": true, "an": true, "is": true, "are": true, "was": true, "be": true,
 	"how": true, "what": true, "when": true, "where": true, "why": true, "can": true,
@@ -750,35 +631,6 @@ func extractSearchTerms(text string) []string {
 		}
 	}
 	return terms
-}
-
-func detectQuestionFocus(msg string) string {
-	lower := strings.ToLower(msg)
-	switch {
-	case strings.Contains(lower, "water") || strings.Contains(lower, "watering"):
-		return "watering frequency, drainage, and over/under-watering signs"
-	case strings.Contains(lower, "light") || strings.Contains(lower, "sun") || strings.Contains(lower, "shade"):
-		return "light needs and best placement (indoor/outdoor)"
-	case strings.Contains(lower, "soil") || strings.Contains(lower, "pot") || strings.Contains(lower, "repot"):
-		return "soil mix, pot size, and repotting timing"
-	case strings.Contains(lower, "fertil") || strings.Contains(lower, "nutrient"):
-		return "fertilizer type, schedule, and dosage"
-	case strings.Contains(lower, "yellow") || strings.Contains(lower, "brown") || strings.Contains(lower, "dying") || strings.Contains(lower, "wilting"):
-		return "likely causes and immediate fixes for the symptoms described"
-	case strings.Contains(lower, "pest") || strings.Contains(lower, "bug") || strings.Contains(lower, "mealy") || strings.Contains(lower, "fungus"):
-		return "pest/disease identification and treatment steps"
-	case strings.Contains(lower, "gift") || strings.Contains(lower, "office") || strings.Contains(lower, "beginner") || strings.Contains(lower, "low maintenance"):
-		return "suitable plant recommendations for their situation"
-	default:
-		return "their specific plant or gardening question"
-	}
-}
-
-func truncateText(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + "…"
 }
 
 // findRelevantProducts searches the catalog using terms from the user's message.
@@ -811,168 +663,6 @@ func (h *Handler) findRelevantProducts(userMessage string, limit int) []models.P
 		h.DB.Select(fields).Where("featured = ? AND status = ?", true, "active").Limit(limit).Find(&products)
 	}
 	return products
-}
-
-// fallback returns the canned reply for the conversation's latest message, in
-// the (string, error) shape every provider call below needs to return.
-func (h *Handler) fallback(messages []ChatMessage) (string, error) {
-	return h.getFallbackResponse(messages[len(messages)-1].Content), nil
-}
-
-// callAI calls the AI API (OpenAI, Gemini, or other providers)
-func (h *Handler) callAI(messages []ChatMessage, systemPrompt string) (string, error) {
-	provider := strings.ToLower(h.Cfg.AIProvider)
-
-	switch provider {
-	case "gemini":
-		if h.Cfg.GeminiAPIKey == "" {
-			return h.fallback(messages)
-		}
-		return h.callGeminiAPI(messages, systemPrompt)
-	case "openai":
-		if h.Cfg.OpenAIAPIKey == "" {
-			return h.fallback(messages)
-		}
-		return h.callOpenAIAPI(messages)
-	default:
-		if h.Cfg.GeminiAPIKey != "" {
-			return h.callGeminiAPI(messages, systemPrompt)
-		}
-		if h.Cfg.OpenAIAPIKey != "" {
-			return h.callOpenAIAPI(messages)
-		}
-		return h.fallback(messages)
-	}
-}
-
-// postJSON POSTs body as JSON with the given extra headers and returns the
-// raw response. A non-2xx status is not treated as an error — callers decide
-// how to react (typically: fall back). Shared by every AI provider call below.
-func postJSON(url string, body any, headers map[string]string) (status int, respBody []byte, err error) {
-	data, err := json.Marshal(body)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	client := &http.Client{Timeout: 25 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to read response: %w", err)
-	}
-	return resp.StatusCode, respBody, nil
-}
-
-// callOpenAIAPI calls the OpenAI API
-func (h *Handler) callOpenAIAPI(messages []ChatMessage) (string, error) {
-	if h.Cfg.OpenAIAPIKey == "" {
-		return h.fallback(messages)
-	}
-
-	reqBody := OpenAIRequest{
-		Model:       "gpt-3.5-turbo",
-		Messages:    messages,
-		MaxTokens:   280,
-		Temperature: 0.35,
-	}
-	status, body, err := postJSON("https://api.openai.com/v1/chat/completions", reqBody, map[string]string{
-		"Authorization": "Bearer " + h.Cfg.OpenAIAPIKey,
-	})
-	if err != nil {
-		return "", err
-	}
-	if status != http.StatusOK {
-		log.Printf("[CHAT] OpenAI API error: %d", status)
-		return h.fallback(messages)
-	}
-
-	var resp OpenAIResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-	if len(resp.Choices) == 0 {
-		return h.fallback(messages)
-	}
-	return resp.Choices[0].Message.Content, nil
-}
-
-// callGeminiAPI calls the Google Gemini API
-func (h *Handler) callGeminiAPI(messages []ChatMessage, systemPrompt string) (string, error) {
-	if h.Cfg.GeminiAPIKey == "" {
-		return h.fallback(messages)
-	}
-
-	contents := make([]GeminiContent, 0, len(messages))
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			continue
-		}
-		role := "user"
-		if msg.Role == "assistant" {
-			role = "model"
-		}
-		contents = append(contents, GeminiContent{Parts: []GeminiPart{{Text: msg.Content}}, Role: role})
-	}
-
-	reqBody := GeminiRequest{Contents: contents}
-	if systemPrompt != "" {
-		reqBody.SystemInstruction = &GeminiContent{Parts: []GeminiPart{{Text: systemPrompt}}}
-	}
-	reqBody.GenerationConfig.Temperature = 0.35
-	reqBody.GenerationConfig.MaxOutputTokens = 350
-
-	// gemini-flash-latest is the free-tier model.
-	apiURL := "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
-	status, body, err := postJSON(apiURL, reqBody, map[string]string{"X-goog-api-key": h.Cfg.GeminiAPIKey})
-	if err != nil {
-		return "", err
-	}
-
-	if status != http.StatusOK {
-		log.Printf("[CHAT] Gemini API error: %d", status)
-		var errResp GeminiResponse
-		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
-			log.Printf("[CHAT] Gemini API error details: %s (code: %d)", errResp.Error.Message, errResp.Error.Code)
-		}
-		return h.fallback(messages)
-	}
-
-	var resp GeminiResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		log.Printf("[CHAT] Failed to unmarshal Gemini response: %v", err)
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-	if resp.Error.Message != "" {
-		log.Printf("[CHAT] Gemini API error in response: %s (code: %d)", resp.Error.Message, resp.Error.Code)
-		return h.fallback(messages)
-	}
-	if len(resp.Candidates) == 0 {
-		log.Printf("[CHAT] Gemini API returned no candidates")
-		return h.fallback(messages)
-	}
-	if len(resp.Candidates[0].Content.Parts) == 0 {
-		log.Printf("[CHAT] Gemini API candidate has no parts")
-		return h.fallback(messages)
-	}
-	text := resp.Candidates[0].Content.Parts[0].Text
-	if text == "" {
-		log.Printf("[CHAT] Gemini API returned empty text")
-		return h.fallback(messages)
-	}
-	return text, nil
 }
 
 // getFallbackResponse provides targeted responses when the AI API is unavailable.

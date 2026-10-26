@@ -16,7 +16,7 @@ import (
 )
 
 // SizeClass buckets a plant by how hard it is to move. Courier partners can
-// take small and medium pots; large plants need Growman's own vehicle, and
+// take small and medium pot0s; large plants need Growman's own vehicle, and
 // XL stock (mature trees, palms) is quote-only.
 type SizeClass string
 

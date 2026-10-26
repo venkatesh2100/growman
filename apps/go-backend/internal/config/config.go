@@ -51,10 +51,14 @@ type Config struct {
 	DBMaxOpenConns int
 	DBMaxIdleConns int
 	RedisPoolSize  int
-	// AI Chat configuration
-	OpenAIAPIKey string // OpenAI API key for chat functionality
-	GeminiAPIKey string // Google Gemini API key for chat functionality
-	AIProvider   string // AI provider: "openai", "gemini", "anthropic", or "custom"
+	// AI Chat configuration. Chat and photo care sheets go to the Python
+	// RAG service. These provider fields are unused by this process; the
+	// Python service reads GEMINI_API_KEY itself.
+	OpenAIAPIKey    string
+	GeminiAPIKey    string
+	AIProvider      string
+	RAGServiceURL   string // Empty keeps canned chat replies and skips care sheets
+	RAGSharedSecret string
 	// Pl@ntNet API for plant identification.
 	// Free plan: 500 identifications/day, shared by species, disease, and
 	// variety scans. PlantNetProject is the flora used when the request
@@ -168,9 +172,11 @@ func Load() (Config, error) {
 		GCSProjectID:       os.Getenv("GCS_PROJECT_ID"),
 		GCSCredentialsJSON: os.Getenv("GCS_CREDENTIALS_JSON"),
 		// AI Chat configuration
-		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
-		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
-		AIProvider:   getenv("AI_PROVIDER", "openai"),
+		OpenAIAPIKey:    os.Getenv("OPENAI_API_KEY"),
+		GeminiAPIKey:    os.Getenv("GEMINI_API_KEY"),
+		AIProvider:      getenv("AI_PROVIDER", "openai"),
+		RAGServiceURL:   strings.TrimSpace(os.Getenv("RAG_SERVICE_URL")),
+		RAGSharedSecret: os.Getenv("RAG_SHARED_SECRET"),
 		// Pl@ntNet API
 		PlantNetAPIKey:  os.Getenv("PLANTNET_API_KEY"),
 		PlantNetProject: getenv("PLANTNET_PROJECT", "all"),
@@ -206,7 +212,7 @@ func Load() (Config, error) {
 		RedisPoolSize:           getenvInt("REDIS_POOL_SIZE", 20),
 	}
 
-	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
+	allowed := getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002")
 	cfg.AllowedOrigins = splitAndTrim(allowed)
 
 	// Hyperdrive URL takes precedence, but fallback to DATABASE_URL

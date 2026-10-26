@@ -20,6 +20,7 @@ import (
 	"github.com/venkatesh2100/growman/apps/go-backend/seed"
 )
 
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {

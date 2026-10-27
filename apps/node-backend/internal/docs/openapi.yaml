@@ -1,0 +1,4904 @@
+openapi: 3.0.3
+info:
+  title: Growman Backend API
+  description: |
+    REST API for the Growman e-commerce platform (catalog, auth, checkout, orders, plant ID, and admin).
+
+    **Interactive docs**
+    - Swagger UI: `/docs`
+    - ReDoc: `/redoc`
+    - Raw spec: `/openapi.yaml`
+
+    Authenticated routes expect `Authorization: Bearer <jwt>`. Use **Authorize** in Swagger after login.
+  version: 1.0.0
+  contact:
+    name: Growman
+servers:
+  - url: /
+    description: Current host
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Health
+    description: Liveness and version
+  - name: Auth
+    description: Login, signup, OTP, Google, Truecaller, profile
+  - name: Products
+    description: Catalog product CRUD and search
+  - name: Categories
+    description: Categories, subcategories, and products in them
+  - name: Brands
+  - name: Catalog
+    description: Combined tags and categories for shop filters
+  - name: Images
+    description: Image upload and plant identification
+  - name: Chat
+    description: AI shopping assistant
+  - name: Checkout
+    description: Guest checkout with email OTP, delivery quotes, and coupons
+  - name: Payments
+    description: Razorpay orders and verification
+  - name: Orders
+  - name: Reviews
+    description: Product reviews and admin moderation
+  - name: Inventory
+    description: Stock adjustments, low-stock reporting, and restock alerts
+  - name: Coupons
+    description: Discount codes and admin coupon CRUD
+  - name: Refunds
+    description: Cancellations and refunds
+  - name: Invoicing
+    description: GST tax invoices and return-filing reports
+  - name: Shipments
+    description: Courier booking and pickup (Shiprocket)
+  - name: Addresses
+    description: Customer address book
+  - name: Privacy
+    description: DPDP Act consent, data export, and erasure
+  - name: Wishlist
+  - name: Requested Products
+    description: Demand for missing products
+  - name: Dootha Waitlist
+    description: Dootha Care device waiting list
+  - name: Order Support
+    description: Admin order-support tickets
+  - name: Dashboard
+    description: Admin analytics maps
+  - name: Webhooks
+security:
+  - bearerAuth: []
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Process health check
+      description: >
+        Liveness only: it reports that the process is up and serving and
+        deliberately touches no datastore, so a database blip cannot cause
+        the orchestrator to restart otherwise-healthy pods. Use /readyz to
+        decide whether to route traffic here.
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Readiness probe with dependency checks
+      description: >
+        Pings Postgres and Redis with a 2 second budget. An unreachable
+        Postgres is `503` with status `down`, because a worker that cannot
+        query the database cannot serve a request and should leave the
+        rotation. Redis is reported but never fatal — the codebase treats it
+        as optional throughout (caching falls back in-process, rate limiting
+        degrades), so a Redis failure is status `degraded` with a `200`.
+      security: []
+      responses:
+        "200":
+          description: Ready, with status `ok` or `degraded`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: Postgres is unreachable; status is `down`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+
+  /api/v1/healthz:
+    get:
+      tags: [Health]
+      summary: API health check
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/debug/version:
+    get:
+      tags: [Health]
+      summary: Build and server time
+      security: []
+      responses:
+        "200":
+          description: Version info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server_time:
+                    type: string
+                    example: "2026-08-30T00:56:00+05:30"
+                  built_at:
+                    type: string
+                    example: "2026-03-09-v2"
+                  git:
+                    type: string
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email or phone and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: JWT and user summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/admin/login:
+    post:
+      tags: [Auth]
+      summary: Admin login (admin or superadmin role required)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create a local account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/google:
+    post:
+      tags: [Auth]
+      summary: Login or signup with a Google ID/access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/google-signup:
+    post:
+      tags: [Auth]
+      summary: Google signup (same token flow as Google login)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /api/v1/auth/forgot-password/send-otp:
+    post:
+      tags: [Auth]
+      summary: Send password-reset OTP to email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Always succeeds (does not reveal whether the email exists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/forgot-password/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify password-reset OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        "200":
+          description: OTP valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/forgot-password/reset:
+    post:
+      tags: [Auth]
+      summary: Reset password after OTP verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp, newPassword]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 6
+                confirmPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/send:
+    post:
+      tags: [Auth]
+      summary: Send phone OTP (MSG91)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  description: 10-digit Indian mobile number
+                  example: "9876543210"
+                reqId:
+                  type: string
+                  description: When set, treated as a resend/retry
+                channel:
+                  type: string
+                  description: Retry channel (11 SMS, 4 VOICE, 12 WHATSAPP)
+                retryChannel:
+                  type: string
+                  description: Alias for channel
+      responses:
+        "200":
+          description: OTP sent (or cooldown / already-registered token)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/verify:
+    post:
+      tags: [Auth]
+      summary: Verify phone OTP and issue JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, otp]
+              properties:
+                phone:
+                  type: string
+                otp:
+                  type: string
+                reqId:
+                  type: string
+      responses:
+        "200":
+          description: JWT; new users may have onboarding scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/otp/widget/verify:
+    post:
+      tags: [Auth]
+      summary: Verify MSG91 widget access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken]
+              properties:
+                accessToken:
+                  type: string
+                identifier:
+                  type: string
+                  description: Optional phone hint from the widget
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/truecaller:
+    post:
+      tags: [Auth]
+      summary: Truecaller OAuth (Android) → JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [authorizationCode, codeVerifier]
+              properties:
+                authorizationCode:
+                  type: string
+                codeVerifier:
+                  type: string
+      responses:
+        "200":
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/check-user:
+    get:
+      tags: [Auth]
+      summary: Check whether a user exists by email and/or phone
+      security: []
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+        - in: query
+          name: phone
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Existence flag and matched identifiers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  email:
+                    type: string
+                  phone:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/profile:
+    put:
+      tags: [Auth]
+      summary: Update profile and address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/profile/complete:
+    post:
+      tags: [Auth]
+      summary: Complete phone onboarding (onboarding-scope JWT required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Full-scope JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhoneAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/auth/save-location:
+    post:
+      tags: [Auth]
+      summary: Save address and coordinates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveLocationRequest"
+      responses:
+        "200":
+          description: Location saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products:
+    get:
+      tags: [Products]
+      summary: List products (paginated)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedProducts"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Products]
+      summary: Create a product
+      description: Optionally create a new category or subcategory via `newCategory` / `newSubcategory`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "200":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/search:
+    get:
+      tags: [Products]
+      summary: Search products by query
+      security: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedProducts"
+
+  /api/v1/products/featured:
+    get:
+      tags: [Products]
+      summary: Featured products
+      security: []
+      responses:
+        "200":
+          description: Featured product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /api/v1/products/{slug}:
+    get:
+      tags: [Products]
+      summary: Get product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [Products]
+      summary: Update product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Products]
+      summary: Delete product by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/{slug}/related:
+    get:
+      tags: [Products]
+      summary: Related products for a slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Related products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/{slug}/reviews:
+    get:
+      tags: [Reviews]
+      summary: Approved reviews for a product
+      description: >
+        Only approved reviews are returned, newest first, with verified
+        purchases ahead of unverified ones at equal age. Reviewer identity
+        is reduced to a first name: a full name next to a delivery address
+        is more personal data than a product page needs. The histogram is
+        the 1-5 star bar chart, and ratingAverage/ratingCount are read from
+        the product's denormalised aggregate rather than recomputed here.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Approved reviews with the product's rating summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductReviewsResponse"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Reviews]
+      summary: Write or update a review (full-scope JWT required)
+      description: >
+        One review per customer per product: re-submitting updates the
+        existing row and returns it to moderation. A review from a customer
+        with a paid order containing the product is marked
+        verifiedPurchase and auto-approves; anything else lands as
+        `pending` and is invisible until an admin approves it. Comment is
+        truncated at 4000 characters, title at 140, and imageKeys at five
+        entries. Requires a completed account — an onboarding-scope token
+        has no verified identity to attach to a review.
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewRequest"
+      responses:
+        "200":
+          description: Review saved, with the status it landed in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [pending, approved]
+                  message:
+                    type: string
+                  review:
+                    $ref: "#/components/schemas/PublicReview"
+        "400":
+          description: Rating is outside 1-5
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/products/{slug}/back-in-stock:
+    post:
+      tags: [Inventory]
+      summary: Subscribe to a restock notification
+      description: >
+        Emails the address when the item has stock again, and doubles as a
+        demand signal for what to propagate next. The product is identified
+        by `productId` in the body; the slug in the path is the page the
+        request came from. A repeat sign-up for the same product and email
+        is not an error — the existing pending row is kept rather than
+        duplicated. When a Bearer token is present the row is also linked
+        to that account.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BackInStockRequestBody"
+      responses:
+        "200":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          description: productId missing, or the email is malformed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      security: []
+      responses:
+        "200":
+          description: Categories with subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /api/v1/categories/{slug}:
+    get:
+      tags: [Categories]
+      summary: Get category by slug
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/products:
+    get:
+      tags: [Categories]
+      summary: Products in a category
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/subcategories:
+    get:
+      tags: [Categories]
+      summary: List subcategories of a category
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+      responses:
+        "200":
+          description: Subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subcategory"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/categories/{slug}/subcategories/{subSlug}/products:
+    get:
+      tags: [Categories]
+      summary: Products in a subcategory
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Slug"
+        - in: path
+          name: subSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/brands:
+    get:
+      tags: [Brands]
+      summary: List brands
+      security: []
+      responses:
+        "200":
+          description: Brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+
+  /api/v1/tags:
+    get:
+      tags: [Catalog]
+      summary: Unique product tags
+      security: []
+      responses:
+        "200":
+          description: Sorted tag names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/v1/catalog:
+    get:
+      tags: [Catalog]
+      summary: Tags and categories for shop filters
+      security: []
+      responses:
+        "200":
+          description: Catalog payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+
+  /api/v1/images/upload:
+    post:
+      tags: [Images]
+      summary: Upload an image
+      description: Multipart form field `image`. Optional `prefix` (default `uploads`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                prefix:
+                  type: string
+                  example: products
+      responses:
+        "200":
+          description: Storage key and resolved URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageKey:
+                    type: string
+                  imageUrl:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/images/identify-plant:
+    post:
+      tags: [Images]
+      summary: Identify a plant and return care context
+      description: |
+        One to five JPEG or PNG photos of the same plant. Species identification
+        spends one Pl@ntNet credit (free plan: 500/day, shared with disease and
+        variety scans). `focus=care` (default) also requests diseases while the
+        remaining daily balance is above the reserve, and varieties only when
+        the species is in the variety catalog. The same photo is cached until
+        00:00 UTC.
+
+        `bestMatch` and `results` are the Pl@ntNet species payload. `species`,
+        `origin`, `care`, `health`, `varieties`, `flora`, and `quota` are added
+        by this API. Origin is from GBIF. Care text is generated guidance, not
+        a Pl@ntNet field.
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: One to five JPEG or PNG images (`image` or `images`)
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                organs:
+                  type: array
+                  items:
+                    type: string
+                    enum: [auto, flower, leaf, fruit, bark]
+                focus:
+                  type: string
+                  enum: [care, species, health, variety, full]
+                  default: care
+                project:
+                  type: string
+                  description: Flora slug. Defaults to PLANTNET_PROJECT, or the nearest k- flora when lat and lon are set.
+                lat:
+                  type: number
+                lon:
+                  type: number
+                nb-results:
+                  type: string
+                  description: 1–10, default 5
+                lang:
+                  type: string
+                  default: en
+                detailed:
+                  type: string
+                  description: "true to include family and genus results"
+                related-images:
+                  type: string
+                no-reject:
+                  type: string
+      responses:
+        "200":
+          description: Species identification plus origin, care, health, and varieties
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bestMatch:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+                  flora:
+                    type: string
+                  species:
+                    type: object
+                  origin:
+                    type: object
+                  care:
+                    type: object
+                  health:
+                    type: object
+                  varieties:
+                    type: object
+                  quota:
+                    type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/plants/status:
+    get:
+      tags: [Images]
+      summary: Pl@ntNet API health
+      security: []
+      responses:
+        "200":
+          description: Upstream status JSON
+  /api/v1/plants/languages:
+    get:
+      tags: [Images]
+      summary: Languages supported by Pl@ntNet
+      security: []
+      responses:
+        "200":
+          description: Language codes
+  /api/v1/plants/projects:
+    get:
+      tags: [Images]
+      summary: Identification floras
+      security: []
+      parameters:
+        - in: query
+          name: lat
+          schema: {type: number}
+        - in: query
+          name: lon
+          schema: {type: number}
+        - in: query
+          name: lang
+          schema: {type: string}
+      responses:
+        "200":
+          description: Flora list, nearest first when lat and lon are set
+  /api/v1/plants/species:
+    get:
+      tags: [Images]
+      summary: Species in the Pl@ntNet taxonomy
+      description: Requires `prefix` or `page`. Page size is capped at 20. `images=true` is rejected.
+      security: []
+      parameters:
+        - in: query
+          name: prefix
+          schema: {type: string}
+        - in: query
+          name: page
+          schema: {type: integer}
+        - in: query
+          name: pageSize
+          schema: {type: integer, maximum: 20}
+        - in: query
+          name: project
+          schema: {type: string}
+        - in: query
+          name: lang
+          schema: {type: string}
+      responses:
+        "200":
+          description: Matching species
+        "400":
+          $ref: "#/components/responses/Error"
+  /api/v1/plants/diseases:
+    get:
+      tags: [Images]
+      summary: Identifiable diseases and pests
+      security: []
+      parameters:
+        - in: query
+          name: prefix
+          schema: {type: string}
+        - in: query
+          name: lang
+          schema: {type: string}
+      responses:
+        "200":
+          description: Disease catalog (EPPO code in name, human label in label)
+  /api/v1/plants/varieties:
+    get:
+      tags: [Images]
+      summary: Identifiable crop varieties
+      security: []
+      parameters:
+        - in: query
+          name: prefix
+          schema: {type: string}
+        - in: query
+          name: lang
+          schema: {type: string}
+      responses:
+        "200":
+          description: Variety catalog
+  /api/v1/plants/quota:
+    get:
+      tags: [Images]
+      summary: Pl@ntNet quota
+      description: Granted quotas plus today's consumption. `history=1` adds the daily history.
+      security: []
+      parameters:
+        - in: query
+          name: history
+          schema: {type: string, enum: ["1"]}
+      responses:
+        "200":
+          description: Quota snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  granted: {}
+                  today: {}
+                  history: {}
+                  identifyRemaining: {type: integer}
+                  reserve: {type: integer}
+
+  /api/v1/chat:
+    post:
+      tags: [Chat]
+      summary: AI chat with product recommendations
+      description: Optional Bearer token (or `token` in body) unlocks order/wishlist intents.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/send-email-otp:
+    post:
+      tags: [Checkout]
+      summary: Send checkout email OTP (new users only)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "409":
+          description: Existing user must log in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Cooldown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: otp_cooldown
+                  retry_after:
+                    type: integer
+
+  /api/v1/checkout/verify-email-otp:
+    post:
+      tags: [Checkout]
+      summary: Verify checkout email OTP and mint a verification proof
+      description: >
+        Single-use: a successful check deletes the stored OTP. The response
+        carries a `verificationToken`, a short-lived single-use proof that
+        this address was verified, which /checkout/create-order requires
+        from guests. Without it the OTP step would be advisory and the
+        order endpoint would write orders for any address. The token is
+        bound to this one email and expires after `expiresIn` seconds.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        "200":
+          description: OTP verified, with the proof token for order creation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  verificationToken:
+                    type: string
+                    description: 64 hex characters; pass as `verificationToken` to /checkout/create-order
+                    example: 9f1c7e2a4b6d8f0a1c3e5d7b9f1a3c5e7d9b1f3a5c7e9d1b3f5a7c9e1d3b5f7a
+                  expiresIn:
+                    type: integer
+                    description: Token lifetime in seconds
+                    example: 900
+        "400":
+          description: Invalid email format, or an invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/quote:
+    post:
+      tags: [Checkout]
+      summary: Quote delivery options for a cart
+      description: >
+        Returns which fulfillment channels are available for a cart and
+        destination, what each costs, and which one to present first.
+        Prices and plant size classes are read from the database, so the
+        fee cannot be influenced by the request. Read-only; safe to call on
+        every cart or address change.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FulfillmentQuoteRequest"
+      responses:
+        "200":
+          description: Available channels and fees
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote:
+                    $ref: "#/components/schemas/FulfillmentQuote"
+                  courierProvider:
+                    type: string
+                    example: Shiprocket
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/create-order:
+    post:
+      tags: [Checkout]
+      summary: Create Razorpay checkout order
+      description: >
+        The only way to start a payment. Everything that decides the amount
+        is re-derived server-side: line prices come from the products and
+        product_sizes tables (the `price` on each item is advisory and
+        ignored), the delivery quote is re-run, and any coupon is
+        re-evaluated.
+
+        fulfillmentChannel is required. An earlier version treated it as
+        optional and accepted the client's amount verbatim when it was
+        absent, which made the whole repricing check skippable by omitting
+        one field.
+
+        Guests must present the `verificationToken` from
+        /checkout/verify-email-otp; it is consumed here, bound to the
+        customer email, and single-use. A signed-in caller is already
+        verified by its JWT and may omit the token.
+
+        Stock is reserved from order creation rather than from payment, so
+        two shoppers cannot both reach the payment screen for the last
+        plant. The order row, its stock reservation and any coupon
+        redemption commit in one transaction. An unpaid order's reservation
+        is returned by the abandoned-order sweep after 30 minutes.
+
+        `publicToken` in the response is an opaque handle, returned once,
+        that lets a guest read the order back from `GET /order?token=` and
+        download its invoice.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutOrderRequest"
+      responses:
+        "200":
+          description: Razorpay order plus the local order id and its public token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RazorpayCreateResponse"
+        "400":
+          description: >
+            Invalid customer details, an empty cart, a non-positive amount,
+            an unknown or non-payable channel, or — as
+            `fulfillment_channel_required` — no delivery option chosen.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutChannelRequiredError"
+        "403":
+          description: >
+            `email_not_verified`: the guest's proof token was missing,
+            expired or already spent. Send the OTP again and retry with a
+            fresh token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutEmailNotVerifiedError"
+        "409":
+          description: >
+            The chosen channel can no longer serve this address
+            (`channel_unavailable`, with `reason`), the amount disagrees
+            with the server's (`amount_mismatch`, with `expectedAmount`),
+            or a line is no longer in stock (`out_of_stock`). The first two
+            return the current `quote` so the client can re-present the
+            options; `out_of_stock` lists the offending lines in `items`
+            when caught up front, or explains in `reason` when the
+            reservation itself lost the race.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CheckoutQuoteConflict"
+                  - $ref: "#/components/schemas/OutOfStockError"
+        "422":
+          description: >
+            `coupon_rejected`: the code is not valid for this cart, this
+            customer or right now, or the discount would take the order
+            below the 1 rupee Razorpay minimum. `reason` is customer-facing
+            copy explaining which.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponRejectedError"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/checkout/validate-coupon:
+    post:
+      tags: [Coupons]
+      summary: Preview a coupon against a cart
+      description: >
+        Returns the discount the server is willing to honour so checkout
+        can show it before payment. Read-only: nothing is redeemed here and
+        the same evaluation runs again at order creation, so the client's
+        claimed discount is never an input to the amount charged. The
+        subtotal is computed from database prices. Per-customer usage caps
+        use the Bearer token's user when one is present and fall back to
+        `email` for guests.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateCouponRequest"
+      responses:
+        "200":
+          description: The discount this code earns on this cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  discount:
+                    $ref: "#/components/schemas/CouponDiscount"
+                  subtotal:
+                    type: number
+                  newTotal:
+                    type: number
+                    description: Goods subtotal after the discount, excluding delivery
+        "400":
+          description: Empty cart, or a product or size that does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: "`coupon_rejected`, with customer-facing copy in `reason`"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponRejectedError"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/razorpay/verify:
+    post:
+      tags: [Payments]
+      summary: Verify Razorpay payment signature
+      description: >
+        Confirms the browser's checkout callback and marks the order paid.
+        The order is loaded first, so the signature is checked against the
+        `razorpay_order_id` the server stored at creation rather than the
+        one posted — otherwise a caller could supply any order id and have
+        it verified against itself.
+
+        `razorpay_signature` is required and a failed check is refused
+        outright: Razorpay's guidance is explicit that a bad signature means
+        do not fulfil and do not retry. Verification is only ever skipped
+        when APP_ENV is explicitly `development`, `dev` or `test`; a missing
+        key secret does not disable it, because a misconfigured production
+        deployment must fail closed.
+
+        Idempotent. This and the Razorpay webhook both funnel through the
+        same paid transition, so an order is confirmed and the customer
+        notified exactly once however it gets there.
+
+        Identify the order with `orderId` where possible; `razorpay_order_id`
+        is accepted as a fallback.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPaymentRequest"
+      responses:
+        "200":
+          description: Payment verified and the order marked paid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  orderId:
+                    type: integer
+                    description: Local database order id
+                  publicToken:
+                    type: string
+                    description: Opaque handle for guest order lookup
+        "400":
+          description: >
+            `razorpay_payment_id` missing, neither `orderId` nor
+            `razorpay_order_id` supplied, `razorpay_signature` missing, or
+            the signature did not verify ("payment verification failed").
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order:
+    get:
+      tags: [Orders]
+      summary: Get a single order by public token or by id
+      description: >
+        Two ways in, never a bare id. A guest passes `?token=` — the
+        order's `publicToken`, 64 hex characters, minted once by
+        /checkout/create-order and scoped to that one order. A signed-in
+        customer passes `?id=` with a Bearer token and may read only their
+        own orders; an admin may read any.
+
+        An order that does not exist and an order belonging to someone else
+        return an identical `404`. Order ids are sequential integers, so
+        distinguishing the two would let the whole order table be
+        enumerated — including customer name, phone, email and address.
+        Serving orders by id alone is exactly how that used to be possible.
+
+        Authentication is optional on this route so one handler can serve
+        both the signed-in owner and the token-bearing guest.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+            minLength: 32
+          description: The order's publicToken (64 hex characters). Authorises on its own.
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: Internal order id. Requires a Bearer token whose user owns the order, or an admin.
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Neither token nor id supplied, or the token is too short to be one
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`?id=` was used without a Bearer token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: No such order, or not this caller's order. The two are indistinguishable by design.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/invoice:
+    get:
+      tags: [Invoicing]
+      summary: Download an order's GST tax invoice as a PDF
+      description: >
+        Access matches GET /order: a `?token=` holder, the authenticated
+        owner, or an admin. Available once the order is paid (or has been
+        refunded); anything earlier is a `409`.
+
+        Catalogue prices are GST-inclusive, so the invoice extracts tax
+        rather than adding it: for an inclusive price P at rate r the
+        taxable value is P / (1 + r/100) and the tax is the remainder.
+        Invoice numbers look like `GRW/2026-27/000123` and are namespaced by
+        Indian financial year (April to March). The number is allocated on
+        the order's first paid transition and stays stable across
+        re-downloads; an order paid before invoicing existed has one
+        back-filled on the first download.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+        - in: query
+          name: token
+          schema:
+            type: string
+            minLength: 32
+          description: The order's publicToken, for guests. Omit it to be authorised by Bearer token instead.
+      responses:
+        "200":
+          description: The tax invoice PDF, served inline and never cached
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: The supplied token is too short to be an order token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: No token supplied and no Bearer token present
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: No such order, or not this caller's order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: The order is not paid, so it has no invoice yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders:
+    get:
+      tags: [Orders]
+      summary: List orders for the current user (admins see all unless scope=self)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: orderId
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [self]
+          description: Admins pass `self` to list only their own orders
+      responses:
+        "200":
+          description: Paginated orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/status:
+    patch:
+      tags: [Orders]
+      summary: Update order status (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - confirmed
+                    - shipped
+                    - out_for_delivery
+                    - delivered
+                    - cancelled
+                    - failed
+                    - paid
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/expected-delivery:
+    patch:
+      tags: [Orders]
+      summary: Update expected delivery date (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedDeliveryDate:
+                  type: string
+                  description: YYYY-MM-DD, or empty to clear
+                  example: "2026-09-15"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/cancel:
+    post:
+      tags: [Refunds]
+      summary: Cancel an order before dispatch
+      description: >
+        The customer may cancel their own order; an admin may cancel any.
+        Cancellation is allowed while the order is pending, paid, confirmed
+        or processing, and refused once an AWB has been assigned or the
+        parcel has shipped — at that point it is a return, not a
+        cancellation.
+
+        The cancellation and the restock commit in one transaction, then the
+        refund is requested. If the refund call fails the order still stays
+        cancelled and an order-support request is raised for a human: a
+        cancelled-but-unrefunded order is recoverable, a
+        refunded-but-still-open one is not. In that case `refund` is
+        `pending_manual` rather than a refund object.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Optional; defaults to customer_cancelled
+      responses:
+        "200":
+          description: Order cancelled, with the refund if one was raised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    example: cancelled
+                  message:
+                    type: string
+                  refund:
+                    oneOf:
+                      - $ref: "#/components/schemas/Refund"
+                      - type: string
+                        enum: [pending_manual]
+                    description: Omitted when the order was never paid
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          description: No such order, or not this caller's order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "`not_cancellable`: the order has already shipped or been cancelled"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotCancellableError"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/refund:
+    post:
+      tags: [Refunds]
+      summary: Refund an order in full or in part (admin)
+      description: >
+        The local refund row is written before Razorpay is called, so a
+        provider timeout can never move money with no record of it. The row
+        starts `pending` and is advanced to `processed` or `failed` by the
+        refund webhooks, which are authoritative; the synchronous API
+        response is only used to capture the provider's refund id. A failed
+        provider call therefore leaves a visible `failed` row for ops.
+
+        Omit `amount` (or send zero) to refund the full remaining balance.
+        `restock` is off by default: a plant refunded as damaged is usually
+        not resellable.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRefundRequest"
+      responses:
+        "200":
+          description: Refund recorded and requested from the provider
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  refund:
+                    $ref: "#/components/schemas/Refund"
+        "400":
+          description: Invalid order id, or a reason outside the allowed set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: >
+            The order is not paid, has no captured payment, is already
+            fully refunded, or the amount exceeds what remains.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/orders/{id}/invoice/email:
+    post:
+      tags: [Invoicing]
+      summary: Email an order's invoice to the customer (admin)
+      description: >
+        For reissues and for orders that predate automatic invoicing. An
+        order without an invoice number has one allocated before the PDF is
+        rendered.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Invoice emailed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  invoiceNumber:
+                    type: string
+                    example: GRW/2026-27/000123
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: The order has no customer email to send to
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "502":
+          description: The invoice email could not be sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/orders/{id}/shipment:
+    post:
+      tags: [Shipments]
+      summary: Book a courier shipment and assign an AWB (admin)
+      description: >
+        Creates the provider order and assigns an AWB in one call, because
+        an order without an AWB is not trackable and so not useful. The
+        provider's shipment id is persisted before the AWB is requested, so
+        a retry after a partial failure does not create a second provider
+        order.
+
+        Idempotent: an order that already has an AWB is returned as-is with
+        `alreadyDone` set rather than double-booked. Only a paid, uncancelled
+        order on the `courier` channel can be booked. A background worker
+        books pending shipments every 15 minutes, so this is mostly for
+        forcing one through early or retrying a failure.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Shipment booked, or already booked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  alreadyDone:
+                    type: boolean
+                    description: Present and true when the order already had an AWB
+                  awbNumber:
+                    type: string
+                  courier:
+                    type: string
+                    description: The carrier the aggregator picked
+                  trackingUrl:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "502":
+          description: >
+            The courier rejected the booking — commonly an unpaid or
+            cancelled order, or a channel other than courier.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: The courier integration is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/orders/{id}/shipment/pickup:
+    post:
+      tags: [Shipments]
+      summary: Schedule the courier pickup for a booked shipment (admin)
+      description: >
+        Separate from booking so ops can batch pickups. Requires a shipment
+        already booked by POST /orders/{id}/shipment.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Pickup requested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  pickupBookedAt:
+                    type: string
+                    format: date-time
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: No shipment has been booked for this order, or the stored shipment id is unusable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: The courier refused the pickup request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: The courier integration is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/addresses:
+    get:
+      tags: [Addresses]
+      summary: List the customer's saved addresses
+      description: Default address first, then most recently updated.
+      responses:
+        "200":
+          description: Saved addresses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addresses:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Address"
+        "401":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Addresses]
+      summary: Save a new shipping address
+      description: >
+        The first address a customer saves becomes their default by
+        definition, and setting `isDefault` clears the flag on the previous
+        one in the same transaction. Capped at 10 saved addresses per
+        account: generous for a household, low enough that the list stays
+        usable and cannot be abused as storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressRequest"
+      responses:
+        "201":
+          description: Created address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          description: Missing name, address line or city, or a malformed phone or pincode
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: The saved-address limit has been reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/addresses/{id}:
+    put:
+      tags: [Addresses]
+      summary: Update one of the customer's own addresses
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressRequest"
+      responses:
+        "200":
+          description: Updated address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          description: No such address, or it belongs to another account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Addresses]
+      summary: Delete one of the customer's own addresses
+      description: >
+        Deleting the default address promotes the most recently updated
+        remaining one, so the account is never left without a default.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          description: No such address, or it belongs to another account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/consent:
+    post:
+      tags: [Privacy]
+      summary: Record a DPDP consent grant or withdrawal
+      description: >
+        Public, because consent is captured before sign-in by the
+        first-visit cookie banner. Authentication is optional and, when a
+        Bearer token is present, the record is attached to that account —
+        without it every record would be keyed by email only, including a
+        signed-in customer's.
+
+        A withdrawal is stored as a new row with `granted: false` rather
+        than by mutating the original grant, so the history of what was
+        agreed and when is never lost, which is the part an audit actually
+        asks for. Each record is stamped with the privacy notice version it
+        was given against; consent to an old notice does not carry forward.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordConsentRequest"
+      responses:
+        "200":
+          description: Consent recorded, with the notice version it was recorded against
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  noticeVersion:
+                    type: string
+                    example: "2026-01"
+        "400":
+          description: No purposes supplied, or an unknown purpose
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/privacy/export:
+    get:
+      tags: [Privacy]
+      summary: Export everything held about the signed-in customer
+      description: >
+        Answers the DPDP right of access with the account, orders, saved
+        addresses, reviews, wishlist, full consent history and support
+        requests. Served as a file download, and includes a retention
+        notice explaining that order records and processing logs are kept
+        for at least a year from the transaction date as Rule 8(3) of the
+        DPDP Rules 2025 requires, even after an account is deleted.
+      responses:
+        "200":
+          description: The caller's personal data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyExport"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/privacy/erase:
+    post:
+      tags: [Privacy]
+      summary: Erase the signed-in customer's personal data
+      description: >
+        Honours the right to erasure within the statutory retention floor,
+        which pulls in two directions: Section 8(7) requires erasure once
+        the purpose is served, while Rule 8(3) requires transactional data
+        and processing logs to be retained for at least a year even after
+        account deletion.
+
+        So this is not a blanket delete. Account identifiers are scrubbed
+        immediately, saved addresses, wishlist and back-in-stock rows are
+        deleted outright, reviews are anonymised rather than removed (the
+        content is useful to other shoppers and is no longer personal data
+        once detached from an identity), and order rows are minimised —
+        contact details dropped, transaction record kept — until the year
+        has passed, after which the retention sweep removes them. The
+        erasure itself is recorded as a consent event.
+
+        Refused while an order is in transit: the delivery address is
+        needed until it arrives.
+      responses:
+        "200":
+          description: Identifiers scrubbed and order records minimised
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: "`open_orders`: an order is still in transit"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenOrdersError"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/inventory/adjust:
+    post:
+      tags: [Inventory]
+      summary: Correct stock after a count, delivery or breakage (admin)
+      description: >
+        Supply exactly one of `stock` (an absolute value) or `delta` (a
+        relative adjustment). A delta is clamped at zero so a bad
+        adjustment cannot leave negative stock. Pass `productSizeId` to
+        adjust a size rather than the product. Raising stock also releases
+        any waiting back-in-stock notifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustStockRequest"
+      responses:
+        "200":
+          description: Stock adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          description: productId missing, both or neither of stock and delta supplied, or a negative absolute stock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/inventory/low-stock:
+    get:
+      tags: [Inventory]
+      summary: Items at or below their low-stock threshold (admin)
+      description: >
+        Covers both sizeless products and individual sizes, lowest stock
+        first, capped at 200 rows. Products with trackInventory off are
+        excluded — they are always available.
+      responses:
+        "200":
+          description: Low-stock lines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LowStockItem"
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/reviews:
+    get:
+      tags: [Reviews]
+      summary: Review moderation queue (admin)
+      description: >
+        Newest first, capped at 200 rows. Defaults to `pending`; pass
+        `status=all` to see every review. Unlike the public endpoint this
+        includes the author's full name and email and any admin notes.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, approved, rejected, all]
+            default: pending
+      responses:
+        "200":
+          description: Reviews awaiting or past moderation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ModerationReview"
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/reviews/{id}/status:
+    patch:
+      tags: [Reviews]
+      summary: Approve or reject a review (admin)
+      description: >
+        The product's rating is recomputed from its approved reviews either
+        way — recomputed from scratch rather than incremented, so reversing
+        a moderation decision cannot leave the aggregate drifting.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected, pending]
+                adminNotes:
+                  type: string
+      responses:
+        "200":
+          description: Review moderated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+        "400":
+          description: Invalid review id, or a status outside the allowed set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/refunds:
+    get:
+      tags: [Refunds]
+      summary: List refunds for reconciliation (admin)
+      description: >
+        Newest first, capped at 200 rows. Rows left `pending` or `failed`
+        are the manual-reconciliation queue.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, processed, failed, all]
+          description: Omit or pass `all` for every refund
+      responses:
+        "200":
+          description: Refunds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refunds:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Refund"
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/reports/gst:
+    get:
+      tags: [Invoicing]
+      summary: Monthly invoice report for GST return filing (admin)
+      description: >
+        One row per invoice raised in the month, plus summed totals an
+        accountant can reconcile against a GSTR filing. Orders without an
+        invoice number are excluded.
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: "2026-09"
+          description: YYYY-MM; defaults to the current month
+      responses:
+        "200":
+          description: Invoices raised in the month, with totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GSTReport"
+        "400":
+          description: month was not formatted YYYY-MM
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/coupons:
+    get:
+      tags: [Coupons]
+      summary: List discount codes (admin)
+      responses:
+        "200":
+          description: Coupons, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coupons:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Coupon"
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Coupons]
+      summary: Create a discount code (admin)
+      description: >
+        Codes are upper-cased and must be unique. A percentage coupon's
+        value is 1-100 and may be capped with `maxDiscount`; a fixed
+        coupon's value is in rupees; `free_shipping` ignores the value.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Coupon"
+      responses:
+        "201":
+          description: Created coupon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Missing or over-long code, a value outside its type's range, or an expiry before the start
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: A coupon with that code already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/coupons/{id}:
+    put:
+      tags: [Coupons]
+      summary: Update a discount code (admin)
+      description: "`usageCount` is not editable; the stored redemption count is preserved."
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Coupon"
+      responses:
+        "200":
+          description: Updated coupon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Coupons]
+      summary: Delete a discount code (admin)
+      description: >
+        A soft delete: redemption history is preserved so past orders stay
+        explicable.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/wishlist:
+    get:
+      tags: [Wishlist]
+      summary: List wishlist products
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Wishlist]
+      summary: Add product to wishlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId]
+              properties:
+                productId:
+                  type: integer
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "200":
+          description: Already in wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/wishlist/{productId}:
+    delete:
+      tags: [Wishlist]
+      summary: Remove product from wishlist
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/requested-products:
+    post:
+      tags: [Requested Products]
+      summary: Request a missing product
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequestedProductRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestedProduct"
+        "400":
+          $ref: "#/components/responses/Error"
+    get:
+      tags: [Requested Products]
+      summary: List requested products (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, reviewed, added, rejected]
+      responses:
+        "200":
+          description: Up to 200 rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequestedProduct"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/dootha-waitlist:
+    post:
+      tags: [Dootha Waitlist]
+      summary: Join the Dootha Care device waiting list
+      description: >
+        Public, rate limited to 5 sign-ups per IP per 10 minutes. A repeat
+        sign-up from the same mobile number updates the existing entry. The
+        details are emailed to WAITLIST_EMAIL.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinDoothaWaitlistRequest"
+      responses:
+        "201":
+          description: Added to the waiting list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoothaWaitlistAck"
+        "400":
+          $ref: "#/components/responses/Error"
+    get:
+      tags: [Dootha Waitlist]
+      summary: List waiting list sign-ups (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, contacted, converted]
+      responses:
+        "200":
+          description: Up to 500 rows, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DoothaWaitlistEntry"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order-support-requests:
+    get:
+      tags: [Order Support]
+      summary: List support tickets (admin)
+      responses:
+        "200":
+          description: Tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderSupportRequest"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/order-support-requests/{id}/status:
+    patch:
+      tags: [Order Support]
+      summary: Update support ticket status (admin)
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, in_progress, resolved]
+                adminNotes:
+                  type: string
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSupportRequest"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/v1/dashboard/map:
+    get:
+      tags: [Dashboard]
+      summary: Admin map analytics
+      parameters:
+        - in: query
+          name: mapType
+          required: true
+          schema:
+            type: string
+            enum: [world, country]
+        - in: query
+          name: timeFrame
+          schema:
+            type: string
+            default: daily
+        - in: query
+          name: country
+          schema:
+            type: string
+            example: india
+          description: Required when mapType=country (India only)
+      responses:
+        "200":
+          description: Map stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  formattedStats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        value:
+                          type: number
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /webhooks/razorpay:
+    post:
+      tags: [Webhooks]
+      summary: Razorpay webhook
+      description: >
+        Mounted outside /api/v1 and its rate limiters, and authenticated by
+        an HMAC body signature rather than a JWT — throttling a provider
+        only converts a delivery into a retry.
+
+        `x-razorpay-signature` is HMAC-SHA256 over the exact raw body,
+        keyed by RAZORPAY_WEBHOOK_SECRET. That is the secret generated in
+        the Razorpay dashboard when the webhook is created, and is *not*
+        the API key secret used for checkout payment signatures; using the
+        key secret here makes every delivery fail. Hex and base64 encodings
+        are both accepted and compared in constant time.
+
+        `x-razorpay-event-id` is unique per event and is how duplicates are
+        detected. The event is claimed by inserting it into a ledger whose
+        unique index on the event id makes the claim atomic: concurrent
+        duplicate deliveries race on the insert, exactly one wins, and side
+        effects run exactly once. A duplicate event id returns `200` with
+        `duplicate: true` and is not reprocessed. A delivery whose
+        `created_at` is more than 10 minutes old is discarded as a replay,
+        also with `200`.
+
+        The handler verifies, claims and acknowledges synchronously, then
+        processes in the background with a 30 second budget. Razorpay
+        requires a 2xx within 5 seconds and retries for 24 hours otherwise,
+        so doing the work inline risked duplicate deliveries of work
+        already underway.
+
+        Events handled: payment.captured, order.paid, payment.failed,
+        refund.created, refund.processed, refund.failed and
+        payment.dispute.created. Anything else is recorded and
+        intentionally not processed.
+      security: []
+      parameters:
+        - in: header
+          name: X-Razorpay-Signature
+          required: true
+          description: HMAC-SHA256 of the raw body, keyed by the dashboard webhook secret
+          schema:
+            type: string
+        - in: header
+          name: X-Razorpay-Event-Id
+          required: false
+          description: >
+            Razorpay's unique event id, used for deduplication. When
+            absent a key is derived from the event type and created_at so
+            dedup still works rather than silently degrading.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  example: payment.captured
+                created_at:
+                  type: integer
+                  description: Unix seconds; deliveries older than 10 minutes are discarded
+                payload:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "200":
+          description: >
+            Acknowledged. `duplicate` marks an event id already seen and
+            not reprocessed; `skipped: stale` marks a delivery discarded as
+            a replay.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+        "400":
+          description: Unreadable body, missing signature header, or an unparseable payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The signature did not verify against RAZORPAY_WEBHOOK_SECRET
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: The event could not be recorded, so Razorpay should retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /webhooks/shiprocket:
+    post:
+      tags: [Webhooks]
+      summary: Shiprocket shipment status webhook
+      description: >
+        Advances an order's shipment state so the customer's order page
+        reflects reality without anyone polling the aggregator. A slow
+        ticker re-polls open shipments as a backstop for missed deliveries.
+
+        Shiprocket authenticates with a shared token in the `x-api-key`
+        header rather than an HMAC signature, so it is compared against
+        SHIPROCKET_WEBHOOK_TOKEN directly. When that token is unconfigured
+        the request is refused with `503` rather than trusting
+        unauthenticated order-state mutations.
+
+        Deliveries are deduplicated on the AWB plus status pair, because
+        Shiprocket resends scans and each pair should only move the order
+        once; a repeat returns `200` with `duplicate: true`. Delivered and
+        shipped statuses move the order; intermediate scans such as pending,
+        pickup scheduled or RTO initiated are recorded on the event ledger
+        but leave order state alone. An AWB that matches no order is
+        accepted and ignored.
+      security: []
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          description: Shared secret matched against SHIPROCKET_WEBHOOK_TOKEN
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [awb]
+              properties:
+                awb:
+                  type: string
+                current_status:
+                  type: string
+                  example: DELIVERED
+                order_id:
+                  type: string
+                courier_name:
+                  type: string
+                scan_date_time:
+                  type: string
+      responses:
+        "200":
+          description: Acknowledged, or recognised as a duplicate scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+        "400":
+          description: Unreadable body, an invalid payload, or no awb
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The x-api-key header was missing or did not match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          description: SHIPROCKET_WEBHOOK_TOKEN is not configured, so webhooks are refused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSize:
+      in: query
+      name: pageSize
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema:
+        type: string
+    ID:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: go-backend
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+          description: >
+            `degraded` means Redis is unreachable but the service still
+            serves; only a Postgres failure yields `down`.
+        service:
+          type: string
+          example: go-backend
+        checks:
+          type: object
+          description: >
+            Per-dependency result, each `ok`, `not configured`, or
+            `error: <detail>`. `postgres_conns` carries pool usage.
+          additionalProperties:
+            type: string
+          example:
+            postgres: ok
+            postgres_conns: 2 in use, 8 idle
+            redis: ok
+            images: ok
+    AuthRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          description: Email address or phone number
+        password:
+          type: string
+    AuthUserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUserSummary"
+    SignupRequest:
+      type: object
+      required: [name, email, phone, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          minLength: 6
+    GoogleAuthRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Google ID token or access token
+    PhoneAuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        isNewUser:
+          type: boolean
+          description: True when profile completion is still required
+        isNewAccount:
+          type: boolean
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            role:
+              type: string
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        emailVerified:
+          type: boolean
+        role:
+          type: string
+        address:
+          type: object
+          properties:
+            line:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+            country:
+              type: string
+            latitude:
+              type: number
+              nullable: true
+            longitude:
+              type: number
+              nullable: true
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        alternatePhone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    SaveLocationRequest:
+      type: object
+      properties:
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        emailVerified:
+          type: boolean
+        provider:
+          type: string
+        role:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subcategory"
+    Subcategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: integer
+    Brand:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+    ProductSize:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        productId:
+          type: integer
+        imageKeys:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+    Attribute:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        value:
+          type: string
+        productId:
+          type: integer
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+        specifications:
+          type: string
+        taxInfo:
+          type: string
+        price:
+          type: number
+        mrp:
+          type: number
+        currency:
+          type: string
+        imageKey:
+          type: string
+        imageUrl:
+          type: string
+        status:
+          type: string
+        featured:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        stock:
+          type: integer
+          description: >
+            Sellable quantity for products without sizes. A product with
+            sizes tracks stock per size and ignores this field.
+        trackInventory:
+          type: boolean
+          default: true
+          description: >
+            False means always available, for made-to-order or effectively
+            unlimited items like seed packets. Such products are never
+            refused for stock and never appear in the low-stock report.
+        lowStockThreshold:
+          type: integer
+          default: 5
+          description: Drives the "only N left" urgency cue and the low-stock report
+        ratingAverage:
+          type: number
+          description: >
+            Denormalised from approved reviews so list pages never join to
+            them, rounded to one decimal place.
+        ratingCount:
+          type: integer
+          description: Number of approved reviews behind ratingAverage
+        hsnCode:
+          type: string
+          description: HSN code for GST invoicing
+        gstRate:
+          type: number
+          description: >
+            GST percentage for this product (5 means 5%). Catalogue prices
+            are tax-inclusive, so this is the rate tax is extracted at, not
+            added at. Zero for nil-rated live plants.
+        sizeClass:
+          type: string
+          enum: [small, medium, large, xl]
+          description: >
+            Default delivery routing for the product; a size may override
+            it. small and medium go by courier, large needs the Growman
+            vehicle, xl is quote-only.
+        bulky:
+          type: boolean
+        categoryId:
+          type: integer
+        category:
+          $ref: "#/components/schemas/Category"
+        subcategoryId:
+          type: integer
+        brandId:
+          type: integer
+        sizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductSize"
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attribute"
+    CreateProductRequest:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          properties:
+            newCategory:
+              type: string
+            newSubcategory:
+              type: string
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrev:
+          type: boolean
+    PaginatedProducts:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        pagination:
+          $ref: "#/components/schemas/PaginationMeta"
+    PaginatedOrders:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        pagination:
+          $ref: "#/components/schemas/PaginationMeta"
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+        name:
+          type: string
+        imageKey:
+          type: string
+        imageUrl:
+          type: string
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+        razorpayOrderId:
+          type: string
+        razorpayPaymentId:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [created, paid, failed, refunded, partially_refunded]
+        status:
+          type: string
+          description: Legacy status field, kept in sync with paymentStatus and advanced by shipment events
+        amount:
+          type: number
+        currency:
+          type: string
+        publicToken:
+          type: string
+          description: >
+            Unguessable 64-hex handle for looking this order up without
+            authentication, so the post-payment page works for guests.
+            Returned once by /checkout/create-order. Order ids are
+            sequential and must never be used for that.
+        expectedDeliveryDate:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        fulfillmentChannel:
+          type: string
+          enum: [store_pickup, courier, own_vehicle, bulk_quote]
+        fulfillmentZone:
+          type: string
+          enum: [store_local, near, mid, far, outside, unknown]
+        subtotal:
+          type: number
+          description: Goods value, excluding delivery. amount is the total charged.
+        deliveryFee:
+          type: number
+        deliveryFeeWaived:
+          type: boolean
+        distanceKm:
+          type: number
+          nullable: true
+        distanceSource:
+          type: string
+          enum: [coordinates, pincode, pincode_prefix, none]
+        latitude:
+          type: number
+        longitude:
+          type: number
+        courierProvider:
+          type: string
+          description: Aggregator, e.g. Shiprocket
+        courierService:
+          type: string
+          description: Carrier the aggregator picked, e.g. Delhivery
+        courierCost:
+          type: number
+          nullable: true
+          description: >
+            What the courier charges Growman, captured from the live rate
+            at checkout. The gap between it and deliveryFee is the delivery
+            subsidy.
+        shipmentId:
+          type: string
+          description: Aggregator shipment id, persisted before the AWB is requested
+        awbNumber:
+          type: string
+          description: Air waybill. Once set the order can no longer be cancelled.
+        trackingUrl:
+          type: string
+        shippedAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        pickupBookedAt:
+          type: string
+          format: date-time
+        taxableValue:
+          type: number
+          description: >
+            taxableValue plus taxAmount equals subtotal: catalogue prices
+            are GST-inclusive, so tax is extracted rather than added.
+        taxAmount:
+          type: number
+        invoiceNumber:
+          type: string
+          description: >
+            Allocated on the first paid transition and stable thereafter.
+            Namespaced by Indian financial year.
+          example: GRW/2026-27/000123
+        invoiceDate:
+          type: string
+          format: date-time
+        couponId:
+          type: integer
+        couponCode:
+          type: string
+        discountTotal:
+          type: number
+        cancelledAt:
+          type: string
+          format: date-time
+        cancelReason:
+          type: string
+        refundedAmount:
+          type: number
+        shippingAddress:
+          type: string
+          description: Legacy single-line address, kept for backward compatibility
+        billingAddress:
+          type: string
+    OrderItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+    Destination:
+      type: object
+      description: >
+        Where the order is going. Coordinates are preferred; the pincode is
+        used when the customer declines geolocation. A half-supplied or
+        out-of-range coordinate pair is ignored in favour of the pincode.
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        pincode:
+          type: string
+    FulfillmentQuoteRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        destination:
+          $ref: "#/components/schemas/Destination"
+    FulfillmentOption:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [store_pickup, courier, own_vehicle, bulk_quote]
+        available:
+          type: boolean
+        label:
+          type: string
+          description: Customer-facing CTA, e.g. "Visit Store"
+        fee:
+          type: number
+        feeWaived:
+          type: boolean
+          description: >
+            True when a fee was zeroed by the free-delivery threshold, as
+            opposed to no fee applying. Distinguishes an absorbed cost from
+            a genuinely free channel when measuring the delivery subsidy.
+        reason:
+          type: string
+          description: >
+            Why the option is unavailable. One of outside_delivery_radius,
+            courier_not_serviceable, item_too_bulky, plant_too_large,
+            too_many_plants, below_minimum_order, bulk_order; or
+            quote_required on the bulk option when a quote is mandatory.
+            store_pickup is never unavailable.
+    FulfillmentQuote:
+      type: object
+      properties:
+        zone:
+          type: string
+          enum: [store_local, near, mid, far, outside, unknown]
+        distanceKm:
+          type: number
+          nullable: true
+        distanceSource:
+          type: string
+          enum: [coordinates, pincode, pincode_prefix, none]
+          description: >
+            How the distance was established. pincode_prefix means only the
+            Hyderabad-city series was recognised, placing the address in the
+            metro but not at a locality.
+        subtotal:
+          type: number
+          description: Goods value from database prices, excluding delivery
+        units:
+          type: integer
+        maxSizeClass:
+          type: string
+          enum: [small, medium, large, xl]
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/FulfillmentOption"
+        recommended:
+          type: string
+          enum: [store_pickup, courier, own_vehicle, bulk_quote]
+        storeVisitSuggested:
+          type: boolean
+        bulkRequired:
+          type: boolean
+          description: Cart is too large or valuable for self-serve checkout
+        amountForFreeDelivery:
+          type: number
+          description: >
+            Extra spend needed to cross the free-delivery threshold. Zero
+            when the waiver is disabled, met, or not offered in this zone.
+        estimatedDeliveryDays:
+          type: integer
+          description: >
+            The courier's own estimate, when a live serviceability lookup
+            returned one. Omitted when unknown. Growman's cost and the
+            carrier that quoted it are deliberately not exposed here.
+    CreateCheckoutOrderRequest:
+      type: object
+      required: [amount, items, customer, fulfillmentChannel]
+      properties:
+        amount:
+          type: number
+          description: >
+            What the client believes the total is. Checked against the
+            server's subtotal plus delivery fee to within 1 rupee and then
+            replaced by the server's figure, so a disagreement is a
+            409 amount_mismatch rather than a silently accepted price.
+        currency:
+          type: string
+          example: INR
+        fulfillmentChannel:
+          type: string
+          enum: [store_pickup, courier, own_vehicle]
+          description: >
+            Required. The option the customer picked from /checkout/quote.
+            bulk_quote is rejected here — bulk orders are priced by sales.
+            Omitting it is a 400 fulfillment_channel_required: this field is
+            what triggers the server-side repricing, so it cannot be
+            optional.
+        latitude:
+          type: number
+        longitude:
+          type: number
+        verificationToken:
+          type: string
+          description: >
+            The 64-hex proof from /checkout/verify-email-otp. Required for
+            guests, consumed here, single-use, and valid only for the email
+            it was issued against. Signed-in callers are already verified
+            by their JWT and may omit it.
+        couponCode:
+          type: string
+          description: >
+            Re-evaluated server-side against database prices; any discount
+            the client claims is ignored.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+              description: 10-digit Indian mobile starting 6-9
+            addressLine:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+    VerifyPaymentRequest:
+      type: object
+      required: [razorpay_payment_id]
+      properties:
+        razorpay_payment_id:
+          type: string
+        razorpay_signature:
+          type: string
+          description: >
+            Required. HMAC-SHA256 of "<razorpay_order_id>|<payment_id>"
+            keyed by the Razorpay API key secret, as the checkout callback
+            supplies it. Hex or base64.
+        orderId:
+          type: integer
+          description: >
+            Growman's own order id, and the preferred way to identify the
+            order: the browser callback's values are attacker-controlled,
+            and the signature is checked against the razorpay_order_id
+            stored at creation time rather than the one posted.
+        razorpay_order_id:
+          type: string
+          description: Fallback lookup when orderId is not supplied
+    RazorpayCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Razorpay order id
+        amount:
+          type: integer
+          description: Amount in paise
+        currency:
+          type: string
+        status:
+          type: string
+        orderId:
+          type: integer
+          description: Local database order id
+        publicToken:
+          type: string
+          description: >
+            Opaque 64-hex handle, returned only here, that lets a guest
+            read the order back from GET /order?token= and download its
+            invoice.
+        subtotal:
+          type: number
+        deliveryFee:
+          type: number
+        fulfillmentChannel:
+          type: string
+        discount:
+          type: number
+          description: Present only when a coupon was applied
+        couponCode:
+          type: string
+          description: Present only when a coupon was applied
+    CheckoutChannelRequiredError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [fulfillment_channel_required]
+        reason:
+          type: string
+          example: Choose a delivery option before placing the order.
+    CheckoutEmailNotVerifiedError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [email_not_verified]
+        reason:
+          type: string
+          example: Please verify your email address before placing the order.
+    CheckoutQuoteConflict:
+      type: object
+      description: >
+        Returned when the chosen channel is no longer available or the
+        amount disagrees with the server's. The current quote comes back so
+        the client can re-present the options.
+      properties:
+        error:
+          type: string
+          enum: [channel_unavailable, amount_mismatch]
+        reason:
+          type: string
+          description: Why the channel is unavailable; set for channel_unavailable only
+        expectedAmount:
+          type: number
+          description: The server's total; set for amount_mismatch only
+        quote:
+          $ref: "#/components/schemas/FulfillmentQuote"
+    OutOfStockError:
+      type: object
+      description: >
+        `items` lists the offending lines when the shortfall is caught
+        before payment. When the reservation itself loses the race for the
+        last units, `reason` names the line instead.
+      properties:
+        error:
+          type: string
+          enum: [out_of_stock]
+        reason:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+              productSizeId:
+                type: integer
+              name:
+                type: string
+              requested:
+                type: integer
+              available:
+                type: integer
+    CouponRejectedError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [coupon_rejected]
+        reason:
+          type: string
+          description: Customer-facing copy explaining the refusal
+          example: Add 500 more to use this code.
+    NotCancellableError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [not_cancellable]
+        reason:
+          type: string
+    OpenOrdersError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [open_orders]
+        reason:
+          type: string
+    WebhookAck:
+      type: object
+      properties:
+        success:
+          type: boolean
+        duplicate:
+          type: boolean
+          description: Present and true when this event id had already been claimed
+        skipped:
+          type: string
+          enum: [stale]
+          description: Present when the delivery was discarded as a replay
+    Review:
+      type: object
+      description: A customer's rating of a product, as stored.
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+        comment:
+          type: string
+        productId:
+          type: integer
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          description: Only approved reviews are public or counted towards a product's rating
+        verifiedPurchase:
+          type: boolean
+          description: Set when the author has a paid order containing this product
+        imageKeys:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+          description: Resolved URLs, computed from imageKeys
+        adminNotes:
+          type: string
+    CreateReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+          maxLength: 140
+        comment:
+          type: string
+          maxLength: 4000
+        imageKeys:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+          description: >
+            Keys from /images/upload. For plants these are the most useful
+            part of a review, since buyers want to see real delivered size
+            and condition.
+    PublicReview:
+      type: object
+      description: >
+        A review as shown on a product page. Reviewer identity is reduced
+        to a first name, falling back to "Growman customer".
+      properties:
+        id:
+          type: integer
+        rating:
+          type: integer
+        title:
+          type: string
+        comment:
+          type: string
+        author:
+          type: string
+        verifiedPurchase:
+          type: boolean
+        images:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    ProductReviewsResponse:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicReview"
+        ratingAverage:
+          type: number
+        ratingCount:
+          type: integer
+        histogram:
+          type: array
+          description: Approved review counts per star rating, highest first
+          items:
+            type: object
+            properties:
+              rating:
+                type: integer
+              count:
+                type: integer
+    ModerationReview:
+      type: object
+      description: A review in the admin queue, with the author's full identity.
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        rating:
+          type: integer
+        title:
+          type: string
+        comment:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        verifiedPurchase:
+          type: boolean
+        authorName:
+          type: string
+        authorEmail:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        adminNotes:
+          type: string
+    BackInStockRequest:
+      type: object
+      description: A restock-notification subscription, which doubles as a demand signal.
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        email:
+          type: string
+          format: email
+        userId:
+          type: integer
+        notifiedAt:
+          type: string
+          format: date-time
+          description: Set once the restock email has been sent; unset rows are the pending queue
+    BackInStockRequestBody:
+      type: object
+      required: [productId, email]
+      properties:
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        email:
+          type: string
+          format: email
+    AdjustStockRequest:
+      type: object
+      required: [productId]
+      properties:
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+          description: Adjust this size rather than the product's own stock
+        stock:
+          type: integer
+          minimum: 0
+          description: Absolute value. Supply exactly one of stock or delta.
+        delta:
+          type: integer
+          description: Relative adjustment, clamped so stock cannot go negative
+        reason:
+          type: string
+          description: Recorded in the audit log alongside the acting admin
+    LowStockItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+        productSizeId:
+          type: integer
+        name:
+          type: string
+          description: Includes the size label when the row is a size
+        slug:
+          type: string
+        stock:
+          type: integer
+        threshold:
+          type: integer
+          description: The product's lowStockThreshold
+    Coupon:
+      type: object
+      required: [code, type]
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        code:
+          type: string
+          maxLength: 32
+          description: Stored upper-cased and unique
+        description:
+          type: string
+        type:
+          type: string
+          enum: [percentage, fixed, free_shipping]
+        value:
+          type: number
+          description: >
+            Percent for percentage (1-100), rupees for fixed, ignored for
+            free_shipping.
+        maxDiscount:
+          type: number
+          description: Caps a percentage coupon's rupee value. Zero means no cap.
+        minSubtotal:
+          type: number
+          description: >
+            Tested against the part of the cart the coupon applies to, not
+            the whole cart, so a scoped code is judged fairly.
+        usageLimit:
+          type: integer
+          description: Global redemption cap. Zero means unlimited.
+        perUserLimit:
+          type: integer
+          default: 1
+          description: Per-account cap, matched by user id when signed in and by email for guests
+        usageCount:
+          type: integer
+          readOnly: true
+          description: >
+            Incremented conditionally inside the order transaction, so
+            concurrent checkouts cannot exceed usageLimit.
+        categoryIds:
+          type: array
+          items:
+            type: string
+          description: Empty applies to the whole cart; otherwise only lines in these categories count
+        productIds:
+          type: array
+          items:
+            type: string
+        firstOrderOnly:
+          type: boolean
+          description: Restricts the code to customers with no paid orders
+        startsAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+    CouponDiscount:
+      type: object
+      description: The discount the server is willing to honour for a code against a cart.
+      properties:
+        code:
+          type: string
+        type:
+          type: string
+          enum: [percentage, fixed, free_shipping]
+        amount:
+          type: number
+          description: Rupees off the goods subtotal, never more than the eligible subtotal
+        freeShipping:
+          type: boolean
+          description: Waives the delivery fee instead of discounting the goods
+        description:
+          type: string
+    ValidateCouponRequest:
+      type: object
+      required: [code, items]
+      properties:
+        code:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+        email:
+          type: string
+          format: email
+          description: Identifies a guest for per-customer usage caps; ignored when a Bearer token is present
+    CreateRefundRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          description: Zero or omitted refunds the full remaining balance
+        reason:
+          type: string
+          enum:
+            - customer_cancelled
+            - damaged
+            - wrong_item
+            - out_of_stock
+            - delivery_failed
+            - other
+          default: other
+        notes:
+          type: string
+          description: Free text, used to carry detail for reason `other`
+        restock:
+          type: boolean
+          default: false
+          description: >
+            Returns the order's units to inventory. Off by default: a plant
+            refunded as damaged is usually not resellable.
+    Refund:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        orderId:
+          type: integer
+        razorpayRefundId:
+          type: string
+          description: Empty between writing the local row and the provider answering
+        razorpayPaymentId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, processed, failed]
+          description: >
+            Advanced to a terminal state by the refund webhooks, which are
+            authoritative. Rows left pending or failed are the
+            manual-reconciliation queue.
+        reason:
+          type: string
+        notes:
+          type: string
+        initiatedBy:
+          type: integer
+          description: Admin user id; absent for system-initiated refunds such as a cancellation
+        processedAt:
+          type: string
+          format: date-time
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+        label:
+          type: string
+          example: Home
+        name:
+          type: string
+        phone:
+          type: string
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        isDefault:
+          type: boolean
+    AddressRequest:
+      type: object
+      required: [name, phone, addressLine, city, pincode]
+      properties:
+        label:
+          type: string
+          example: Home
+        name:
+          type: string
+        phone:
+          type: string
+          description: 10-digit Indian mobile starting 6-9
+        addressLine:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+          description: 6 digits, not starting with 0
+        latitude:
+          type: number
+        longitude:
+          type: number
+        isDefault:
+          type: boolean
+          description: Setting this clears the flag on the previous default
+    ConsentRecord:
+      type: object
+      description: >
+        One consent event. A withdrawal is a new row with granted false,
+        never a mutation of the original, so the history is an audit trail.
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+        email:
+          type: string
+        purpose:
+          type: string
+          enum: [essential, analytics, marketing, personalisation]
+        granted:
+          type: boolean
+        noticeVersion:
+          type: string
+          description: The privacy notice this consent was given against
+          example: "2026-01"
+        ip:
+          type: string
+        userAgent:
+          type: string
+    RecordConsentRequest:
+      type: object
+      required: [purposes]
+      properties:
+        email:
+          type: string
+          format: email
+          description: >
+            Identifies an anonymous visitor so a later withdrawal can be
+            honoured. Ignored in favour of the token's user when signed in.
+        purposes:
+          type: object
+          description: >
+            Purpose to granted. `essential` covers what is needed to run
+            the shop and cannot be withdrawn while an order is open.
+          additionalProperties:
+            type: boolean
+          example:
+            essential: true
+            analytics: true
+            marketing: false
+    PrivacyExport:
+      type: object
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        noticeVersion:
+          type: string
+        account:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            role:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        addresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Address"
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        wishlist:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              productId:
+                type: integer
+              product:
+                $ref: "#/components/schemas/Product"
+        consentHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentRecord"
+        supportRequests:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSupportRequest"
+        retentionNotice:
+          type: string
+          description: Explains the Rule 8(3) one-year retention floor for order records
+    GSTReport:
+      type: object
+      properties:
+        month:
+          type: string
+          example: "2026-09"
+        invoices:
+          type: array
+          items:
+            type: object
+            properties:
+              invoiceNumber:
+                type: string
+              invoiceDate:
+                type: string
+                format: date-time
+              orderId:
+                type: integer
+              customerName:
+                type: string
+              state:
+                type: string
+              pincode:
+                type: string
+              taxableValue:
+                type: number
+              taxAmount:
+                type: number
+              total:
+                type: number
+              refundedAmount:
+                type: number
+              paymentStatus:
+                type: string
+        count:
+          type: integer
+        totals:
+          type: object
+          properties:
+            taxableValue:
+              type: number
+            taxAmount:
+              type: number
+            total:
+              type: number
+            refundedAmount:
+              type: number
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        conversationHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+        token:
+          type: string
+          description: Optional JWT if Authorization header is missing
+    ChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        recommendedProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              slug:
+                type: string
+              price:
+                type: number
+              imageUrl:
+                type: string
+        orders:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              status:
+                type: string
+              amount:
+                type: number
+              createdAt:
+                type: string
+              expectedDeliveryDate:
+                type: string
+              itemCount:
+                type: integer
+              itemPreview:
+                type: string
+              imageUrl:
+                type: string
+    CreateRequestedProductRequest:
+      type: object
+      required: [productName]
+      properties:
+        productName:
+          type: string
+        details:
+          type: string
+        source:
+          type: string
+          example: search_page
+        requesterName:
+          type: string
+        requesterEmail:
+          type: string
+        requesterPhone:
+          type: string
+        adminNotes:
+          type: string
+    RequestedProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        productName:
+          type: string
+        details:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        requestedById:
+          type: integer
+        requesterName:
+          type: string
+        requesterEmail:
+          type: string
+        requesterPhone:
+          type: string
+        adminNotes:
+          type: string
+    JoinDoothaWaitlistRequest:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          description: 10-digit Indian mobile number
+        email:
+          type: string
+          description: Optional
+        address:
+          type: string
+          description: Optional delivery area
+        source:
+          type: string
+          example: homepage_popup
+        website:
+          type: string
+          description: Honeypot; must be empty
+    DoothaWaitlistAck:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+    DoothaWaitlistEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        userId:
+          type: integer
+        ip:
+          type: string
+        userAgent:
+          type: string
+        signups:
+          type: integer
+        adminNotes:
+          type: string
+    OrderSupportRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        orderId:
+          type: integer
+        userId:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        issueType:
+          type: string
+        priority:
+          type: string
+        userMessage:
+          type: string
+        orderStatus:
+          type: string
+        paymentStatus:
+          type: string
+        orderAmount:
+          type: number
+        status:
+          type: string
+        source:
+          type: string
+        adminNotes:
+          type: string

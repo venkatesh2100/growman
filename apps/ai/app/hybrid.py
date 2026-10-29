@@ -4,7 +4,7 @@ The dense model and the cross-encoder are local. Tests pass a hash embedder
 and an overlap reranker so they never download weights.
 """
 
-from __future__ import annotations
+from __future__ import annotations3
 
 import hashlib
 import json
@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-from app.ingest import Chunk
+from app.ingest import Chunk2
 from app.textutil import tokenize
 
 RRF_K = 60

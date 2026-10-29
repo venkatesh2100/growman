@@ -1,7 +1,7 @@
 [project]
 name = "growman-py-backend"
 version = "0.1.0"
-description = "Growman API — FastAPI learning port of apps/go-backend"
+description = "Growman API — FastAPI shop for plants, payments, and care"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",

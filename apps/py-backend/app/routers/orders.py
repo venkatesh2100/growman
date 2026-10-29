@@ -1,283 +1,162 @@
-"""Orders and the client-driven payment check.
+"""Orders the customer can see, and the invoice they can download."""
 
-``POST /razorpay/verify`` and the Razorpay webhook both call
-``mark_order_paid``. The conditional update inside that function is what
-makes the confirmation email happen once.
-
-``GET /order`` is never authorised by a sequential id alone. A guest
-presents the opaque token minted at checkout. A signed-in customer
-presents the id and must own the order (admins may see any).
-"""
-
-from __future__ import annotations
-
-import logging
-import secrets
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
-from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.accounts import add_credit, hash_password
-from app.auth import is_admin, optional_claims, require_user
-from app.documents import render_invoice_pdf
-from app.errors import APIError
-from app.inventory import release
-from app.metrics import payment_signature_failures
-from app.models import Order, User, alive, utcnow
-from app.notify import alert_ops, send_email
-from app.payments import mark_order_paid, refund_payment, verify_hmac
-from app.payments import _assign_invoice
-from app.present import order_json
-from app.responses import page_meta, parse_page
-from app.routers.deps import get_db
+from app import shop
+from app.db import get_db
+from app.http import APIError
+from app.models import Order, alive
+from app.security import member, optional_user
+from app.serialize import order_out
 
-log = logging.getLogger("growman.orders")
-router = APIRouter()
+router = APIRouter(tags=["orders"])
 
 
-def _load_for_viewer(db: Session, request: Request, claims, *, order_id: int | None = None, token: str = "") -> Order:
-    stmt = select(Order).where(alive(Order)).options(selectinload(Order.items))
-    if token:
-        if len(token) < 32:
-            raise APIError(400, "invalid order token")
-        order = db.scalar(stmt.where(Order.public_token == token))
-    elif order_id:
-        if claims is None:
-            raise APIError(401, "missing Authorization header")
-        order = db.scalar(stmt.where(Order.id == order_id))
-        if order and not is_admin(claims.role) and order.user_id != claims.user_id:
-            # Same 404 as a missing order, so ids cannot be enumerated.
-            order = None
-    else:
-        raise APIError(400, "id or token is required")
-    if order is None:
-        raise APIError(404, "order not found")
+def _own(db: Session, user, order_id: int, *, admin_ok: bool = False) -> Order:
+    order = shop.load_order(db, order_id=order_id)
+    if order.user_id != user.id and not (admin_ok and user.role in {"admin", "superadmin"}):
+        raise APIError(404, "not_found")
     return order
 
 
 @router.get("/order")
-def get_order(request: Request, db: Session = Depends(get_db), claims=Depends(optional_claims)):
-    token = (request.query_params.get("token") or "").strip()
-    raw_id = (request.query_params.get("id") or "").strip()
-    order_id = int(raw_id) if raw_id.isdigit() else None
-    order = _load_for_viewer(db, request, claims, order_id=order_id, token=token)
-    return order_json(order, request.app.state.settings.image_base_url)
-
-
-@router.get("/orders/{order_id}/invoice")
-def invoice(order_id: int, request: Request, db: Session = Depends(get_db), claims=Depends(optional_claims)):
-    token = (request.query_params.get("token") or "").strip()
-    order = _load_for_viewer(db, request, claims, order_id=None if token else order_id, token=token)
-    if order.payment_status != "paid" and not order.refunded_amount:
-        raise APIError(409, "an invoice is only available once the order is paid")
-    if not order.invoice_number:
-        _assign_invoice(db, order)
-        db.flush()
-    filename = (order.invoice_number or f"order-{order.id}").replace("/", "-")
-    pdf = render_invoice_pdf(order)
-    return Response(
-        content=pdf,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'inline; filename="invoice-{filename}.pdf"',
-            "Cache-Control": "private, max-age=0, no-store",
-        },
-    )
-
-
-class VerifyIn(BaseModel):
-    razorpay_order_id: str = ""
-    razorpay_payment_id: str = ""
-    razorpay_signature: str = ""
-    orderId: int | None = None
-
-
-@router.post("/razorpay/verify")
-def verify_payment(body: VerifyIn, request: Request, db: Session = Depends(get_db)):
-    if not body.razorpay_payment_id:
-        raise APIError(400, "razorpay_payment_id is required")
-    if not body.orderId and not body.razorpay_order_id:
-        raise APIError(400, "orderId or razorpay_order_id is required")
-    stmt = select(Order).options(selectinload(Order.items))
-    if body.orderId:
-        order = db.scalar(stmt.where(Order.id == body.orderId, alive(Order)))
+def get_order(request: Request, db: Session = Depends(get_db), user=Depends(optional_user), token: str = "", id: int = 0):
+    if token:
+        order = shop.load_order(db, token=token)
+    elif user is not None and id:
+        order = _own(db, user, id, admin_ok=True)
     else:
-        order = db.scalar(stmt.where(Order.razorpay_order_id == body.razorpay_order_id, alive(Order)))
-    if order is None:
-        raise APIError(404, "order not found")
-
-    settings = request.app.state.settings
-    if not settings.skip_signature_checks:
-        # Sign the order id we stored, not the one the browser posted.
-        if not body.razorpay_signature:
-            raise APIError(400, "razorpay_signature is required")
-        message = f"{order.razorpay_order_id}|{body.razorpay_payment_id}"
-        if not verify_hmac(settings.razorpay_key_secret, message, body.razorpay_signature):
-            payment_signature_failures.labels(stage="verify").inc()
-            raise APIError(400, "payment verification failed")
-
-    first = mark_order_paid(db, order, body.razorpay_payment_id)
-    _after_paid(request, db, order, first)
-    return {"success": True, "message": "Payment verified successfully", "orderId": order.id, "publicToken": order.public_token}
-
-
-def _after_paid(request, db: Session, order: Order, first: bool) -> None:
-    if not first:
-        return
-    settings = request.app.state.settings
-    if order.customer_email:
-        lines = "\n".join(f"- {i.name} x {i.quantity}" for i in order.items)
-        send_email(
-            settings,
-            order.customer_email,
-            f"Growman order {order.id} confirmed",
-            f"Hi {order.customer_name},\n\nWe received ₹{order.amount:.0f}.\n\n{lines}\n",
-        )
-    alert_ops(settings, f"Paid order #{order.id} ₹{order.amount:.0f} via {order.fulfillment_channel}")
-    if order.user_id is None and order.customer_email:
-        _link_soft_account(db, order)
-
-
-def _link_soft_account(db: Session, order: Order) -> None:
-    """A guest payment still becomes a user, so the order has an owner.
-
-    Failure here must not undo the payment, so the caller runs this after
-    ``mark_order_paid`` has already written the paid row. The random
-    password is never shown; the customer sets one through forgot-password.
-    """
-    user = db.scalar(
-        select(User).where(or_(User.email == order.customer_email, User.phone == order.customer_phone), alive(User))
-    )
-    if user is None:
-        user = User(
-            name=order.customer_name,
-            email=order.customer_email,
-            phone=order.customer_phone,
-            password_hash=hash_password(secrets.token_hex(16)),
-            email_verified=True,
-            provider="local",
-            role="user",
-        )
-        db.add(user)
-        db.flush()
-    order.user_id = user.id
+        raise APIError(400, "token_or_id_required")
+    return order_out(order, request.app.state.settings.image_base_url)
 
 
 @router.get("/orders")
-def list_orders(request: Request, db: Session = Depends(get_db), claims=Depends(require_user)):
-    page, size, offset = parse_page(request)
-    status = (request.query_params.get("status") or "").strip().lower()
-    search = (request.query_params.get("search") or "").strip().lower()
-    scope = (request.query_params.get("scope") or "").strip().lower()
-    admin = is_admin(claims.role) and scope != "self"
-    cond = [alive(Order)]
-    if not admin:
-        cond.append(Order.user_id == claims.user_id)
-    if status in {"", "all"}:
-        pass
-    elif status == "settled":
-        # Paid, refunded, and partially refunded stay in history. Unpaid
-        # checkouts and abandoned carts do not.
-        cond.append(Order.payment_status.notin_(["created", "failed"]))
-        cond.append(Order.status != "abandoned")
-    else:
-        wanted = [part.strip() for part in status.split(",") if part.strip()]
-        cond.append(Order.status.in_(wanted))
-    if search and admin:
-        like = f"%{search}%"
-        cond.append(or_(Order.customer_name.ilike(like), Order.customer_email.ilike(like), Order.customer_phone.ilike(like)))
-    total = db.scalar(select(func.count()).select_from(Order).where(*cond)) or 0
+def list_orders(request: Request, db: Session = Depends(get_db), user=Depends(member)):
     rows = db.scalars(
-        select(Order).where(*cond).options(selectinload(Order.items)).order_by(Order.created_at.desc()).offset(offset).limit(size)
+        select(Order).where(alive(Order), Order.user_id == user.id).options(selectinload(Order.items)).order_by(Order.id.desc())
     ).all()
-    base = request.app.state.settings.image_base_url
-    return {"data": [order_json(o, base) for o in rows], "pagination": page_meta(page, size, total)}
+    return [order_out(row, request.app.state.settings.image_base_url) for row in rows]
 
 
-class StatusIn(BaseModel):
-    status: str
-
-
-@router.patch("/orders/{order_id}/status")
-def update_status(order_id: int, body: StatusIn, db: Session = Depends(get_db), claims=Depends(require_user)):
-    if not is_admin(claims.role):
-        raise APIError(403, "admin access required")
-    order = db.get(Order, order_id)
-    if order is None or order.deleted_at is not None:
-        raise APIError(404, "order not found")
-    order.status = body.status.strip().lower()
-    if order.status == "delivered" and order.delivered_at is None:
-        order.delivered_at = utcnow()
-    return {"id": order.id, "status": order.status}
-
-
-class DeliveryDateIn(BaseModel):
-    expectedDeliveryDate: str
-
-
-@router.patch("/orders/{order_id}/expected-delivery")
-def update_delivery_date(order_id: int, body: DeliveryDateIn, db: Session = Depends(get_db), claims=Depends(require_user)):
-    if not is_admin(claims.role):
-        raise APIError(403, "admin access required")
-    order = db.get(Order, order_id)
-    if order is None:
-        raise APIError(404, "order not found")
-    try:
-        order.expected_delivery_date = datetime_from(body.expectedDeliveryDate)
-    except ValueError as exc:
-        raise APIError(400, "expectedDeliveryDate must be YYYY-MM-DD") from exc
-    return {"ok": True}
-
-
-def datetime_from(value: str):
-    from datetime import datetime
-
-    return datetime.strptime(value.strip()[:10], "%Y-%m-%d")
-
-
-class CancelIn(BaseModel):
-    reason: str = ""
+@router.get("/me/orders/active")
+def active_order(request: Request, db: Session = Depends(get_db), user=Depends(member)):
+    order = db.scalar(
+        select(Order).where(
+            alive(Order), Order.user_id == user.id,
+            Order.status.notin_(["delivered", "cancelled", "abandoned", "failed"]),
+        ).options(selectinload(Order.items)).order_by(Order.id.desc())
+    )
+    return order_out(order, request.app.state.settings.image_base_url) if order else None
 
 
 @router.post("/orders/{order_id}/cancel")
-def cancel_order(order_id: int, body: CancelIn, request: Request, db: Session = Depends(get_db), claims=Depends(require_user)):
-    order = db.scalar(select(Order).where(Order.id == order_id, alive(Order)).options(selectinload(Order.items)))
-    if order is None or (not is_admin(claims.role) and order.user_id != claims.user_id):
-        raise APIError(404, "order not found")
-    if not order.is_cancellable() and not is_admin(claims.role):
-        raise APIError(409, "this order can no longer be cancelled")
-    order.cancelled_at = utcnow()
-    order.cancel_reason = body.reason[:500]
-    order.status = "cancelled"
-    release(db, order)
-    if order.payment_status == "paid" and order.razorpay_payment_id:
-        refund = refund_payment(request.app.state.settings, order.razorpay_payment_id, order.amount - order.refunded_amount)
-        from app.models import Refund
+def cancel(order_id: int, body: dict, db: Session = Depends(get_db), user=Depends(member)):
+    order = _own(db, user, order_id, admin_ok=True)
+    shop.cancel(db, order, str(body.get("reason") or "Cancelled by customer"))
+    return {"ok": True}
 
-        db.add(
-            Refund(
-                order_id=order.id,
-                razorpay_refund_id=str(refund.get("id") or ""),
-                razorpay_payment_id=order.razorpay_payment_id,
-                amount=order.amount,
-                reason="customer_cancelled",
-                initiated_by=claims.user_id,
-                status=str(refund.get("status") or "pending"),
-            )
-        )
-        order.payment_status = "refunded"
-        order.refunded_amount = order.amount
-    if order.credit_applied and order.user_id:
-        add_credit(db, order.user_id, order.credit_applied, "cancel", order.id)
-    if order.customer_email:
-        send_email(
-            request.app.state.settings,
-            order.customer_email,
-            f"Growman order {order.id} cancelled",
-            f"Hi {order.customer_name},\n\nOrder #{order.id} for Rs. {order.amount:.0f} is cancelled."
-            + (" The payment will be refunded.\n" if order.payment_status == "refunded" else "\n"),
-        )
+
+@router.get("/orders/{order_id}/invoice")
+def invoice(order_id: int, request: Request, db: Session = Depends(get_db), user=Depends(optional_user), token: str = ""):
+    if token:
+        order = shop.load_order(db, token=token)
+        if order.id != order_id:
+            raise APIError(404, "not_found")
+    elif user is not None:
+        order = _own(db, user, order_id, admin_ok=True)
+    else:
+        raise APIError(401, "missing_token")
+    if order.payment_status != "paid" or not order.invoice_number:
+        raise APIError(409, "invoice_not_ready")
+    return Response(pdf(order), media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{order.invoice_number.replace("/", "-")}.pdf"'})
+
+
+@router.post("/orders/{order_id}/reorder")
+def reorder(order_id: int, request: Request, db: Session = Depends(get_db), user=Depends(member)):
+    order = _own(db, user, order_id)
+    base = request.app.state.settings.image_base_url
+    return {"items": order_out(order, base)["items"]}
+
+
+@router.post("/orders/{order_id}/rating")
+def rate(order_id: int, body: dict, db: Session = Depends(get_db), user=Depends(member)):
+    order = _own(db, user, order_id)
+    score = int(body.get("rating") or 0)
+    if not 1 <= score <= 5:
+        raise APIError(400, "invalid_rating")
+    order.delivery_rating = score
+    order.delivery_feedback = str(body.get("feedback") or "")[:500]
+    return {"ok": True}
+
+
+@router.post("/orders/{order_id}/retry-payment")
+def retry_payment(order_id: int, request: Request, db: Session = Depends(get_db), user=Depends(member)):
+    order = _own(db, user, order_id)
+    if order.payment_status == "paid":
+        raise APIError(409, "already_paid")
+    remote = shop._razorpay(request.app.state.settings, order.amount, order.currency or "INR")
+    order.razorpay_order_id = remote["id"]
+    order.payment_status = "created"
+    order.status = "pending"
+    return {"id": remote["id"], "amount": remote["amount"], "currency": remote["currency"], "orderId": order.id, "publicToken": order.public_token}
+
+
+@router.patch("/orders/{order_id}/status")
+def update_status(order_id: int, body: dict, db: Session = Depends(get_db), user=Depends(member)):
+    if user.role not in {"admin", "superadmin"}:
+        raise APIError(403, "admin_required")
+    order = shop.load_order(db, order_id=order_id)
+    status = str(body.get("status") or "")
+    if status not in {"pending", "paid", "confirmed", "processing", "shipped", "delivered", "cancelled"}:
+        raise APIError(400, "invalid_status")
+    order.status = status
+    if status == "shipped":
+        order.shipped_at = order.shipped_at or datetime.utcnow()
+    if status == "delivered":
+        order.delivered_at = order.delivered_at or datetime.utcnow()
     return {"ok": True, "status": order.status}
+
+
+@router.patch("/orders/{order_id}/expected-delivery")
+def expected_delivery(order_id: int, body: dict, db: Session = Depends(get_db), user=Depends(member)):
+    if user.role not in {"admin", "superadmin"}:
+        raise APIError(403, "admin_required")
+    order = shop.load_order(db, order_id=order_id)
+    raw = str(body.get("date") or body.get("expectedDeliveryDate") or "")
+    try:
+        order.expected_delivery_date = datetime.strptime(raw, "%Y-%m-%d")
+    except ValueError as exc:
+        raise APIError(400, "date must be YYYY-MM-DD") from exc
+    return {"ok": True}
+
+
+def pdf(order: Order) -> bytes:
+    from fpdf import FPDF
+    doc = FPDF()
+    doc.add_page()
+    doc.set_font("Helvetica", size=16)
+    doc.cell(0, 10, "Sri Shirdi Sai Nursery", new_x="LMARGIN", new_y="NEXT")
+    doc.set_font("Helvetica", size=11)
+    doc.cell(0, 6, "Hyderabad", new_x="LMARGIN", new_y="NEXT")
+    doc.cell(0, 8, f"Tax invoice {order.invoice_number}", new_x="LMARGIN", new_y="NEXT")
+    doc.cell(0, 6, f"{order.customer_name}  {order.customer_phone}", new_x="LMARGIN", new_y="NEXT")
+    doc.cell(0, 6, f"{order.address_line}, {order.city} {order.pincode}", new_x="LMARGIN", new_y="NEXT")
+    doc.ln(4)
+    for item in order.items:
+        if item.deleted_at:
+            continue
+        doc.cell(0, 6, f"{item.quantity} x {item.name}    Rs {item.price * item.quantity:.2f}", new_x="LMARGIN", new_y="NEXT")
+    doc.ln(2)
+    doc.cell(0, 6, f"Subtotal Rs {order.subtotal:.2f}", new_x="LMARGIN", new_y="NEXT")
+    doc.cell(0, 6, f"Delivery Rs {order.delivery_fee:.2f}", new_x="LMARGIN", new_y="NEXT")
+    doc.cell(0, 6, f"Tax Rs {order.tax_amount:.2f}    Total Rs {order.amount:.2f}", new_x="LMARGIN", new_y="NEXT")
+    doc.ln(4)
+    doc.set_x(doc.l_margin)
+    doc.multi_cell(0, 6, shop.rupees(order.amount))
+    return bytes(doc.output())

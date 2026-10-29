@@ -6,7 +6,7 @@ import re
 
 from app.textutil import content_tokens
 
-MAX_MESSAGE_CHARS = 2000
+MAX_MESSAGE_CHARS = 2P000
 
 DISCLAIMER = (
     "Consult a qualified practitioner before using any plant medicinally. "

@@ -1,51 +1,27 @@
-"""Catalog reads. This is most of the traffic, so list and detail responses
-are cached. A mutation deletes the catalog prefixes rather than trying to
-guess which keys an edit touched.
-
-Prices on the way out are the database prices. Nothing in this file trusts
-a price sent by the client.
-"""
-
-from __future__ import annotations
+"""The catalog. Prices and stock come from Postgres. Redis only remembers the page."""
 
 import json
-import re
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import require_admin, require_user
-from app.errors import APIError
-from app.models import (
-    Attribute,
-    BackInStockRequest,
-    Brand,
-    Category,
-    Order,
-    OrderItem,
-    Product,
-    ProductSize,
-    Review,
-    Subcategory,
-    alive,
-)
-from app.present import product_card, product_detail, review_json
-from app.responses import page_meta, parse_page, public_json
-from app.routers.deps import get_db
+from app.db import get_db
+from app.http import APIError, page_of
+from app.models import Brand, Category, Product, Review, Subcategory, alive, utcnow
+from app.security import admin, member
+from app.serialize import brand as brand_out
+from app.serialize import category as category_out
+from app.serialize import product as product_out
+from app.serialize import review as review_out
 
-router = APIRouter()
-
-_CARD = (
+router = APIRouter(tags=["catalog"])
+LOAD = (
     selectinload(Product.sizes),
     selectinload(Product.category),
-    selectinload(Product.brand),
-)
-_DETAIL = _CARD + (
-    selectinload(Product.attributes),
     selectinload(Product.subcategory),
-    selectinload(Product.reviews).selectinload(Review.user),
+    selectinload(Product.brand),
+    selectinload(Product.attributes),
 )
 
 
@@ -53,421 +29,269 @@ def _base(request: Request) -> str:
     return request.app.state.settings.image_base_url
 
 
-def _slugify(name: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    return slug[:170] or "item"
+def _cached(request: Request, key: str, build):
+    redis = request.app.state.redis
+    if redis is not None:
+        try:
+            raw = redis.get(key)
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            pass
+    value = build()
+    if redis is not None:
+        try:
+            redis.setex(key, 120, json.dumps(value))
+        except Exception:
+            pass
+    return value
+
+
+def _query(db: Session):
+    return select(Product).where(alive(Product), Product.status == "active").options(*LOAD).order_by(Product.id.desc())
+
+
+def _page(request: Request, db: Session, stmt, page: int, page_size: int, key: str):
+    page_size = min(max(page_size, 1), 100)
+
+    def build():
+        total = db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
+        rows = db.scalars(stmt.offset((max(page, 1) - 1) * page_size).limit(page_size)).all()
+        return {"data": [product_out(row, _base(request)) for row in rows], "pagination": page_of(page, page_size, total)}
+
+    return _cached(request, key, build)
 
 
 @router.get("/products")
-def list_products(request: Request, db: Session = Depends(get_db)):
-    page, size, offset = parse_page(request)
-    key = f"products:list:p{page}:s{size}"
-
-    def load() -> bytes:
-        total = db.scalar(select(func.count()).select_from(Product).where(alive(Product))) or 0
-        rows = db.scalars(
-            select(Product).where(alive(Product)).options(*_CARD).order_by(Product.created_at.desc()).offset(offset).limit(size)
-        ).all()
-        body = {
-            "data": [product_card(p, _base(request)) for p in rows],
-            "pagination": page_meta(page, size, total),
-        }
-        return json.dumps(body).encode()
-
-    raw = request.app.state.cache.get_or_load(key, 600, load)
-    return public_json(request, raw, max_age=60)
+def list_products(request: Request, db: Session = Depends(get_db), page: int = 1, pageSize: int = 24,
+                  category: str = "", tag: str = "", q: str = "", featured: bool = False,
+                  minPrice: float | None = None, maxPrice: float | None = None):
+    stmt = _query(db)
+    if category:
+        stmt = stmt.join(Category, Product.category_id == Category.id).where(Category.slug == category)
+    if tag:
+        stmt = stmt.where(Product.tags.contains([tag]))
+    if q:
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(Product.name.ilike(like), Product.short_desc.ilike(like)))
+    if featured:
+        stmt = stmt.where(Product.featured.is_(True))
+    if minPrice is not None:
+        stmt = stmt.where(Product.price >= minPrice)
+    if maxPrice is not None:
+        stmt = stmt.where(Product.price <= maxPrice)
+    return _page(request, db, stmt, page, pageSize, f"products:{page}:{pageSize}:{category}:{tag}:{q}:{featured}:{minPrice}:{maxPrice}")
 
 
 @router.get("/products/search")
-def search_products(request: Request, db: Session = Depends(get_db)):
-    q = (request.query_params.get("q") or "").strip()
-    if len(q) < 2:
-        raise APIError(400, "enter at least 2 characters")
-    page, size, offset = parse_page(request)
-    like = f"%{q}%"
-    # ILIKE can use the trigram GIN indexes created at boot.
-    cond = or_(Product.name.ilike(like), Product.short_desc.ilike(like))
-    total = db.scalar(select(func.count()).select_from(Product).where(alive(Product), cond)) or 0
-    rows = db.scalars(
-        select(Product).where(alive(Product), cond).options(*_CARD).order_by(Product.featured.desc(), Product.created_at.desc()).offset(offset).limit(size)
-    ).all()
-    return {
-        "data": [product_card(p, _base(request)) for p in rows],
-        "pagination": page_meta(page, size, total),
-    }
+def search(request: Request, db: Session = Depends(get_db), q: str = "", page: int = 1, pageSize: int = 20):
+    pageSize = min(pageSize, 40)
+    if not q.strip():
+        return {"data": [], "pagination": page_of(1, pageSize, 0)}
+    return list_products(request, db, page=page, pageSize=pageSize, q=q)
 
 
 @router.get("/products/featured")
-def featured(request: Request, db: Session = Depends(get_db)):
-    def load() -> bytes:
-        rows = db.scalars(
-            select(Product)
-            .where(alive(Product), Product.featured.is_(True), Product.status == "active")
-            .options(*_CARD)
-            .order_by(Product.created_at.desc())
-            .limit(12)
-        ).all()
-        return json.dumps([product_card(p, _base(request)) for p in rows]).encode()
-
-    return public_json(request, request.app.state.cache.get_or_load("products:featured", 600, load))
+def featured(request: Request, db: Session = Depends(get_db), page: int = 1, pageSize: int = 12):
+    return list_products(request, db, page=page, pageSize=pageSize, featured=True)
 
 
 @router.get("/products/filters")
-def filter_products(request: Request, db: Session = Depends(get_db)):
-    """Tag and attribute filters used by the plant finder, not the grid search."""
-    stmt = select(Product).where(alive(Product), Product.status == "active").options(*_CARD)
-    wanted = []
-    for key in ("light", "climate"):
-        value = (request.query_params.get(key) or "").strip()
-        if value:
-            wanted.append(value)
-    if request.query_params.get("petSafe") == "1":
-        wanted.append("pet")
-    if request.query_params.get("beginner") == "1":
-        wanted.append("beginner")
-    if request.query_params.get("indoor") == "1":
-        wanted.append("indoor")
-    if wanted:
-        # ``@>`` asks whether the text[] contains this tag. The GIN index
-        # on tags makes that cheap.
-        for word in wanted:
-            stmt = stmt.where(Product.tags.contains([word]))
-    rows = db.scalars(stmt.order_by(Product.featured.desc()).limit(40)).all()
-    return {"products": [product_card(p, _base(request)) for p in rows]}
+def filters(request: Request, db: Session = Depends(get_db), category: str = "", tag: str = "",
+            minPrice: float | None = None, maxPrice: float | None = None, page: int = 1, pageSize: int = 24):
+    return list_products(request, db, page=page, pageSize=pageSize, category=category, tag=tag, minPrice=minPrice, maxPrice=maxPrice)
+
+
+def _by_slug(db: Session, slug: str, active: bool = True) -> Product:
+    stmt = select(Product).where(Product.slug == slug, alive(Product)).options(*LOAD, selectinload(Product.reviews).selectinload(Review.user))
+    if active:
+        stmt = stmt.where(Product.status == "active")
+    row = db.scalar(stmt)
+    if row is None:
+        raise APIError(404, "not_found")
+    return row
 
 
 @router.get("/products/{slug}")
 def get_product(slug: str, request: Request, db: Session = Depends(get_db)):
-    if not slug or len(slug) > 180:
-        raise APIError(400, "invalid slug")
-
-    def load() -> bytes:
-        product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)).options(*_DETAIL))
-        if product is None:
-            raise APIError(404, "product not found")
-        # Public detail shows approved reviews only. Pending ones stay hidden.
-        product.reviews = [r for r in product.reviews if r.status == "approved" and r.deleted_at is None][:12]
-        return json.dumps(product_detail(product, _base(request))).encode()
-
-    try:
-        raw = request.app.state.cache.get_or_load(f"products:detail:{slug}", 1800, load)
-    except APIError:
-        raise
-    return public_json(request, raw, max_age=120)
+    return product_out(_by_slug(db, slug), _base(request), reviews=True)
 
 
 @router.get("/products/{slug}/related")
 def related(slug: str, request: Request, db: Session = Depends(get_db)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    rows = db.scalars(
-        select(Product)
-        .where(alive(Product), Product.category_id == product.category_id, Product.id != product.id)
-        .options(*_CARD)
-        .limit(8)
-    ).all()
-    return {"products": [product_card(p, _base(request)) for p in rows]}
+    row = _by_slug(db, slug)
+    stmt = _query(db).where(Product.category_id == row.category_id, Product.id != row.id).limit(8)
+    return [product_out(item, _base(request)) for item in db.scalars(stmt)]
 
 
 @router.get("/products/{slug}/companions")
 def companions(slug: str, request: Request, db: Session = Depends(get_db)):
-    """Pots, soil, and feed that sit next to a plant on the product page."""
-    product = db.scalar(select(Product.id).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    like = or_(Product.name.ilike("%pot%"), Product.name.ilike("%soil%"), Product.name.ilike("%fertil%"))
-    rows = db.scalars(select(Product).where(alive(Product), Product.id != product, like).options(*_CARD).limit(8)).all()
-    return {"products": [product_card(p, _base(request)) for p in rows]}
+    row = _by_slug(db, slug)
+    stmt = _query(db).where(Product.id != row.id, Product.featured.is_(True)).limit(4)
+    return [product_out(item, _base(request)) for item in db.scalars(stmt)]
 
 
 @router.get("/products/{slug}/reviews")
-def list_reviews(slug: str, request: Request, db: Session = Depends(get_db)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    page, size, offset = parse_page(request)
-    cond = (Review.product_id == product.id, Review.status == "approved", alive(Review))
-    total = db.scalar(select(func.count()).select_from(Review).where(*cond)) or 0
-    rows = db.scalars(
-        select(Review).where(*cond).options(selectinload(Review.user)).order_by(Review.created_at.desc()).offset(offset).limit(size)
-    ).all()
-    return {"data": [review_json(r, _base(request)) for r in rows], "pagination": page_meta(page, size, total)}
-
-
-class ReviewIn(BaseModel):
-    rating: int = Field(ge=1, le=5)
-    title: str = ""
-    comment: str = ""
+def list_reviews(slug: str, db: Session = Depends(get_db)):
+    row = _by_slug(db, slug)
+    rows = [item for item in row.reviews if item.deleted_at is None and item.status == "approved"]
+    return [review_out(item) for item in rows]
 
 
 @router.post("/products/{slug}/reviews")
-def create_review(slug: str, body: ReviewIn, request: Request, db: Session = Depends(get_db), claims=Depends(require_user)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    # The unique index is the real guard. This check is the friendly error
-    # for the common case; a race still loses on the index.
-    existing = db.scalar(select(Review.id).where(Review.product_id == product.id, Review.user_id == claims.user_id, alive(Review)))
-    if existing:
-        raise APIError(409, "you already reviewed this product")
-    purchased = db.scalar(
-        select(OrderItem.id)
-        .join(Order, Order.id == OrderItem.order_id)
-        .where(
-            Order.user_id == claims.user_id,
-            Order.payment_status == "paid",
-            OrderItem.product_id == product.id,
-            alive(Order),
+def create_review(slug: str, body: dict, db: Session = Depends(get_db), user=Depends(member)):
+    from app.models import Order, OrderItem
+    row = _by_slug(db, slug)
+    rating = int(body.get("rating") or 0)
+    if not 1 <= rating <= 5:
+        raise APIError(400, "invalid_rating")
+    verified = db.scalar(
+        select(OrderItem.id).join(Order, OrderItem.order_id == Order.id).where(
+            Order.user_id == user.id, Order.payment_status == "paid", OrderItem.product_id == row.id
         )
-    )
-    review = Review(
-        product_id=product.id,
-        user_id=claims.user_id,
-        rating=body.rating,
-        title=body.title[:160],
-        comment=body.comment[:4000],
-        status="pending",
-        verified_purchase=purchased is not None,
-    )
-    db.add(review)
-    db.flush()
-    return review_json(review, _base(request))
-
-
-class RestockIn(BaseModel):
-    email: str
-    productSizeId: int | None = None
-
-
-@router.post("/products/{slug}/back-in-stock")
-def back_in_stock(slug: str, body: RestockIn, db: Session = Depends(get_db)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    email = body.email.strip().lower()
-    if "@" not in email:
-        raise APIError(400, "invalid email format")
-    exists = db.scalar(
-        select(BackInStockRequest.id).where(
-            BackInStockRequest.product_id == product.id,
-            BackInStockRequest.email == email,
-            BackInStockRequest.notified_at.is_(None),
-        )
-    )
-    if exists is None:
-        db.add(BackInStockRequest(product_id=product.id, email=email, product_size_id=body.productSizeId))
+    ) is not None
+    db.add(Review(rating=rating, title=str(body.get("title") or "")[:160], comment=str(body.get("comment") or ""),
+                  product_id=row.id, user_id=user.id, status="pending", verified_purchase=verified))
+    try:
+        db.flush()
+    except Exception as exc:
+        raise APIError(409, "already_reviewed") from exc
     return {"ok": True}
 
 
-class ProductIn(BaseModel):
-    name: str
-    slug: str = ""
-    price: float
-    mrp: float = 0
-    shortDescription: str = ""
-    description: str = ""
-    categoryId: int | None = None
-    subcategoryId: int | None = None
-    brandId: int | None = None
-    stock: int = 0
-    featured: bool = False
-    tags: list[str] = []
-    status: str = "active"
-    sizeClass: str = "small"
-    trackInventory: bool = True
-    hsnCode: str = ""
-    gstRate: float = 0
-    imageKey: str = ""
-    sizes: list[dict] = []
-    attributes: list[dict] = []
+@router.post("/products/{slug}/back-in-stock")
+def back_in_stock(slug: str, body: dict, db: Session = Depends(get_db)):
+    from app.models import BackInStockRequest
+    row = _by_slug(db, slug)
+    email = str(body.get("email") or "").strip().lower()
+    if "@" not in email:
+        raise APIError(400, "invalid_email")
+    db.add(BackInStockRequest(product_id=row.id, email=email, product_size_id=body.get("productSizeId")))
+    return {"ok": True}
+
+
+def _slug(name: str, db: Session) -> str:
+    import re
+    base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "plant"
+    slug, n = base, 2
+    while db.scalar(select(Product.id).where(Product.slug == slug)):
+        slug = f"{base}-{n}"
+        n += 1
+    return slug
 
 
 @router.post("/products")
-def create_product(body: ProductIn, request: Request, db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    slug = body.slug or _slugify(body.name)
-    if db.scalar(select(Product.id).where(Product.slug == slug)):
-        raise APIError(409, "slug already exists")
-    product = Product(
-        name=body.name,
-        slug=slug,
-        price=body.price,
-        mrp=body.mrp or body.price,
-        short_desc=body.shortDescription,
-        description=body.description,
-        category_id=body.categoryId,
-        subcategory_id=body.subcategoryId,
-        brand_id=body.brandId,
-        stock=body.stock,
-        featured=body.featured,
-        tags=body.tags,
-        status=body.status,
-        size_class=body.sizeClass,
-        track_inventory=body.trackInventory,
-        hsn_code=body.hsnCode,
-        gst_rate=body.gstRate,
-        image_key=body.imageKey,
+def create_product(body: dict, request: Request, db: Session = Depends(get_db), _admin=Depends(admin)):
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise APIError(400, "name_required")
+    row = Product(
+        name=name, slug=_slug(name, db), description=str(body.get("description") or ""),
+        short_desc=str(body.get("shortDescription") or ""), full_desc=str(body.get("fullDescription") or ""),
+        price=float(body.get("price") or 0), mrp=float(body.get("mrp") or 0),
+        image_key=str(body.get("imageKey") or ""), status=str(body.get("status") or "active"),
+        featured=bool(body.get("featured")), tags=list(body.get("tags") or []),
+        stock=int(body.get("stock") or 0), track_inventory=bool(body.get("trackInventory", True)),
+        size_class=str(body.get("sizeClass") or "small"), bulky=bool(body.get("bulky")),
+        category_id=body.get("categoryId"), subcategory_id=body.get("subcategoryId"), brand_id=body.get("brandId"),
+        hsn_code=str(body.get("hsnCode") or ""), gst_rate=float(body.get("gstRate") or 0),
     )
-    db.add(product)
+    db.add(row)
     db.flush()
-    for size in body.sizes:
-        db.add(
-            ProductSize(
-                product_id=product.id,
-                label=size.get("label") or "",
-                price=float(size.get("price") or 0),
-                stock=int(size.get("stock") or 0),
-            )
-        )
-    for attr in body.attributes:
-        db.add(Attribute(product_id=product.id, name=attr.get("name") or "", value=attr.get("value") or ""))
-    request.app.state.cache.invalidate_catalog()
+    for size in body.get("sizes") or []:
+        from app.models import ProductSize
+        db.add(ProductSize(product_id=row.id, label=str(size.get("label") or "Standard"), price=float(size.get("price") or row.price),
+                           stock=int(size.get("stock") or 0), size_class=size.get("sizeClass"), bulky=size.get("bulky"),
+                           image_keys=list(size.get("imageKeys") or [])))
     db.flush()
-    return {"id": product.id, "slug": product.slug}
+    return product_out(_by_slug(db, row.slug, active=False), _base(request))
 
 
 @router.put("/products/{slug}")
-def update_product(slug: str, body: ProductIn, request: Request, db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    product.name = body.name
-    product.price = body.price
-    product.mrp = body.mrp or body.price
-    product.short_desc = body.shortDescription
-    product.description = body.description
-    product.stock = body.stock
-    product.featured = body.featured
-    product.tags = body.tags
-    product.status = body.status
-    product.size_class = body.sizeClass
-    product.track_inventory = body.trackInventory
-    product.image_key = body.imageKey or product.image_key
-    if body.categoryId:
-        product.category_id = body.categoryId
-    request.app.state.cache.invalidate_catalog()
-    return {"id": product.id, "slug": product.slug}
+def update_product(slug: str, body: dict, request: Request, db: Session = Depends(get_db), _admin=Depends(admin)):
+    row = _by_slug(db, slug, active=False)
+    mapping = {
+        "name": "name", "description": "description", "shortDescription": "short_desc", "fullDescription": "full_desc",
+        "price": "price", "mrp": "mrp", "imageKey": "image_key", "status": "status", "featured": "featured",
+        "stock": "stock", "trackInventory": "track_inventory", "sizeClass": "size_class", "bulky": "bulky",
+        "categoryId": "category_id", "brandId": "brand_id", "gstRate": "gst_rate", "hsnCode": "hsn_code",
+    }
+    for src, dest in mapping.items():
+        if src in body:
+            setattr(row, dest, body[src])
+    if "tags" in body:
+        row.tags = list(body["tags"] or [])
+    return product_out(row, _base(request))
 
 
 @router.delete("/products/{slug}")
-def delete_product(slug: str, request: Request, db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    product = db.scalar(select(Product).where(Product.slug == slug, alive(Product)))
-    if product is None:
-        raise APIError(404, "product not found")
-    from app.models import utcnow
-
-    product.deleted_at = utcnow()
-    request.app.state.cache.invalidate_catalog()
+def delete_product(slug: str, db: Session = Depends(get_db), _admin=Depends(admin)):
+    row = _by_slug(db, slug, active=False)
+    row.deleted_at = utcnow()
+    row.status = "archived"
     return {"ok": True}
 
 
 @router.get("/categories")
-def list_categories(request: Request, db: Session = Depends(get_db)):
-    def load() -> bytes:
-        rows = db.scalars(select(Category).where(alive(Category)).options(selectinload(Category.subcategories))).all()
-        body = [
-            {
-                "id": c.id,
-                "name": c.name,
-                "slug": c.slug,
-                "description": c.description,
-                "subcategories": [{"id": s.id, "name": s.name, "slug": s.slug} for s in c.subcategories if s.deleted_at is None],
-            }
-            for c in rows
-        ]
-        return json.dumps(body).encode()
-
-    return public_json(request, request.app.state.cache.get_or_load("categories:all", 600, load))
+def categories(db: Session = Depends(get_db)):
+    rows = db.scalars(select(Category).where(alive(Category)).options(selectinload(Category.subcategories)).order_by(Category.name)).all()
+    out = []
+    for row in rows:
+        item = category_out(row)
+        item["subcategories"] = [category_out(sub) | {"categoryId": sub.category_id} for sub in row.subcategories if sub.deleted_at is None]
+        out.append(item)
+    return out
 
 
 @router.get("/categories/{slug}")
-def get_category(slug: str, request: Request, db: Session = Depends(get_db)):
-    cat = db.scalar(select(Category).where(Category.slug == slug, alive(Category)).options(selectinload(Category.subcategories)))
-    if cat is None:
-        raise APIError(404, "category not found")
-    return {
-        "id": cat.id,
-        "name": cat.name,
-        "slug": cat.slug,
-        "description": cat.description,
-        "subcategories": [{"id": s.id, "name": s.name, "slug": s.slug} for s in cat.subcategories],
-    }
-
-
-@router.get("/categories/{slug}/subcategories")
-def list_subcategories(slug: str, db: Session = Depends(get_db)):
-    cat = db.scalar(select(Category).where(Category.slug == slug, alive(Category)))
-    if cat is None:
-        raise APIError(404, "category not found")
-    rows = db.scalars(select(Subcategory).where(Subcategory.category_id == cat.id, alive(Subcategory))).all()
-    return [{"id": s.id, "name": s.name, "slug": s.slug, "categoryId": s.category_id} for s in rows]
+def category(slug: str, db: Session = Depends(get_db)):
+    row = db.scalar(select(Category).where(Category.slug == slug, alive(Category)).options(selectinload(Category.subcategories)))
+    if row is None:
+        raise APIError(404, "not_found")
+    item = category_out(row)
+    item["subcategories"] = [category_out(sub) | {"categoryId": sub.category_id} for sub in row.subcategories if sub.deleted_at is None]
+    return item
 
 
 @router.get("/categories/{slug}/products")
-def products_by_category(slug: str, request: Request, db: Session = Depends(get_db)):
-    return _products_in(request, db, category_slug=slug)
+def category_products(slug: str, request: Request, db: Session = Depends(get_db), page: int = 1, pageSize: int = 24):
+    return list_products(request, db, page=page, pageSize=pageSize, category=slug)
+
+
+@router.get("/categories/{slug}/subcategories")
+def subcategories(slug: str, db: Session = Depends(get_db)):
+    row = db.scalar(select(Category).where(Category.slug == slug, alive(Category)))
+    if row is None:
+        raise APIError(404, "not_found")
+    rows = db.scalars(select(Subcategory).where(Subcategory.category_id == row.id, alive(Subcategory))).all()
+    return [category_out(sub) | {"categoryId": sub.category_id} for sub in rows]
 
 
 @router.get("/categories/{slug}/subcategories/{sub_slug}/products")
-def products_by_subcategory(slug: str, sub_slug: str, request: Request, db: Session = Depends(get_db)):
-    return _products_in(request, db, category_slug=slug, sub_slug=sub_slug)
-
-
-def _products_in(request, db, category_slug: str, sub_slug: str | None = None):
-    cat = db.scalar(select(Category).where(Category.slug == category_slug, alive(Category)))
-    if cat is None:
-        raise APIError(404, "category not found")
-    page, size, offset = parse_page(request)
-    cond = [alive(Product), Product.category_id == cat.id]
-    if sub_slug:
-        sub = db.scalar(select(Subcategory).where(Subcategory.category_id == cat.id, Subcategory.slug == sub_slug))
-        if sub is None:
-            raise APIError(404, "subcategory not found")
-        cond.append(Product.subcategory_id == sub.id)
-    total = db.scalar(select(func.count()).select_from(Product).where(*cond)) or 0
-    rows = db.scalars(select(Product).where(*cond).options(*_CARD).order_by(Product.created_at.desc()).offset(offset).limit(size)).all()
-    return {"data": [product_card(p, _base(request)) for p in rows], "pagination": page_meta(page, size, total)}
+def subcategory_products(slug: str, sub_slug: str, request: Request, db: Session = Depends(get_db), page: int = 1, pageSize: int = 24):
+    sub = db.scalar(select(Subcategory).join(Category, Subcategory.category_id == Category.id).where(
+        Category.slug == slug, Subcategory.slug == sub_slug, alive(Subcategory)))
+    if sub is None:
+        raise APIError(404, "not_found")
+    stmt = _query(db).where(Product.subcategory_id == sub.id)
+    return _page(request, db, stmt, page, pageSize, f"products:sub:{sub.id}:{page}:{pageSize}")
 
 
 @router.get("/brands")
-def list_brands(request: Request, db: Session = Depends(get_db)):
-    def load() -> bytes:
-        rows = db.scalars(select(Brand).where(alive(Brand)).order_by(Brand.name)).all()
-        return json.dumps([{"id": b.id, "name": b.name, "slug": b.slug} for b in rows]).encode()
-
-    return public_json(request, request.app.state.cache.get_or_load("brands:all", 900, load))
+def brands(db: Session = Depends(get_db)):
+    return [brand_out(row) for row in db.scalars(select(Brand).where(alive(Brand)).order_by(Brand.name))]
 
 
 @router.get("/tags")
-def list_tags(request: Request, db: Session = Depends(get_db)):
-    def load() -> bytes:
-        rows = db.scalars(select(Product.tags).where(alive(Product))).all()
-        tags = sorted({tag for group in rows for tag in (group or [])})
-        return json.dumps(tags).encode()
-
-    return public_json(request, request.app.state.cache.get_or_load("tags:all", 600, load))
+def tags(db: Session = Depends(get_db)):
+    found = set()
+    for row in db.scalars(select(Product.tags).where(alive(Product), Product.status == "active")):
+        found.update(row or [])
+    return sorted(found)
 
 
 @router.get("/catalog")
-def catalog_nav(request: Request, db: Session = Depends(get_db)):
-    """One payload for the storefront nav: categories, brands, featured slugs."""
-
-    def load() -> bytes:
-        cats = db.scalars(select(Category).where(alive(Category)).options(selectinload(Category.subcategories))).all()
-        brands = db.scalars(select(Brand).where(alive(Brand))).all()
-        featured_rows = db.scalars(select(Product.slug).where(alive(Product), Product.featured.is_(True)).limit(8)).all()
-        body = {
-            "categories": [
-                {
-                    "name": c.name,
-                    "slug": c.slug,
-                    "subcategories": [{"name": s.name, "slug": s.slug} for s in c.subcategories if s.deleted_at is None],
-                }
-                for c in cats
-            ],
-            "brands": [{"name": b.name, "slug": b.slug} for b in brands],
-            "featured": list(featured_rows),
-        }
-        return json.dumps(body).encode()
-
-    return public_json(request, request.app.state.cache.get_or_load("catalog:nav", 600, load))
+def catalog(request: Request, db: Session = Depends(get_db)):
+    def build():
+        return {"tags": tags(db), "categories": categories(db)}
+    return _cached(request, "catalog:nav", build)

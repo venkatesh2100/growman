@@ -3,9 +3,11 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install --omit=dev
+COPY prisma ./prisma
+RUN npm install --omit=dev && npx prisma generate
 
 COPY . .
+RUN npx prisma generate
 
 EXPOSE 8080
 

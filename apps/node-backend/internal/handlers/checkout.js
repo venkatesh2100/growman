@@ -13,7 +13,7 @@ After a guest pays, createSoftAccount makes them a password-less account.
 
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { recordInventoryConflict } from "../metrics/prometheus.js";
 import { exactIP, clientIP } from "../middlewares/ip.js";

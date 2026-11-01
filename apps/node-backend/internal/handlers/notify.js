@@ -3,7 +3,7 @@
 // sessions go to Discord or to the store email. Customers also get shipped
 // and cancelled order emails.
 
-import { QueryTypes } from "sequelize";
+import { QueryTypes } from "../db/compat.js";
 import { parseToken } from "../auth/jwt.js";
 import { recordPaymentOutcome } from "../metrics/prometheus.js";
 import { Order, User } from "../models/index.js";

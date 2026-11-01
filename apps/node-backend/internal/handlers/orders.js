@@ -10,7 +10,7 @@ List results are cached for a couple of minutes. Changing an order clears
 that cache so the next list is fresh.
 */
 
-import { Op, fn, col, where as sqlWhere } from "sequelize";
+import { Op, fn, col, where as sqlWhere } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { requireUser, isAdminRole } from "../auth/jwt.js";
 import { parsePagination, buildPaginationMeta } from "../../pkg/pagination/pagination.js";

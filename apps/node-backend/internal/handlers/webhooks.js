@@ -11,7 +11,7 @@ plants back in stock, unless the order was already paid. Refund events update
 the refund row. A dispute opens a support ticket and alerts the shop.
 */
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { json, error } from "../../pkg/httpjson/httpjson.js";
 import { recordPaymentSignatureFailure } from "../metrics/prometheus.js";
 import { Order, OrderItem, WebhookEvent, OrderSupportRequest } from "../models/index.js";

@@ -14,7 +14,7 @@ with a public token, or while signed in.
 */
 
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { isAdminRole } from "../auth/jwt.js";
 import { recordPaymentSignatureFailure, recordInventoryConflict } from "../metrics/prometheus.js";

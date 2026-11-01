@@ -2,7 +2,7 @@
 // When a customer tells Dootha about a delay, refund, or delivery problem,
 // a support ticket is saved. Staff can list those tickets and mark them resolved.
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { isAdminRole, requireUser } from "../auth/jwt.js";
 import { emailOrEmpty, Order, OrderSupportRequest, phoneOrEmpty, User } from "../models/index.js";

@@ -23,11 +23,7 @@ export async function ready(req, res) {
   let overall = "ok";
   try {
     await this.sequelize.query("SELECT 1");
-    const pool = this.sequelize.connectionManager.pool;
-    const using = pool?.using ?? pool?._count ?? 0;
-    const idle = pool?.available ?? 0;
     checks.postgres = "ok";
-    checks.postgres_conns = `${using} in use, ${idle} idle`;
   } catch (err) {
     checks.postgres = `error: ${err.message}`;
     status = 503;

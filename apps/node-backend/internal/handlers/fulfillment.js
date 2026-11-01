@@ -7,7 +7,7 @@
 // charged matches the quote, including the optional gift-wrap fee.
 // A bulk order is quoted by sales and cannot be paid here.
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { fulfillmentPolicy } from "../config/config.js";
 import * as engine from "../fulfillment/fulfillment.js";

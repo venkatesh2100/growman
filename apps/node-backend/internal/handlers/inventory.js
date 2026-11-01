@@ -11,7 +11,7 @@ A background timer sweeps abandoned checkouts so reserved plants are not
 held forever.
 */
 
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { Product, ProductSize, Order, OrderItem, BackInStockRequest } from "../models/index.js";
 import { validateEmail, renderEmail, escapeHtml } from "./auth.js";

@@ -2,7 +2,7 @@
 // They can turn order updates, offers, care reminders, weather, and Dootha
 // messages on or off, set a quiet hour, pause for a vacation, and mark notices read.
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { requireUser } from "../auth/jwt.js";
 import { AppNotification, NotificationPreference } from "../models/index.js";

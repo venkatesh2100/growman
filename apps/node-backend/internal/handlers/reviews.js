@@ -7,7 +7,7 @@
 // purchases first. Ten days after delivery we email a request to review
 // the first item on the order.
 
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { requireUser } from "../auth/jwt.js";
 import { Product, Review, User, Order, OrderItem } from "../models/index.js";

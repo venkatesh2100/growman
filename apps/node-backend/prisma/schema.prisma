@@ -1,0 +1,721 @@
+// Shop tables used by the Node API. Column names match the existing Postgres
+// schema (the same tables the Go API created). Prisma Client is the query
+// layer. Partial indexes stay in handler.ensureSearchIndexes, because Prisma
+// cannot express a WHERE clause on an index.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              BigInt    @id @default(autoincrement())
+  name            String?
+  email           String?   @unique
+  phone           String?   @unique
+  passwordHash    String?   @map("password_hash")
+  phoneVerifiedAt DateTime? @map("phone_verified_at")
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  provider        String?   @default("local")
+  role            String?
+  addressLine     String?   @map("address_line")
+  city            String?
+  state           String?
+  pincode         String?
+  country         String?
+  latitude        Float?
+  longitude       Float?
+  referralCode    String?   @map("referral_code")
+  referredBy      BigInt?   @map("referred_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  reviews Review[]
+  orders  Order[]
+
+  @@map("users")
+}
+
+model Category {
+  id          BigInt    @id @default(autoincrement())
+  name        String?
+  slug        String?   @unique
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  subcategories Subcategory[]
+  products      Product[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id          BigInt    @id @default(autoincrement())
+  name        String?
+  slug        String?
+  description String?
+  categoryId  BigInt    @map("category_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  category Category  @relation(fields: [categoryId], references: [id])
+  products Product[]
+
+  @@index([categoryId])
+  @@map("subcategories")
+}
+
+model Brand {
+  id        BigInt    @id @default(autoincrement())
+  name      String?
+  slug      String?   @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id                BigInt    @id @default(autoincrement())
+  name              String?
+  slug              String?   @unique
+  description       String?
+  shortDesc         String?   @map("short_desc")
+  fullDesc          String?   @map("full_desc")
+  specifications    String?
+  taxInfo           String?   @map("tax_info")
+  price             Float?
+  mrp               Float?
+  currency          String?
+  imageKey          String?   @map("image_key")
+  status            String?
+  featured          Boolean   @default(false)
+  tags              String[]  @default([])
+  stock             Int       @default(0)
+  trackInventory    Boolean   @default(true) @map("track_inventory")
+  lowStockThreshold Int       @default(5) @map("low_stock_threshold")
+  ratingAverage     Float     @default(0) @map("rating_average")
+  ratingCount       Int       @default(0) @map("rating_count")
+  hsnCode           String?   @map("hsn_code")
+  gstRate           Float     @default(0) @map("gst_rate")
+  sizeClass         String?   @default("small") @map("size_class")
+  bulky             Boolean   @default(false)
+  categoryId        BigInt    @map("category_id")
+  subcategoryId     BigInt?   @map("subcategory_id")
+  brandId           BigInt?   @map("brand_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  category    Category     @relation(fields: [categoryId], references: [id])
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id])
+  brand       Brand?       @relation(fields: [brandId], references: [id])
+  sizes       ProductSize[]
+  attributes  Attribute[]
+  reviews     Review[]
+  orderItems  OrderItem[]
+  wishlists   Wishlist[]
+  savedItems  SavedItem[]
+  recentViews RecentView[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductSize {
+  id        BigInt    @id @default(autoincrement())
+  label     String?
+  price     Float?
+  stock     Int       @default(0)
+  productId BigInt    @map("product_id")
+  sizeClass String?   @map("size_class")
+  bulky     Boolean?
+  imageKeys String[]  @default([]) @map("image_keys")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_sizes")
+}
+
+model Attribute {
+  id        BigInt    @id @default(autoincrement())
+  name      String?
+  value     String?
+  productId BigInt    @map("product_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("attributes")
+}
+
+model Review {
+  id               BigInt    @id @default(autoincrement())
+  rating           Int?
+  title            String?
+  comment          String?
+  productId        BigInt    @map("product_id")
+  userId           BigInt    @map("user_id")
+  status           String?   @default("pending")
+  verifiedPurchase Boolean   @default(false) @map("verified_purchase")
+  imageKeys        String[]  @default([]) @map("image_keys")
+  adminNotes       String?   @map("admin_notes")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model Order {
+  id                    BigInt    @id @default(autoincrement())
+  userId                BigInt?   @map("user_id")
+  razorpayOrderId       String?   @unique @map("razorpay_order_id")
+  razorpayPaymentId     String?   @map("razorpay_payment_id")
+  paymentStatus         String?   @default("created") @map("payment_status")
+  status                String?
+  amount                Float?
+  currency              String?
+  expectedDeliveryDate  DateTime? @map("expected_delivery_date")
+  publicToken           String?   @map("public_token")
+  customerName          String?   @map("customer_name")
+  customerEmail         String?   @map("customer_email")
+  customerPhone         String?   @map("customer_phone")
+  clientIp              String?   @map("client_ip")
+  userAgent             String?   @map("user_agent")
+  addressLine           String?   @map("address_line")
+  city                  String?
+  state                 String?
+  pincode               String?
+  fulfillmentChannel    String?   @map("fulfillment_channel")
+  fulfillmentZone       String?   @map("fulfillment_zone")
+  subtotal              Float?
+  deliveryFee           Float?    @map("delivery_fee")
+  deliveryFeeWaived     Boolean   @default(false) @map("delivery_fee_waived")
+  distanceKm            Float?    @map("distance_km")
+  distanceSource        String?   @map("distance_source")
+  latitude              Float?
+  longitude             Float?
+  courierProvider       String?   @map("courier_provider")
+  courierService        String?   @map("courier_service")
+  courierCost           Float?    @map("courier_cost")
+  shipmentId            String?   @map("shipment_id")
+  awbNumber             String?   @map("awb_number")
+  trackingUrl           String?   @map("tracking_url")
+  shippedAt             DateTime? @map("shipped_at")
+  deliveredAt           DateTime? @map("delivered_at")
+  pickupBookedAt        DateTime? @map("pickup_booked_at")
+  taxableValue          Float?    @map("taxable_value")
+  taxAmount             Float?    @map("tax_amount")
+  invoiceNumber         String?   @map("invoice_number")
+  invoiceDate           DateTime? @map("invoice_date")
+  couponId              BigInt?   @map("coupon_id")
+  couponCode            String?   @map("coupon_code")
+  discountTotal         Float?    @map("discount_total")
+  reviewRequestedAt     DateTime? @map("review_requested_at")
+  cancelledAt           DateTime? @map("cancelled_at")
+  cancelReason          String?   @map("cancel_reason")
+  refundedAmount        Float     @default(0) @map("refunded_amount")
+  inventoryReleased     Boolean   @default(false) @map("inventory_released")
+  giftWrap              Boolean   @default(false) @map("gift_wrap")
+  giftNote              String?   @map("gift_note")
+  hidePrice             Boolean   @default(false) @map("hide_price")
+  giftFee               Float?    @map("gift_fee")
+  deliverySlot          String?   @map("delivery_slot")
+  preferredDeliveryDate DateTime? @map("preferred_delivery_date")
+  deliveryRating        Int?      @map("delivery_rating")
+  deliveryFeedback      String?   @map("delivery_feedback")
+  creditApplied         Float?    @map("credit_applied")
+  shippingAddress       String?   @map("shipping_address")
+  billingAddress        String?   @map("billing_address")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+
+  user     User?       @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+  refunds  Refund[]
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            BigInt    @id @default(autoincrement())
+  orderId       BigInt    @map("order_id")
+  productId     BigInt    @map("product_id")
+  productSizeId BigInt?   @map("product_size")
+  quantity      Int?
+  price         Float?
+  name          String?
+  imageKey      String?   @map("image_key")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id                BigInt    @id @default(autoincrement())
+  orderId           BigInt    @map("order_id")
+  razorpayOrderId   String?   @map("razorpay_order_id")
+  razorpayPaymentId String?   @unique @map("razorpay_payment_id")
+  amount            Float?
+  currency          String?
+  status            String?
+  method            String?
+  description       String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Wishlist {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt    @map("user_id")
+  productId  BigInt    @map("product_id")
+  priceAtAdd Float?    @map("price_at_add")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}
+
+model RequestedProduct {
+  id             BigInt    @id @default(autoincrement())
+  productName    String    @map("product_name")
+  details        String?
+  status         String?   @default("pending")
+  source         String?   @default("manual")
+  requestedById  BigInt?   @map("requested_by_id")
+  requesterName  String?   @map("requester_name")
+  requesterEmail String?   @map("requester_email")
+  requesterPhone String?   @map("requester_phone")
+  adminNotes     String?   @map("admin_notes")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@map("requested_products")
+}
+
+model DoothaWaitlist {
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  phone      String
+  email      String?
+  address    String?
+  status     String?   @default("pending")
+  source     String?   @default("homepage_popup")
+  userId     BigInt?   @map("user_id")
+  ip         String?
+  userAgent  String?   @map("user_agent")
+  signups    Int       @default(1)
+  adminNotes String?   @map("admin_notes")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@map("dootha_waitlists")
+}
+
+model OrderSupportRequest {
+  id             BigInt    @id @default(autoincrement())
+  orderId        BigInt?   @map("order_id")
+  userId         BigInt?   @map("user_id")
+  customerName   String?   @map("customer_name")
+  customerEmail  String?   @map("customer_email")
+  customerPhone  String?   @map("customer_phone")
+  issueType      String?   @map("issue_type")
+  priority       String?   @default("high")
+  userMessage    String    @map("user_message")
+  orderStatus    String?   @map("order_status")
+  paymentStatus  String?   @map("payment_status")
+  orderAmount    Float?    @map("order_amount")
+  orderItems     String?   @map("order_items")
+  expectedDelivery String? @map("expected_delivery")
+  status         String?   @default("pending")
+  source         String?   @default("chatbot")
+  adminNotes     String?   @map("admin_notes")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@map("order_support_requests")
+}
+
+model WebhookEvent {
+  id          BigInt    @id @default(autoincrement())
+  provider    String?
+  eventId     String?   @unique @map("event_id")
+  eventType   String?   @map("event_type")
+  status      String?   @default("received")
+  payload     String?
+  error       String?
+  attempts    Int       @default(0)
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("webhook_events")
+}
+
+model Refund {
+  id                  BigInt    @id @default(autoincrement())
+  orderId             BigInt    @map("order_id")
+  razorpayRefundId    String?   @map("razorpay_refund_id")
+  razorpayPaymentId   String?   @map("razorpay_payment_id")
+  amount              Float?
+  currency            String?   @default("INR")
+  status              String?   @default("pending")
+  reason              String?
+  notes               String?
+  initiatedBy         BigInt?   @map("initiated_by")
+  processedAt         DateTime? @map("processed_at")
+  restockedInventory  Boolean   @default(false) @map("restocked_inventory")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("refunds")
+}
+
+model Coupon {
+  id             BigInt    @id @default(autoincrement())
+  code           String?   @unique
+  description    String?
+  type           String?
+  value          Float?
+  maxDiscount    Float?    @map("max_discount")
+  minSubtotal    Float?    @map("min_subtotal")
+  usageLimit     Int?      @map("usage_limit")
+  perUserLimit   Int       @default(1) @map("per_user_limit")
+  usageCount     Int       @default(0) @map("usage_count")
+  categoryIds    String[]  @default([]) @map("category_ids")
+  productIds     String[]  @default([]) @map("product_ids")
+  firstOrderOnly Boolean   @default(false) @map("first_order_only")
+  startsAt       DateTime? @map("starts_at")
+  expiresAt      DateTime? @map("expires_at")
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id        BigInt    @id @default(autoincrement())
+  couponId  BigInt    @map("coupon_id")
+  userId    BigInt?   @map("user_id")
+  email     String?
+  orderId   BigInt    @map("order_id")
+  amount    Float?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("coupon_redemptions")
+}
+
+model Address {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @map("user_id")
+  label       String?
+  name        String?
+  phone       String?
+  addressLine String?   @map("address_line")
+  city        String?
+  state       String?
+  pincode     String?
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean   @default(false) @map("is_default")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model ConsentRecord {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt?   @map("user_id")
+  email         String?
+  purpose       String?
+  granted       Boolean?
+  noticeVersion String?   @map("notice_version")
+  ip            String?
+  userAgent     String?   @map("user_agent")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  @@map("consent_records")
+}
+
+model BackInStockRequest {
+  id            BigInt    @id @default(autoincrement())
+  productId     BigInt    @map("product_id")
+  productSizeId BigInt?   @map("product_size_id")
+  email         String?
+  userId        BigInt?   @map("user_id")
+  notifiedAt    DateTime? @map("notified_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  @@map("back_in_stock_requests")
+}
+
+model OwnedPlant {
+  id                  BigInt    @id @default(autoincrement())
+  userId              BigInt    @map("user_id")
+  name                String?
+  location            String?
+  notes               String?
+  waterEveryDays      Int?      @map("water_every_days")
+  fertilizeEveryDays  Int?      @map("fertilize_every_days")
+  waterNextAt         DateTime? @map("water_next_at")
+  fertilizeNextAt     DateTime? @map("fertilize_next_at")
+  waterReminder       Boolean   @default(true) @map("water_reminder")
+  fertilizeReminder   Boolean   @default(true) @map("fertilize_reminder")
+  photoUrl            String?   @map("photo_url")
+  productId           BigInt?   @map("product_id")
+  productSlug         String?   @map("product_slug")
+  room                String?
+  mistEveryDays       Int?      @map("mist_every_days")
+  rotateEveryDays     Int?      @map("rotate_every_days")
+  repotEveryDays      Int?      @map("repot_every_days")
+  pruneEveryDays      Int?      @map("prune_every_days")
+  mistReminder        Boolean?  @map("mist_reminder")
+  rotateReminder      Boolean?  @map("rotate_reminder")
+  repotReminder       Boolean?  @map("repot_reminder")
+  pruneReminder       Boolean?  @map("prune_reminder")
+  mistNextAt          DateTime? @map("mist_next_at")
+  rotateNextAt        DateTime? @map("rotate_next_at")
+  repotNextAt         DateTime? @map("repot_next_at")
+  pruneNextAt         DateTime? @map("prune_next_at")
+  snoozedUntil        DateTime? @map("snoozed_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  healthLogs PlantHealthLog[]
+
+  @@index([userId])
+  @@map("owned_plants")
+}
+
+model PlantHealthLog {
+  id           BigInt    @id @default(autoincrement())
+  ownedPlantId BigInt    @map("owned_plant_id")
+  userId       BigInt    @map("user_id")
+  status       String?
+  notes        String?
+  photoUrl     String?   @map("photo_url")
+  recordedAt   DateTime? @map("recorded_at")
+  followUpAt   DateTime? @map("follow_up_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  ownedPlant OwnedPlant @relation(fields: [ownedPlantId], references: [id])
+
+  @@index([ownedPlantId])
+  @@map("plant_health_logs")
+}
+
+model NotificationPreference {
+  id             BigInt    @id @default(autoincrement())
+  userId         BigInt    @unique @map("user_id")
+  orderUpdates   Boolean   @default(true) @map("order_updates")
+  promotions     Boolean   @default(false)
+  careReminders  Boolean   @default(true) @map("care_reminders")
+  weatherAlerts  Boolean   @default(true) @map("weather_alerts")
+  doothaAlerts   Boolean   @default(true) @map("dootha_alerts")
+  reminderHour   Int       @default(8) @map("reminder_hour")
+  quietStartHour Int       @default(22) @map("quiet_start_hour")
+  quietEndHour   Int       @default(7) @map("quiet_end_hour")
+  vacationUntil  DateTime? @map("vacation_until")
+  pushToken      String?   @map("push_token")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@map("notification_preferences")
+}
+
+model AppNotification {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @map("user_id")
+  kind         String?
+  title        String?
+  body         String?
+  ownedPlantId BigInt?   @map("owned_plant_id")
+  orderId      BigInt?   @map("order_id")
+  productId    BigInt?   @map("product_id")
+  href         String?
+  readAt       DateTime? @map("read_at")
+  dedupeKey    String?   @unique @map("dedupe_key")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@map("app_notifications")
+}
+
+model SavedItem {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt    @map("user_id")
+  productId     BigInt    @map("product_id")
+  productSizeId BigInt?   @map("product_size_id")
+  pot           String?
+  quantity      Int       @default(1)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("saved_items")
+}
+
+model StoreCredit {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @unique @map("user_id")
+  balance   Float?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("store_credits")
+}
+
+model CreditEntry {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  amount    Float?
+  reason    String?
+  orderId   BigInt?   @map("order_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("credit_entries")
+}
+
+model SavedPaymentMethod {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  kind      String?
+  label     String?
+  detail    String?
+  isDefault Boolean   @default(false) @map("is_default")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("saved_payment_methods")
+}
+
+model RecentView {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  productId BigInt    @map("product_id")
+  viewedAt  DateTime? @map("viewed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("recent_views")
+}
+
+model CartSnapshot {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt    @unique @map("user_id")
+  itemsJson  String?   @map("items_json")
+  itemCount  Int?      @map("item_count")
+  notifiedAt DateTime? @map("notified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@map("cart_snapshots")
+}
+
+model ChatTurn {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  role      String?
+  content   String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@map("chat_turns")
+}
+
+model QuoteRequest {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt?   @map("user_id")
+  estimateNo String?   @map("estimate_no")
+  name       String?
+  phone      String?
+  email      String?
+  summary    String?
+  amount     Float?
+  status     String?   @default("sent")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@map("quote_requests")
+}

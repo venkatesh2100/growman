@@ -1,7 +1,7 @@
 // The handler is the toolbox every URL uses.
 //
 // It keeps:
-//   sequelize     the Postgres connection
+//   sequelize     Prisma database handle (query, transaction, raw SQL)
 //   cfg           settings read from the environment
 //   redis         optional shared cache and rate-limit counter (null if Redis is off)
 //   cache         fast memory cache, with Redis behind it when Redis is on
@@ -13,7 +13,7 @@
 // handler.listProducts. Inside those functions, `this` is the handler.
 
 import { CacheHelper } from "../cache/cache.js";
-import { QueryTypes } from "sequelize";
+import { QueryTypes } from "../db/compat.js";
 
 const HANDLER_MODULES = [
   "health", "query", "image_helpers", "auth", "products", "categories", "brands", "catalog",
@@ -35,7 +35,9 @@ export class Handler {
   }
 
   async autoMigrate() {
-    await this.sequelize.sync();
+    // Creates tables only when this database has never been migrated.
+    // An existing shop database keeps its tables and only gains missing indexes.
+    await this.sequelize.ensureSchema();
     await this.ensureSearchIndexes();
   }
 

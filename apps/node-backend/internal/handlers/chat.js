@@ -4,7 +4,7 @@
 // Other questions go to the plant-advice service, with a short canned reply
 // when that service is down. Signed-in chats are saved and a notice is sent.
 
-import { Op, literal } from "sequelize";
+import { Op, literal } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { parseToken } from "../auth/jwt.js";
 import { emailOrEmpty, Order, phoneOrEmpty, Product, RequestedProduct, User, Wishlist } from "../models/index.js";

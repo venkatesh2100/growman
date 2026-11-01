@@ -6,7 +6,7 @@
 // create the category or subcategory named in the form. Stock, price, GST,
 // and the featured flag live on the product row the admin saves.
 
-import { Op, literal } from "sequelize";
+import { Op, literal } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { parsePagination, buildPaginationMeta } from "../../pkg/pagination/pagination.js";
 import {

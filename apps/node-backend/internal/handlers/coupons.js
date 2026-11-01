@@ -6,7 +6,7 @@
 // The public validate route tells the cart whether a code applies. Admins create,
 // edit, and delete codes. Recording a redemption happens when an order is placed.
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { Coupon, CouponRedemption, Order, Product } from "../models/index.js";
 

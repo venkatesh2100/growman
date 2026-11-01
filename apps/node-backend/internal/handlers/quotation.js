@@ -2,7 +2,7 @@
 // A customer lists plants, quantities, and delivery details. Staff receive
 // the estimate by email, and the customer gets the same estimate back as JSON.
 
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { parseToken } from "../auth/jwt.js";
 import { clientIP } from "../middlewares/ip.js";

@@ -7,7 +7,7 @@
 // fetch any invoice and email it.
 
 import PDFDocument from "pdfkit";
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "../db/compat.js";
 import { json, error } from "../../pkg/httpjson/httpjson.js";
 import { requireUser, isAdminRole } from "../auth/jwt.js";
 import { Order, OrderItem, Product } from "../models/index.js";

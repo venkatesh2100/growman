@@ -7,7 +7,7 @@
 // waiting and refreshes tracking. Store pickup and our own vehicle are not
 // booked here.
 
-import { Op, literal } from "sequelize";
+import { Op, literal } from "../db/compat.js";
 import { json, error } from "../../pkg/httpjson/httpjson.js";
 import { Order, OrderItem } from "../models/index.js";
 

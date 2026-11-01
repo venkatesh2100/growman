@@ -6,7 +6,7 @@
 // the row for good. A product that was removed from the catalog still leaves
 // a gap in the list so the saved order of the other items stays put.
 
-import { QueryTypes } from "sequelize";
+import { QueryTypes } from "../db/compat.js";
 import { json, error, decode } from "../../pkg/httpjson/httpjson.js";
 import { requireUser } from "../auth/jwt.js";
 import { Product, ProductSize, Category, Wishlist } from "../models/index.js";
@@ -18,7 +18,8 @@ function isDuplicateKey(err) {
   while (current && !seen.has(current)) {
     seen.add(current);
     const text = String(current.message || current);
-    if (text.includes("23505") || text.includes("duplicate key")) return true;
+    if (text.includes("23505") || text.includes("duplicate key") || text.includes("P2002") || text.includes("Unique constraint")) return true;
+    if (current.code === "P2002") return true;
     if (current.parent?.code === "23505" || current.original?.code === "23505") return true;
     current = current.cause || current.parent || current.original;
   }

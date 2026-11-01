@@ -18,7 +18,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import nodemailer from "nodemailer";
-import { Op } from "sequelize";
+import { Op } from "../db/compat.js";
 import { json, error } from "../../pkg/httpjson/httpjson.js";
 import {
   requireUser,

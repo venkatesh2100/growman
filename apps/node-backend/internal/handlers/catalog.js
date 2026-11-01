@@ -4,7 +4,7 @@
 // those tags plus every category and its subcategories, so the storefront can
 // draw filters without a second round trip. Both responses are cached.
 
-import { QueryTypes } from "sequelize";
+import { QueryTypes } from "../db/compat.js";
 import { error } from "../../pkg/httpjson/httpjson.js";
 import {
   servePublic,

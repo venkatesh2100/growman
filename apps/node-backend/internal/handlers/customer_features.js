@@ -5,7 +5,7 @@
 
 import { randomBytes } from "node:crypto";
 import multer from "multer";
-import { Op, literal } from "sequelize";
+import { Op, literal } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { isAdminRole, requireUser } from "../auth/jwt.js";
 import { isDue, nextDueAt, seasonFor } from "../care/season.js";

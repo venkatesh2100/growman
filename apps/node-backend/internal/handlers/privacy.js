@@ -3,7 +3,7 @@
 // for their account to be erased. Order rows that the law says we must keep
 // are scrubbed of personal details and deleted later by a daily sweep.
 
-import { Op, literal } from "sequelize";
+import { Op, literal } from "../db/compat.js";
 import { decode, error, json } from "../../pkg/httpjson/httpjson.js";
 import { requireUser } from "../auth/jwt.js";
 import { clientIP } from "../middlewares/ip.js";
